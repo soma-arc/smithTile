@@ -109,20 +109,39 @@ export class SmithTile {
       while (currentAngle >= 360) currentAngle -= 360;
     }
 
-    // 座標をCanvasの中央に移動するためのオフセットを計算
-    const minX = Math.min(...this.vertices.map(v => v.x));
-    const maxX = Math.max(...this.vertices.map(v => v.x));
-    const minY = Math.min(...this.vertices.map(v => v.y));
-    const maxY = Math.max(...this.vertices.map(v => v.y));
+    // 基準点A（最初の頂点）を原点(0, 0)に配置するため、
+    // 基準点の座標分だけオフセットを適用
+    const basePointX = this.vertices[0].x;
+    const basePointY = this.vertices[0].y;
     
-    const offsetX = (800 - (maxX - minX)) / 2 - minX;
-    const offsetY = (600 - (maxY - minY)) / 2 - minY;
-    
-    // 全ての頂点にオフセットを適用
+    // 全ての頂点から基準点の座標を差し引いて、基準点を原点に移動
     this.vertices = this.vertices.map(vertex => ({
-      x: vertex.x + offsetX,
-      y: vertex.y + offsetY
+      x: vertex.x - basePointX,
+      y: vertex.y - basePointY
     }));
+
+    // Canvasの中央に表示するためのオフセットを計算
+    const centerX = 800 / 2;
+    const centerY = 600 / 2;
+    
+    // 全ての頂点をCanvasの中央に移動
+    this.vertices = this.vertices.map(vertex => ({
+      x: vertex.x + centerX,
+      y: vertex.y + centerY
+    }));
+  }
+
+  /**
+   * 頂点を赤い円で描画
+   */
+  private drawVertices(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = '#ff0000';
+    
+    this.vertices.forEach(vertex => {
+      ctx.beginPath();
+      ctx.arc(vertex.x, vertex.y, 3, 0, 2 * Math.PI);
+      ctx.fill();
+    });
   }
 
   /**
@@ -139,7 +158,7 @@ export class SmithTile {
     // 背景を白で塗りつぶし
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    // タイルを描画
+    // タイルの辺を描画
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
     
@@ -155,5 +174,8 @@ export class SmithTile {
     // パスを閉じる
     ctx.closePath();
     ctx.stroke();
+
+    // 頂点を赤い円で描画
+    this.drawVertices(ctx);
   }
 }
