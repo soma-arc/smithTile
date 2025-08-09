@@ -139,6 +139,10 @@ export class SmithTile {
     // 背景を白で塗りつぶし
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
+    // タイルを描画
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    
     // パスを開始
     ctx.beginPath();
     ctx.moveTo(this.vertices[0].x, this.vertices[0].y);

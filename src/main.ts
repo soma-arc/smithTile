@@ -12,6 +12,7 @@ class SmithTileApp {
   private ratioRadios: NodeListOf<HTMLInputElement>;
   private sizeSlider: HTMLInputElement;
   private sizeValue: HTMLElement;
+  private showAxesCheckbox: HTMLInputElement;
   private verticesList: HTMLElement;
 
   constructor() {
@@ -23,6 +24,7 @@ class SmithTileApp {
     this.ratioRadios = document.querySelectorAll('input[name="ratio"]') as NodeListOf<HTMLInputElement>;
     this.sizeSlider = document.getElementById('size-slider') as HTMLInputElement;
     this.sizeValue = document.getElementById('size-value') as HTMLElement;
+    this.showAxesCheckbox = document.getElementById('show-axes') as HTMLInputElement;
     this.verticesList = document.getElementById('vertices-list') as HTMLElement;
 
     this.initializeEventListeners();
@@ -50,13 +52,48 @@ class SmithTileApp {
       this.sizeValue.textContent = `${size}px`;
       this.updateDisplay();
     });
+
+    // 座標軸表示チェックボックスのイベントリスナー
+    this.showAxesCheckbox.addEventListener('change', () => {
+      this.updateDisplay();
+    });
+  }
+
+  /**
+   * 座標軸を描画
+   */
+  private drawAxes(): void {
+    const centerX = this.canvas.width / 2;
+    const centerY = this.canvas.height / 2;
+    
+    this.ctx.strokeStyle = '#888888';
+    this.ctx.lineWidth = 1;
+    
+    // X軸を描画
+    this.ctx.beginPath();
+    this.ctx.moveTo(0, centerY);
+    this.ctx.lineTo(this.canvas.width, centerY);
+    this.ctx.stroke();
+    
+    // Y軸を描画
+    this.ctx.beginPath();
+    this.ctx.moveTo(centerX, 0);
+    this.ctx.lineTo(centerX, this.canvas.height);
+    this.ctx.stroke();
   }
 
   /**
    * 表示を更新（描画と座標リスト）
    */
   private updateDisplay(): void {
+    // タイルを描画
     this.smithTile.draw(this.ctx);
+    
+    // 座標軸を描画（オプション）
+    if (this.showAxesCheckbox.checked) {
+      this.drawAxes();
+    }
+    
     this.updateVerticesList();
   }
 
