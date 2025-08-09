@@ -71,7 +71,7 @@ export class SmithTile {
     const { a, b } = this.getEdgeLengths();
     
     // BBAAパターンを繰り返し: BBAABBAABBAABB (14辺)
-    const pattern = [b, b, a, a, b, b, a, a, b, b, a, a, b, b];
+    const pattern = [a, a, a, a, b, b, a, a, b, b, a, a, b, b];
     
     return pattern;
   }
