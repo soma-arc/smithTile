@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smith タイル描画アプリ</title>
+</head>
+<body>
+    <div id="app">
+        <h1>Smith タイル描画アプリ</h1>
+        <div class="container">
+            <div class="canvas-area">
+                <canvas id="canvas" width="800" height="600"></canvas>
+            </div>
+            <div class="control-panel">
+                <div class="control-group">
+                    <h3>辺の比率</h3>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="ratio" value="1:4" checked>
+                            1:4
+                        </label>
+                        <label>
+                            <input type="radio" name="ratio" value="1:√3">
+                            1:√3
+                        </label>
+                        <label>
+                            <input type="radio" name="ratio" value="√3:1">
+                            √3:1
+                        </label>
+                        <label>
+                            <input type="radio" name="ratio" value="4:1">
+                            4:1
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>サイズ調整</h3>
+                    <div class="slider-group">
+                        <input type="range" id="size-slider" min="5" max="50" value="10" step="1">
+                        <span id="size-value">10px</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>頂点座標</h3>
+                    <div id="vertices-list" class="vertices-list">
+                        <!-- 頂点座標がここに動的に表示される -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
