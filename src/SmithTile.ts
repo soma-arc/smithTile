@@ -48,19 +48,32 @@ export class SmithTile {
   }
 
   /**
-   * 辺の比率に基づいて短辺と長辺の長さを計算
+   * 辺の比率に基づいてA値とB値の長さを計算
+   * 比率A:BでBBAAパターンを生成
    */
-  private getEdgeLengths(): { short: number; long: number } {
+  private getEdgeLengths(): { a: number; b: number } {
     switch (this.ratio) {
       case '1:4':
-        return { short: this.baseLength, long: this.baseLength * 4 };
+        return { a: this.baseLength, b: this.baseLength * 4 };
       case '1:√3':
-        return { short: this.baseLength, long: this.baseLength * Math.sqrt(3) };
+        return { a: this.baseLength, b: this.baseLength * Math.sqrt(3) };
       case '√3:1':
-        return { short: this.baseLength * Math.sqrt(3), long: this.baseLength };
+        return { a: this.baseLength * Math.sqrt(3), b: this.baseLength };
       case '4:1':
-        return { short: this.baseLength * 4, long: this.baseLength };
+        return { a: this.baseLength * 4, b: this.baseLength };
     }
+  }
+
+  /**
+   * BBAAパターンに基づいて14辺の長さ配列を生成
+   */
+  private generateEdgePattern(): number[] {
+    const { a, b } = this.getEdgeLengths();
+    
+    // BBAAパターンを繰り返し: BBAABBAABBAABB (14辺)
+    const pattern = [b, b, a, a, b, b, a, a, b, b, a, a, b, b];
+    
+    return pattern;
   }
 
   /**
@@ -68,12 +81,10 @@ export class SmithTile {
    * 基準点（頂点A）を原点(0, 0)に配置し、各頂点の座標を算出
    */
   private calculateVertices(): void {
-    const { short, long } = this.getEdgeLengths();
     this.vertices = [];
 
-    // 辺の長さパターン（短辺をS、長辺をLで表現）
-    // Smithタイルの辺の構成：S, L, S, L, S, L, S, L, S, L, S, S, L, L
-    const edgeLengths = [short, long, short, long, short, long, short, long, short, long, short, short, long, long];
+    // BBAAパターンに基づいて辺の長さ配列を生成
+    const edgeLengths = this.generateEdgePattern();
 
     // 最初の頂点（基準点A）を原点に配置
     let currentPoint: Point = { x: 0, y: 0 };
