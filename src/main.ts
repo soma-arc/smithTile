@@ -12,6 +12,8 @@ class SmithTileApp {
   private ratioRadios: NodeListOf<HTMLInputElement>;
   private sizeSlider: HTMLInputElement;
   private sizeValue: HTMLElement;
+  private rotationSlider: HTMLInputElement;
+  private rotationValue: HTMLElement;
   private showAxesCheckbox: HTMLInputElement;
   private verticesList: HTMLElement;
 
@@ -24,6 +26,8 @@ class SmithTileApp {
     this.ratioRadios = document.querySelectorAll('input[name="ratio"]') as NodeListOf<HTMLInputElement>;
     this.sizeSlider = document.getElementById('size-slider') as HTMLInputElement;
     this.sizeValue = document.getElementById('size-value') as HTMLElement;
+    this.rotationSlider = document.getElementById('rotation-slider') as HTMLInputElement;
+    this.rotationValue = document.getElementById('rotation-value') as HTMLElement;
     this.showAxesCheckbox = document.getElementById('show-axes') as HTMLInputElement;
     this.verticesList = document.getElementById('vertices-list') as HTMLElement;
 
@@ -50,6 +54,14 @@ class SmithTileApp {
       const size = parseInt(this.sizeSlider.value);
       this.smithTile.setBaseLength(size);
       this.sizeValue.textContent = `${size}px`;
+      this.updateDisplay();
+    });
+
+    // 回転スライダーのイベントリスナー
+    this.rotationSlider.addEventListener('input', () => {
+      const rotation = parseInt(this.rotationSlider.value);
+      this.smithTile.setRotation(rotation);
+      this.rotationValue.textContent = `${rotation}°`;
       this.updateDisplay();
     });
 

@@ -13,6 +13,7 @@ export interface Point {
 export class SmithTile {
   private ratio: RatioType;
   private baseLength: number;
+  private rotation: number; // 回転角度（度数法）
   private vertices: Point[] = [];
 
   // 内角の値（度数法）- 頂点Aから反時計回り
@@ -21,6 +22,7 @@ export class SmithTile {
   constructor(ratio: RatioType = '1:4', baseLength: number = 10) {
     this.ratio = ratio;
     this.baseLength = baseLength;
+    this.rotation = 0; // 初期回転角度は0度
     this.calculateVertices();
   }
 
@@ -41,10 +43,41 @@ export class SmithTile {
   }
 
   /**
+   * 回転角度を設定
+   */
+  setRotation(angle: number): void {
+    this.rotation = angle;
+    this.calculateVertices();
+  }
+
+  /**
    * 全頂点座標を取得
    */
   getVertices(): Point[] {
     return [...this.vertices];
+  }
+
+  /**
+   * 点を指定した角度だけ回転させる
+   */
+  private rotatePoint(point: Point, centerX: number, centerY: number, angle: number): Point {
+    const angleRad = (angle * Math.PI) / 180;
+    const cos = Math.cos(angleRad);
+    const sin = Math.sin(angleRad);
+    
+    // 回転中心を基準とした相対座標
+    const relativeX = point.x - centerX;
+    const relativeY = point.y - centerY;
+    
+    // 回転変換を適用
+    const rotatedX = relativeX * cos - relativeY * sin;
+    const rotatedY = relativeX * sin + relativeY * cos;
+    
+    // 回転中心を加算して絶対座標に戻す
+    return {
+      x: rotatedX + centerX,
+      y: rotatedY + centerY
+    };
   }
 
   /**
@@ -140,6 +173,13 @@ export class SmithTile {
       x: vertex.x + centerX,
       y: vertex.y + centerY
     }));
+
+    // 回転を適用（回転中心はCanvasの中央）
+    if (this.rotation !== 0) {
+      this.vertices = this.vertices.map(vertex => 
+        this.rotatePoint(vertex, centerX, centerY, this.rotation)
+      );
+    }
   }
 
   /**
