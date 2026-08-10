@@ -1,0 +1,300 @@
+/* App-specific layout and controls for the Tile(a, b) visualizer.
+   Design-system tokens/components live in design-system.css. */
+
+@import "./design-system.css";
+
+html,
+body {
+    height: 100%;
+}
+
+.app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    overflow: hidden;
+}
+
+/* — header — */
+.app-header {
+    border-bottom: 1px solid var(--color-divider);
+    flex: none;
+    gap: var(--space-4);
+}
+.app-title-group {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+    margin-right: auto;
+}
+.app-title-group .nav-brand {
+    margin: 0;
+}
+.app-subtitle {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-accent-700);
+}
+
+.app-body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+}
+
+/* — control column (left) — */
+.controls {
+    width: 288px;
+    flex: none;
+    border-right: 1px solid var(--color-divider);
+    overflow-y: auto;
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+.controls h6 {
+    margin: 0 0 var(--space-3);
+    color: var(--color-accent-700);
+}
+.field-row {
+    display: flex;
+    gap: var(--space-3);
+}
+.field-row .field {
+    flex: 1;
+}
+.field-inline-label {
+    display: flex;
+    justify-content: space-between;
+}
+.readout {
+    color: var(--color-accent-700);
+    font-variant-numeric: tabular-nums;
+}
+.ratio-ends {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--color-neutral-600);
+    margin-top: 3px;
+}
+.hidden {
+    /* biome-ignore lint/complexity/noImportantStyles: utility class must reliably win over component display rules */
+    display: none !important;
+}
+
+/* preset grid */
+.preset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+}
+.tv-preset {
+    font-family: var(--font-heading);
+    font-weight: var(--font-heading-weight);
+    font-size: 12.5px;
+    text-align: left;
+    padding: 7px 9px;
+    line-height: 1.15;
+    white-space: pre-line;
+}
+.tv-preset.active {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-color: var(--color-accent);
+}
+
+/* range input */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 3px;
+    background: var(--color-neutral-300);
+    outline: none;
+    border-radius: 2px;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    background: var(--color-accent);
+    border: 0;
+    cursor: pointer;
+    border-radius: 0;
+}
+input[type="range"]::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    background: var(--color-accent);
+    border: 0;
+    cursor: pointer;
+    border-radius: 0;
+}
+
+/* display toggles */
+.tv-toggle {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 0;
+    cursor: pointer;
+    font-size: 13px;
+    user-select: none;
+}
+.tv-toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.tv-box {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    border: 1.5px solid var(--color-divider);
+    display: grid;
+    place-items: center;
+    color: var(--color-bg);
+}
+.tv-toggle input:checked + .tv-box {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+}
+.tv-toggle:hover .tv-box {
+    border-color: var(--color-accent);
+}
+.tv-toggle input:focus-visible + .tv-box {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+.tv-box svg {
+    display: none;
+}
+.tv-toggle input:checked + .tv-box svg {
+    display: block;
+}
+
+/* — canvas (center) — */
+.canvas-main {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    padding: var(--space-6);
+    display: flex;
+}
+.canvas-frame {
+    flex: 1;
+    position: relative;
+    background: var(--color-bg);
+}
+.svg-host {
+    position: absolute;
+    inset: 0;
+}
+
+.legend {
+    position: absolute;
+    left: 16px;
+    bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 11.5px;
+    background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+    padding: 9px 12px;
+    border: 1px solid var(--color-divider);
+    backdrop-filter: blur(2px);
+}
+.legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.preset-title {
+    position: absolute;
+    right: 16px;
+    top: 14px;
+    font-size: 12px;
+    background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+    padding: 6px 11px;
+    border: 1px solid var(--color-divider);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+.not-polykite {
+    position: absolute;
+    right: 16px;
+    bottom: 14px;
+    max-width: 260px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--color-neutral-800);
+    background: var(--color-accent-100);
+    padding: 8px 11px;
+    border-left: 3px solid var(--color-accent);
+}
+
+/* — info column (right) — */
+.info {
+    width: 216px;
+    flex: none;
+    border-left: 1px solid var(--color-divider);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    overflow-y: auto;
+}
+.info h6 {
+    margin: 0;
+    color: var(--color-accent-700);
+}
+.info-stat-label {
+    font-size: 11px;
+    color: var(--color-neutral-700);
+    margin-bottom: 3px;
+}
+.info-stat-value {
+    font-size: 26px;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+.info-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    font-size: 12.5px;
+}
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+.info-row .k {
+    color: var(--color-neutral-700);
+}
+.info-row .v {
+    font-variant-numeric: tabular-nums;
+}
+.info-block-label {
+    color: var(--color-neutral-700);
+    margin-bottom: 4px;
+}
+
+/* scrollbars */
+.controls::-webkit-scrollbar,
+.info::-webkit-scrollbar {
+    width: 8px;
+}
+.controls::-webkit-scrollbar-thumb,
+.info::-webkit-scrollbar-thumb {
+    background: var(--color-neutral-300);
+}
