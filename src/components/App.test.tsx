@@ -1,0 +1,52 @@
+// @vitest-environment jsdom
+import '@testing-library/jest-dom/vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it } from 'vitest';
+import { TileStateProvider } from '../hooks/useTileState';
+import { App } from './App';
+
+afterEach(cleanup);
+
+function renderApp() {
+    return render(
+        <TileStateProvider>
+            <App />
+        </TileStateProvider>,
+    );
+}
+
+describe('<App> (state + components wiring)', () => {
+    it('starts on the Hat preset', () => {
+        renderApp();
+        expect(screen.getByRole('button', { name: /ハット/ })).toHaveClass('active');
+        expect(screen.getByText('1 : √3')).toBeInTheDocument();
+    });
+
+    it('applies a preset on click and updates the info panel', async () => {
+        const user = userEvent.setup();
+        renderApp();
+        await user.click(screen.getByRole('button', { name: 'Tile(1,4)' }));
+        expect(screen.getByText('1 : 4')).toBeInTheDocument(); // a : b
+        expect(screen.getByText('4.000')).toBeInTheDocument(); // b / a
+        expect(screen.getByRole('button', { name: 'Tile(1,4)' })).toHaveClass('active');
+    });
+
+    it('switches language', async () => {
+        const user = userEvent.setup();
+        renderApp();
+        await user.click(screen.getByRole('radio', { name: 'English' }));
+        expect(screen.getByText('Parameters')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Hat/ })).toBeInTheDocument();
+    });
+
+    it('renders per-edge segments when the A/B toggle is enabled', async () => {
+        const user = userEvent.setup();
+        const { container } = renderApp();
+        // Only the two legend swatches use <line> before the toggle.
+        expect(container.querySelectorAll('svg line')).toHaveLength(2);
+        await user.click(screen.getByRole('checkbox', { name: 'A / B 辺を区別' }));
+        // 2 legend swatches + 14 tile edges.
+        expect(container.querySelectorAll('svg line')).toHaveLength(16);
+    });
+});
