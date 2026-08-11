@@ -5,7 +5,6 @@
 
 import type { Lang } from '../i18n';
 import { type Preset, SQRT3 } from '../smithTile';
-import { IDENTITY_TRANSFORM, type Transform } from '../Transform';
 
 export type Mode = 'ratio' | 'independent';
 
@@ -26,7 +25,8 @@ export type TileState = {
     zoom: number;
     toggles: Toggles;
     presetName: string; // includes the sentinel 'custom'
-    transform: Transform;
+    /** Whole-scene rotation in degrees (view control, like zoom). */
+    rotationDeg: number;
 };
 
 export const initialTileState: TileState = {
@@ -44,7 +44,7 @@ export const initialTileState: TileState = {
         showLengths: false,
     },
     presetName: 'hat',
-    transform: IDENTITY_TRANSFORM,
+    rotationDeg: 0,
 };
 
 export type TileAction =
@@ -54,6 +54,7 @@ export type TileAction =
     | { type: 'setB'; value: number }
     | { type: 'setRatio'; ratio: number }
     | { type: 'setZoom'; zoom: number }
+    | { type: 'setRotation'; deg: number }
     | { type: 'applyPreset'; preset: Preset }
     | { type: 'toggle'; key: keyof Toggles };
 
@@ -96,6 +97,9 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
 
         case 'setZoom':
             return { ...state, zoom: action.zoom };
+
+        case 'setRotation':
+            return { ...state, rotationDeg: action.deg };
 
         case 'applyPreset': {
             const p = action.preset;

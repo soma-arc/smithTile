@@ -36,6 +36,21 @@ describe('camera', () => {
         expect(p.y).toBeGreaterThan(0);
         expect(p.y).toBeLessThan(CANVAS_H);
     });
+
+    it('keeps the frame center fixed at the canvas center under any rotation', () => {
+        const cam = createCamera(1, 90);
+        const p = cam.project(cam.center);
+        expect(p.x).toBeCloseTo(CANVAS_W / 2, 6);
+        expect(p.y).toBeCloseTo(CANVAS_H / 2, 6);
+    });
+
+    it('rotates the view: a point right of center moves above center at +90°', () => {
+        const cam = createCamera(1, 90);
+        const right = { x: cam.center.x + 1, y: cam.center.y };
+        const p = cam.project(right);
+        expect(p.x).toBeCloseTo(CANVAS_W / 2, 6); // stays on the vertical center line
+        expect(p.y).toBeLessThan(CANVAS_H / 2); // moved upward on screen
+    });
 });
 
 describe('buildScene', () => {

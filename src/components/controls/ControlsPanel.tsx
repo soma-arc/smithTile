@@ -5,6 +5,7 @@ import { IndependentControls } from './IndependentControls';
 import { ModeToggle } from './ModeToggle';
 import { PresetGrid } from './PresetGrid';
 import { RatioControl } from './RatioControl';
+import { RotationControl } from './RotationControl';
 import { ZoomControl } from './ZoomControl';
 
 export function ControlsPanel() {
@@ -17,6 +18,7 @@ export function ControlsPanel() {
                 <ModeToggle />
                 {mode === 'independent' ? <IndependentControls /> : <RatioControl />}
                 <ZoomControl />
+                <RotationControl />
             </section>
 
             <section>

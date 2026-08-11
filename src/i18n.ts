@@ -12,6 +12,7 @@ export interface Strings {
     bEdges: string;
     ratioLabel: string;
     zoom: string;
+    rotation: string;
     presets: string;
     display: string;
     grid: string;
@@ -46,6 +47,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         bEdges: 'B辺 ×6',
         ratioLabel: '比率 b / a',
         zoom: '表示スケール',
+        rotation: '回転',
         presets: 'プリセット',
         display: '表示',
         grid: '参照グリッド (kite)',
@@ -79,6 +81,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         bEdges: 'B-edges ×6',
         ratioLabel: 'Ratio b / a',
         zoom: 'View scale',
+        rotation: 'Rotation',
         presets: 'Presets',
         display: 'Display',
         grid: 'Reference grid (kite)',
