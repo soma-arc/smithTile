@@ -13,6 +13,7 @@ export function DisplayToggles() {
         { key: 'showVectors', label: t.vectors },
         { key: 'showVertexNums', label: t.vertexNums },
         { key: 'showLengths', label: t.lengths },
+        { key: 'showAngles', label: t.angles },
     ];
     return (
         <div>

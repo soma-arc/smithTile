@@ -21,6 +21,7 @@ export interface Strings {
     vectors: string;
     vertexNums: string;
     lengths: string;
+    angles: string;
     info: string;
     edgeCount: string;
     closure: string;
@@ -56,6 +57,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         vectors: '方向ベクトル',
         vertexNums: '頂点番号 (14辺)',
         lengths: '辺長ラベル a / b',
+        angles: '内角ラベル (°)',
         info: '情報',
         edgeCount: '辺数',
         closure: '閉路誤差',
@@ -90,6 +92,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         vectors: 'Direction vectors',
         vertexNums: 'Vertex numbers (14)',
         lengths: 'Edge-length labels a / b',
+        angles: 'Interior angles (°)',
         info: 'Info',
         edgeCount: 'Edges',
         closure: 'Closure error',

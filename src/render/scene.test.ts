@@ -15,6 +15,7 @@ const NO_OVERLAYS: Overlays = {
     vectors: false,
     vertexNums: false,
     lengths: false,
+    angles: false,
 };
 
 function world(overlays: Partial<Overlays> = {}, a = 1, b = Math.sqrt(3)): SceneWorld {
@@ -81,6 +82,14 @@ describe('buildScene', () => {
         const edges = ab.layers.find((l) => l.id === 'edges');
         expect(edges?.items).toHaveLength(14);
         expect(edges?.items.every((d) => d.kind === 'segment')).toBe(true);
+    });
+
+    it('adds 14 interior-angle text labels when enabled', () => {
+        const angles = buildScene(world({ angles: true }), camera).layers.find(
+            (l) => l.id === 'angles',
+        );
+        expect(angles?.items).toHaveLength(14);
+        expect(angles?.items.every((d) => d.kind === 'text')).toBe(true);
     });
 
     it('produces 14 vertex-number circles+labels when enabled', () => {

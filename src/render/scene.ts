@@ -13,8 +13,20 @@
  * every backend renders pixel-identically.
  */
 
-import { kitesInside, polykiteValid, transformedGridKites, transformKite } from '../kiteGrid';
-import { createSmithTile, EDGE_COUNT, EDGE_TEMPLATE, smithTileWorldVertices } from '../smithTile';
+import {
+    centroid,
+    kitesInside,
+    polykiteValid,
+    transformedGridKites,
+    transformKite,
+} from '../kiteGrid';
+import {
+    createSmithTile,
+    EDGE_COUNT,
+    EDGE_TEMPLATE,
+    smithTileWorldVertices,
+    VERTEX_TEMPLATE,
+} from '../smithTile';
 import type { Transform } from '../Transform';
 import type { Vec2 } from '../Vec2';
 import type { Camera } from './camera';
@@ -60,6 +72,7 @@ export type Overlays = {
     vectors: boolean;
     vertexNums: boolean;
     lengths: boolean;
+    angles: boolean;
 };
 
 /** What exists in the world to be drawn. Tile list is future-proofed for tilings. */
@@ -239,6 +252,33 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
                 style: { fill: COLOR.vertexDot },
             })),
         });
+    }
+
+    // interior-angle labels (from the fixed vertex template), placed just
+    // inside each vertex toward the tile's centroid.
+    if (overlays.angles) {
+        const c = centroid(V);
+        const items: Drawable[] = [];
+        for (let i = 0; i < EDGE_COUNT; i++) {
+            const p = V[i];
+            const dx = c.x - p.x;
+            const dy = c.y - p.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const off = 16;
+            const deg = Math.round((VERTEX_TEMPLATE[i].interiorAngle * 180) / Math.PI);
+            items.push({
+                kind: 'text',
+                at: { x: p.x + (dx / len) * off, y: p.y + (dy / len) * off },
+                text: `${deg}°`,
+                style: {
+                    fill: COLOR.vertexDot,
+                    size: 10.5,
+                    weight: 600,
+                    family: 'Barlow Condensed, sans-serif',
+                },
+            });
+        }
+        layers.push({ id: 'angles', items });
     }
 
     return { layers, viewBox: camera.viewBox };

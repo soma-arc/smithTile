@@ -18,6 +18,7 @@ import {
     polygonArea,
     SQRT3,
     smithTileWorldVertices,
+    VERTEX_TEMPLATE,
     validateParameters,
 } from './smithTile';
 import { applyTransform, IDENTITY_TRANSFORM, type Transform } from './Transform';
@@ -70,6 +71,28 @@ describe('edge template', () => {
     it('has 8 A-edges and 6 B-edges', () => {
         expect(EDGE_TEMPLATE.filter((e) => e.kind === 'A')).toHaveLength(8);
         expect(EDGE_TEMPLATE.filter((e) => e.kind === 'B')).toHaveLength(6);
+    });
+});
+
+describe('interior angles', () => {
+    const degs = VERTEX_TEMPLATE.map((v) => Math.round((v.interiorAngle * 180) / Math.PI));
+
+    it('matches the Hat interior-angle sequence', () => {
+        expect(degs).toEqual([120, 270, 120, 90, 240, 90, 240, 90, 120, 180, 120, 270, 120, 90]);
+    });
+
+    it('sums to (n-2)·180° for the 14-gon', () => {
+        const sum = degs.reduce((s, d) => s + d, 0);
+        expect(sum).toBe((EDGE_COUNT - 2) * 180); // 2160
+    });
+
+    it('flags 120° vertices as sockets and 240° as plugs', () => {
+        for (const v of VERTEX_TEMPLATE) {
+            const deg = Math.round((v.interiorAngle * 180) / Math.PI);
+            if (deg === 120) expect(v.portCandidate).toBe('socket');
+            else if (deg === 240) expect(v.portCandidate).toBe('plug');
+            else expect(v.portCandidate).toBeNull();
+        }
     });
 });
 

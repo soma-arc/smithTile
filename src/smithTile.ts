@@ -70,12 +70,16 @@ function edgeVector(edge: EdgeSpec, a: number, b: number): Vec2 {
     return { x: Math.cos(angle) * length, y: Math.sin(angle) * length };
 }
 
-const VERTEX_TEMPLATE: readonly TileVertexSpec[] = EDGE_TEMPLATE.map((_edge, i) => {
-    const prev = EDGE_TEMPLATE[(i + EDGE_COUNT - 1) % EDGE_COUNT];
-    const next = EDGE_TEMPLATE[(i + 1) % EDGE_COUNT];
-    const interiorDirection = (next.direction - prev.direction + 12) % 12;
+export const VERTEX_TEMPLATE: readonly TileVertexSpec[] = EDGE_TEMPLATE.map((edge, i) => {
+    // Vertex i sits between the incoming edge[i-1] and the outgoing edge[i].
+    const incoming = EDGE_TEMPLATE[(i + EDGE_COUNT - 1) % EDGE_COUNT];
+    // Signed turn from incoming to outgoing direction, in 30° units, in (-6, 6].
+    const raw = (((edge.direction - incoming.direction) % 12) + 12) % 12;
+    const turn = raw > 6 ? raw - 12 : raw;
+    // Interior angle = 180° − turn (reflex vertices exceed 180°), in 30° units.
+    const interiorDirection = 6 - turn;
     const portCandidate =
-        interiorDirection === 4 ? 'socket' : interiorDirection === 8 ? 'plug' : null; // 120 ... socket, 240 ... plug
+        interiorDirection === 4 ? 'socket' : interiorDirection === 8 ? 'plug' : null; // 120° socket, 240° plug
 
     return { interiorAngle: interiorDirection * (Math.PI / 6), portCandidate };
 });
