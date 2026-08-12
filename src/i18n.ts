@@ -22,6 +22,9 @@ export interface Strings {
     vertexNums: string;
     lengths: string;
     angles: string;
+    ports: string;
+    legendSocket: string;
+    legendPlug: string;
     info: string;
     edgeCount: string;
     closure: string;
@@ -58,6 +61,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         vertexNums: '頂点番号 (14辺)',
         lengths: '辺長ラベル a / b',
         angles: '内角ラベル (°)',
+        ports: 'ポート候補',
+        legendSocket: 'ソケット候補 (120°)',
+        legendPlug: 'プラグ候補 (240°)',
         info: '情報',
         edgeCount: '辺数',
         closure: '閉路誤差',
@@ -93,6 +99,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         vertexNums: 'Vertex numbers (14)',
         lengths: 'Edge-length labels a / b',
         angles: 'Interior angles (°)',
+        ports: 'Port candidates',
+        legendSocket: 'Socket candidate (120°)',
+        legendPlug: 'Plug candidate (240°)',
         info: 'Info',
         edgeCount: 'Edges',
         closure: 'Closure error',

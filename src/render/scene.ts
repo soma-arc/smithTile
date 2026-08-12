@@ -73,6 +73,7 @@ export type Overlays = {
     vertexNums: boolean;
     lengths: boolean;
     angles: boolean;
+    ports: boolean;
 };
 
 /** What exists in the world to be drawn. Tile list is future-proofed for tilings. */
@@ -252,6 +253,27 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
                 style: { fill: COLOR.vertexDot },
             })),
         });
+    }
+
+    // port candidates: a colored ring around each socket/plug vertex, sitting
+    // outside the vertex-number disc so both overlays can be shown together.
+    if (overlays.ports) {
+        const items: Drawable[] = [];
+        for (let i = 0; i < EDGE_COUNT; i++) {
+            const pc = VERTEX_TEMPLATE[i].portCandidate;
+            if (!pc) continue;
+            items.push({
+                kind: 'circle',
+                center: V[i],
+                r: 12,
+                style: {
+                    fill: 'none',
+                    stroke: pc === 'socket' ? COLOR.socketRing : COLOR.plugRing,
+                    width: 2.4,
+                },
+            });
+        }
+        layers.push({ id: 'ports', items });
     }
 
     // interior-angle labels (from the fixed vertex template), placed just

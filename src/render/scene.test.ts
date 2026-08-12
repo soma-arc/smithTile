@@ -16,6 +16,7 @@ const NO_OVERLAYS: Overlays = {
     vertexNums: false,
     lengths: false,
     angles: false,
+    ports: false,
 };
 
 function world(overlays: Partial<Overlays> = {}, a = 1, b = Math.sqrt(3)): SceneWorld {
@@ -82,6 +83,21 @@ describe('buildScene', () => {
         const edges = ab.layers.find((l) => l.id === 'edges');
         expect(edges?.items).toHaveLength(14);
         expect(edges?.items.every((d) => d.kind === 'segment')).toBe(true);
+    });
+
+    it('marks port candidates with 7 rings (5 sockets + 2 plugs) when enabled', () => {
+        const ports = buildScene(world({ ports: true }), camera).layers.find(
+            (l) => l.id === 'ports',
+        );
+        expect(ports?.items).toHaveLength(7);
+        // all are unfilled rings
+        expect(ports?.items.every((d) => d.kind === 'circle' && d.style.fill === 'none')).toBe(
+            true,
+        );
+        const strokes =
+            ports?.items.map((d) => (d.kind === 'circle' ? d.style.stroke : undefined)) ?? [];
+        expect(strokes.filter((s) => s === '#5980a6')).toHaveLength(5); // sockets
+        expect(strokes.filter((s) => s === '#c17d54')).toHaveLength(2); // plugs
     });
 
     it('adds 14 interior-angle text labels when enabled', () => {

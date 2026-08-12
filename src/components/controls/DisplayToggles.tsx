@@ -14,6 +14,7 @@ export function DisplayToggles() {
         { key: 'showVertexNums', label: t.vertexNums },
         { key: 'showLengths', label: t.lengths },
         { key: 'showAngles', label: t.angles },
+        { key: 'showPorts', label: t.ports },
     ];
     return (
         <div>

@@ -13,4 +13,6 @@ export const COLOR = {
     vector: '#416180',
     vertexFill: '#f2f2f3',
     vertexDot: '#1d2d3d',
+    socketRing: '#5980a6', // 120° convex vertices
+    plugRing: '#c17d54', // 240° reflex vertices
 } as const;

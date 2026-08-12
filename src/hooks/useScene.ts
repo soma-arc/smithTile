@@ -25,6 +25,7 @@ export function useScene(state: TileState): Scene {
                         vertexNums: toggles.showVertexNums,
                         lengths: toggles.showLengths,
                         angles: toggles.showAngles,
+                        ports: toggles.showPorts,
                     },
                 },
                 createCamera(zoom, rotationDeg),
