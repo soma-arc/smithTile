@@ -32,7 +32,7 @@ function dist(p: Vec2, q: Vec2): number {
 
 /** Local (untransformed) boundary vertices via the public SmithTile API. */
 function positions(a: number, b: number): readonly Vec2[] {
-    return createSmithTile(a, b, IDENTITY_TRANSFORM).definition.shape.vertices;
+    return createSmithTile(a, b, IDENTITY_TRANSFORM).shape.vertices;
 }
 
 describe('Tile(a, b) boundary', () => {

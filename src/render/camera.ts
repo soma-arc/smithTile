@@ -29,7 +29,7 @@ export type Camera = {
 let refFrameCache: { cx: number; cy: number; w: number; h: number } | null = null;
 function refFrame() {
     if (refFrameCache) return refFrameCache;
-    const hat = createSmithTile(1, SQRT3, IDENTITY_TRANSFORM).definition.shape.vertices;
+    const hat = createSmithTile(1, SQRT3, IDENTITY_TRANSFORM).shape.vertices;
     let mnx = Infinity;
     let mny = Infinity;
     let mxx = -Infinity;

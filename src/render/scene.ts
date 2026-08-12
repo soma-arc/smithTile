@@ -88,7 +88,7 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     const P = camera.project;
 
     const tile = createSmithTile(a, b, transform);
-    const localVertices = tile.definition.shape.vertices; // for polykite math (untransformed)
+    const localVertices = tile.shape.vertices; // for polykite math (untransformed)
     const V = smithTileWorldVertices(tile).map(P); // screen-space boundary
     const showDec = overlays.polykite && polykiteValid(a, b);
 

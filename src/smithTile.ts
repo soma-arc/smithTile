@@ -17,7 +17,8 @@ import { applyTransform, type Transform } from './Transform';
 import type { Vec2 } from './Vec2';
 
 export type EdgeKind = 'A' | 'B';
-export type PortCandidate = 'plug' | 'socket' | null;
+export type PortKind = 'plug' | 'socket';
+export type PortCandidate = PortKind | null;
 
 /** One edge of the tile boundary. `direction` is measured in 30° units. */
 export interface EdgeSpec {
@@ -199,45 +200,41 @@ type SmithTileShape = {
     vertices: readonly Vec2[];
 };
 
-type PortLayout = {
-    plugVertexIndex: number;
-    socketVertices: readonly number[];
+export type Port = {
+    position: Vec2;
+    direction: number;
 };
 
-type SmithTileDefinition = {
-    shape: SmithTileShape;
-    articulatedPorts: PortLayout;
-    wrigglyPorts: PortLayout;
+export type SmithPatch = {
+    tiles: readonly SmithTile[];
+    plug: Port;
+    sockets: readonly Port[];
 };
 
 export type SmithTile = {
-    definition: SmithTileDefinition;
+    shape: SmithTileShape;
     transform: Transform;
 };
 
-function createSmithTileDefinition(a: number, b: number): SmithTileDefinition {
-    const vertices = verticesFromBasis(a, b).map((v) => v.position);
-    const shape: SmithTileShape = { a, b, vertices };
-    const articulatedPorts: PortLayout = { plugVertexIndex: 0, socketVertices: [5, 6] };
-    const wrigglyPorts: PortLayout = { plugVertexIndex: 0, socketVertices: [5, 6] };
-    return { shape, articulatedPorts, wrigglyPorts };
-}
-
+//   const articulatedPorts: PortLayout = { plugVertexIndex: 4, socketVertices: [11, 1] }; // socket vertices are in CCW order
+//   const wrigglyPorts: PortLayout = { plugVertexIndex: 6, socketVertices: [1, 11] }; // socket vertices are in CW order
 export function createSmithTile(a: number, b: number, transform: Transform): SmithTile {
     validateParameters(a, b);
-    const smithTileDefinition: SmithTileDefinition = createSmithTileDefinition(a, b);
-    return { definition: smithTileDefinition, transform };
+    const vertices = verticesFromBasis(a, b).map((v) => v.position);
+    const shape: SmithTileShape = { a, b, vertices };
+    return { shape, transform };
 }
 
 /** The tile's boundary vertices in world space (its transform applied). */
 export function smithTileWorldVertices(tile: SmithTile): Vec2[] {
-    return tile.definition.shape.vertices.map((p) => applyTransform(tile.transform, p));
+    return tile.shape.vertices.map((p) => applyTransform(tile.transform, p));
 }
 
 export function isAperiodic(smithTile: SmithTile): boolean {
-    const { a, b } = smithTile.definition.shape;
+    const { a, b } = smithTile.shape;
     if (b === 0 && a > 0) return false; //'comet';
     if (a === 0 && b > 0) return false; //'chevron';
     if (Math.abs(a - b) < 1e-9) return false; // 't11';
     return true;
 }
+

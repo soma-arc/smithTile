@@ -94,7 +94,7 @@ export function transformedGridKites(t: Transform): Kite[] {
 
 /** The tile's boundary vertices in local (untransformed) space. */
 function localTileVertices(a: number, b: number): readonly Vec2[] {
-    return createSmithTile(a, b, IDENTITY_TRANSFORM).definition.shape.vertices;
+    return createSmithTile(a, b, IDENTITY_TRANSFORM).shape.vertices;
 }
 
 /** Rounded coordinate key, used to test lattice membership. */
