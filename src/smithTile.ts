@@ -71,7 +71,7 @@ function edgeVector(edge: EdgeSpec, a: number, b: number): Vec2 {
     return { x: Math.cos(angle) * length, y: Math.sin(angle) * length };
 }
 
-export const VERTEX_TEMPLATE: readonly TileVertexSpec[] = EDGE_TEMPLATE.map((edge, i) => {
+const VERTEX_TEMPLATE: readonly TileVertexSpec[] = EDGE_TEMPLATE.map((edge, i) => {
     // Vertex i sits between the incoming edge[i-1] and the outgoing edge[i].
     const incoming = EDGE_TEMPLATE[(i + EDGE_COUNT - 1) % EDGE_COUNT];
     // Signed turn from incoming to outgoing direction, in 30° units, in (-6, 6].
@@ -197,18 +197,10 @@ export function findPreset(key: string): Preset | undefined {
 type SmithTileShape = {
     a: number;
     b: number;
-    vertices: readonly Vec2[];
-};
-
-export type Port = {
-    position: Vec2;
-    direction: number;
-};
-
-export type SmithPatch = {
-    tiles: readonly SmithTile[];
-    plug: Port;
-    sockets: readonly Port[];
+    /** Boundary vertices in cyclic order (position + interior angle + port candidate). */
+    vertices: readonly TileVertex[];
+    /** Boundary edges in cyclic order; edge i connects vertices[i] → vertices[i+1]. */
+    edges: readonly EdgeSpec[];
 };
 
 export type SmithTile = {
@@ -216,18 +208,16 @@ export type SmithTile = {
     transform: Transform;
 };
 
-//   const articulatedPorts: PortLayout = { plugVertexIndex: 4, socketVertices: [11, 1] }; // socket vertices are in CCW order
-//   const wrigglyPorts: PortLayout = { plugVertexIndex: 6, socketVertices: [1, 11] }; // socket vertices are in CW order
 export function createSmithTile(a: number, b: number, transform: Transform): SmithTile {
     validateParameters(a, b);
-    const vertices = verticesFromBasis(a, b).map((v) => v.position);
-    const shape: SmithTileShape = { a, b, vertices };
+    const vertices = verticesFromBasis(a, b);
+    const shape: SmithTileShape = { a, b, vertices, edges: EDGE_TEMPLATE };
     return { shape, transform };
 }
 
 /** The tile's boundary vertices in world space (its transform applied). */
 export function smithTileWorldVertices(tile: SmithTile): Vec2[] {
-    return tile.shape.vertices.map((p) => applyTransform(tile.transform, p));
+    return tile.shape.vertices.map((v) => applyTransform(tile.transform, v.position));
 }
 
 export function isAperiodic(smithTile: SmithTile): boolean {
@@ -237,4 +227,3 @@ export function isAperiodic(smithTile: SmithTile): boolean {
     if (Math.abs(a - b) < 1e-9) return false; // 't11';
     return true;
 }
-

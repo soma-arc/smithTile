@@ -20,13 +20,7 @@ import {
     transformedGridKites,
     transformKite,
 } from '../kiteGrid';
-import {
-    createSmithTile,
-    EDGE_COUNT,
-    EDGE_TEMPLATE,
-    smithTileWorldVertices,
-    VERTEX_TEMPLATE,
-} from '../smithTile';
+import { createSmithTile, smithTileWorldVertices } from '../smithTile';
 import type { Transform } from '../Transform';
 import type { Vec2 } from '../Vec2';
 import type { Camera } from './camera';
@@ -89,7 +83,10 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     const P = camera.project;
 
     const tile = createSmithTile(a, b, transform);
-    const localVertices = tile.shape.vertices; // for polykite math (untransformed)
+    const verts = tile.shape.vertices; // per-vertex geometry (angle, port candidate)
+    const edges = tile.shape.edges; // per-edge geometry (A / B kind)
+    const N = verts.length; // boundary vertex/edge count
+    const localVertices = verts.map((v) => v.position); // for polykite math (untransformed)
     const V = smithTileWorldVertices(tile).map(P); // screen-space boundary
     const showDec = overlays.polykite && polykiteValid(a, b);
 
@@ -153,12 +150,12 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
         });
     } else {
         const items: Drawable[] = [];
-        for (let i = 0; i < EDGE_COUNT; i++) {
-            const isA = EDGE_TEMPLATE[i].kind === 'A';
+        for (let i = 0; i < N; i++) {
+            const isA = edges[i].kind === 'A';
             items.push({
                 kind: 'segment',
                 a: V[i],
-                b: V[(i + 1) % EDGE_COUNT],
+                b: V[(i + 1) % N],
                 style: {
                     stroke: isA ? COLOR.aEdge : COLOR.bEdge,
                     width: 2.8,
@@ -173,9 +170,9 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     // 6. direction vectors (arrowheads at edge midpoints)
     if (overlays.vectors) {
         const items: Drawable[] = [];
-        for (let i = 0; i < EDGE_COUNT; i++) {
+        for (let i = 0; i < N; i++) {
             const p1 = V[i];
-            const p2 = V[(i + 1) % EDGE_COUNT];
+            const p2 = V[(i + 1) % N];
             const mx = (p1.x + p2.x) / 2;
             const my = (p1.y + p2.y) / 2;
             const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x);
@@ -198,10 +195,10 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     // 7. edge-length labels (a / b)
     if (overlays.lengths) {
         const items: Drawable[] = [];
-        for (let i = 0; i < EDGE_COUNT; i++) {
+        for (let i = 0; i < N; i++) {
             const p1 = V[i];
-            const p2 = V[(i + 1) % EDGE_COUNT];
-            const isA = EDGE_TEMPLATE[i].kind === 'A';
+            const p2 = V[(i + 1) % N];
+            const isA = edges[i].kind === 'A';
             const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x);
             const nx = Math.sin(ang);
             const ny = -Math.cos(ang);
@@ -223,7 +220,7 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     // 8. vertex numbers, or plain dots
     if (overlays.vertexNums) {
         const items: Drawable[] = [];
-        for (let i = 0; i < EDGE_COUNT; i++) {
+        for (let i = 0; i < N; i++) {
             items.push({
                 kind: 'circle',
                 center: V[i],
@@ -259,8 +256,8 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     // outside the vertex-number disc so both overlays can be shown together.
     if (overlays.ports) {
         const items: Drawable[] = [];
-        for (let i = 0; i < EDGE_COUNT; i++) {
-            const pc = VERTEX_TEMPLATE[i].portCandidate;
+        for (let i = 0; i < N; i++) {
+            const pc = verts[i].portCandidate;
             if (!pc) continue;
             items.push({
                 kind: 'circle',
@@ -281,13 +278,13 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     if (overlays.angles) {
         const c = centroid(V);
         const items: Drawable[] = [];
-        for (let i = 0; i < EDGE_COUNT; i++) {
+        for (let i = 0; i < N; i++) {
             const p = V[i];
             const dx = c.x - p.x;
             const dy = c.y - p.y;
             const len = Math.hypot(dx, dy) || 1;
             const off = 16;
-            const deg = Math.round((VERTEX_TEMPLATE[i].interiorAngle * 180) / Math.PI);
+            const deg = Math.round((verts[i].interiorAngle * 180) / Math.PI);
             items.push({
                 kind: 'text',
                 at: { x: p.x + (dx / len) * off, y: p.y + (dy / len) * off },

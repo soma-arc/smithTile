@@ -18,7 +18,6 @@ import {
     polygonArea,
     SQRT3,
     smithTileWorldVertices,
-    VERTEX_TEMPLATE,
     validateParameters,
 } from './smithTile';
 import { applyTransform, IDENTITY_TRANSFORM, type Transform } from './Transform';
@@ -32,7 +31,7 @@ function dist(p: Vec2, q: Vec2): number {
 
 /** Local (untransformed) boundary vertices via the public SmithTile API. */
 function positions(a: number, b: number): readonly Vec2[] {
-    return createSmithTile(a, b, IDENTITY_TRANSFORM).shape.vertices;
+    return createSmithTile(a, b, IDENTITY_TRANSFORM).shape.vertices.map((v) => v.position);
 }
 
 describe('Tile(a, b) boundary', () => {
@@ -75,7 +74,9 @@ describe('edge template', () => {
 });
 
 describe('interior angles', () => {
-    const degs = VERTEX_TEMPLATE.map((v) => Math.round((v.interiorAngle * 180) / Math.PI));
+    // Angle structure is (a, b)-independent; read it off any concrete tile.
+    const vertices = createSmithTile(1, SQRT3, IDENTITY_TRANSFORM).shape.vertices;
+    const degs = vertices.map((v) => Math.round((v.interiorAngle * 180) / Math.PI));
 
     it('matches the Hat interior-angle sequence', () => {
         expect(degs).toEqual([120, 270, 120, 90, 240, 90, 240, 90, 120, 180, 120, 270, 120, 90]);
@@ -87,7 +88,7 @@ describe('interior angles', () => {
     });
 
     it('flags 120° vertices as sockets and 240° as plugs', () => {
-        for (const v of VERTEX_TEMPLATE) {
+        for (const v of vertices) {
             const deg = Math.round((v.interiorAngle * 180) / Math.PI);
             if (deg === 120) expect(v.portCandidate).toBe('socket');
             else if (deg === 240) expect(v.portCandidate).toBe('plug');
