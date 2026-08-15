@@ -13,8 +13,8 @@
  * DesignSystem, or rendering dependencies.
  */
 
-import { applyTransform, type Transform } from './Transform';
-import type { Vec2 } from './Vec2';
+import { applyTransform, composeTransforms, type Transform } from './Transform';
+import { subVec2, type Vec2 } from './Vec2';
 
 export type EdgeKind = 'A' | 'B';
 export type PortKind = 'plug' | 'socket';
@@ -208,6 +208,8 @@ export type SmithTile = {
     transform: Transform;
 };
 
+//   const articulatedPorts: PortLayout = { plugVertexIndex: 4, socketVertices: [11, 1] }; // socket vertices are in CCW order
+//   const wrigglyPorts: PortLayout = { plugVertexIndex: 6, socketVertices: [1, 11] }; // socket vertices are in CW order
 export function createSmithTile(a: number, b: number, transform: Transform): SmithTile {
     validateParameters(a, b);
     const vertices = verticesFromBasis(a, b);
@@ -220,6 +222,18 @@ export function smithTileWorldVertices(tile: SmithTile): Vec2[] {
     return tile.shape.vertices.map((v) => applyTransform(tile.transform, v.position));
 }
 
+/**
+ * Map a `Port` through a transform: its position is transformed like any point,
+ * and its inward heading is rotated by the transform's rotation. Scale and
+ * translation leave an angle (a unit-less heading, in radians) unchanged.
+ */
+export function transformPort(t: Transform, port: Port): Port {
+    return {
+        position: applyTransform(t, port.position),
+        inwardAngleRad: port.inwardAngleRad + t.rotation,
+    };
+}
+
 export function isAperiodic(smithTile: SmithTile): boolean {
     const { a, b } = smithTile.shape;
     if (b === 0 && a > 0) return false; //'comet';
@@ -227,3 +241,82 @@ export function isAperiodic(smithTile: SmithTile): boolean {
     if (Math.abs(a - b) < 1e-9) return false; // 't11';
     return true;
 }
+
+export type Port = {
+    // patch-local position
+    position: Vec2;
+    /**
+     * Direction toward the interior of the patch
+     * at this marked vertex.
+     */
+    inwardAngleRad: number;
+};
+
+export type SmithPatch = {
+    tiles: readonly SmithTile[];
+    plug: Port;
+    sockets: readonly Port[];
+    transform: Transform;
+};
+
+export function attachPatch(
+    parent: SmithPatch,
+    socketIndex: number,
+    child: SmithPatch,
+): SmithPatch {
+    const parentSocket = parent.sockets[socketIndex];
+    const remainingSockets = parent.sockets.filter((_, i) => i !== socketIndex);
+    const childPlug = child.plug;
+
+    const childRotationRad = parentSocket.inwardAngleRad + Math.PI - childPlug.inwardAngleRad;
+    const rotatedChildPlugPosition = {
+        x:
+            childPlug.position.x * Math.cos(childRotationRad) -
+            childPlug.position.y * Math.sin(childRotationRad),
+        y:
+            childPlug.position.x * Math.sin(childRotationRad) +
+            childPlug.position.y * Math.cos(childRotationRad),
+    };
+    const translation = subVec2(parentSocket.position, rotatedChildPlugPosition);
+    const attachTransform = { position: translation, rotation: childRotationRad, scale: 1 };
+
+    return {
+        tiles: [
+            ...parent.tiles,
+            ...child.tiles.map((tile) => ({
+                ...tile,
+                transform: composeTransforms(attachTransform, tile.transform),
+            })),
+        ],
+        plug: parent.plug,
+        sockets: [
+            ...remainingSockets,
+            ...child.sockets.map((socket) => transformPort(attachTransform, socket)),
+        ],
+        transform: parent.transform,
+    };
+}
+
+function getPortFromVertex(tile: SmithTile, vertexIndex: number): Port {
+    const vertex = tile.shape.vertices[vertexIndex];
+    const interiorAngle = vertex.interiorAngle / 2;
+    return {
+        position: applyTransform(tile.transform, vertex.position),
+        inwardAngleRad: interiorAngle + tile.transform.rotation,
+    };
+}
+
+export function createArticulatedSmithPatchT(a: number, b: number) {
+    const tile = createSmithTile(a, b, { position: { x: 0, y: 0 }, rotation: 0, scale: 1 });
+    const patch = {
+        tiles: [tile],
+        plug: getPortFromVertex(tile, 0),
+        sockets: [getPortFromVertex(tile, 12), getPortFromVertex(tile, 2)],
+        transform: { position: { x: 0, y: 0 }, rotation: 0, scale: 1 },
+    };
+    return patch;
+}
+
+export const T = createArticulatedSmithPatchT(1, 1);
+export const T2x = attachPatch(T, 0, T);
+export const T2y = attachPatch(T, 1, T);

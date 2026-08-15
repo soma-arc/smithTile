@@ -38,3 +38,20 @@ export function applyTransform(t: Transform, p: Vec2): Vec2 {
 export function transformPoints(t: Transform, points: readonly Vec2[]): Vec2[] {
     return points.map((p) => applyTransform(t, p));
 }
+
+/**
+ * Compose two transforms: `composeTransforms(outer, inner)` is the single
+ * transform equivalent to applying `inner` first, then `outer`
+ * (`compose(p) === applyTransform(outer, applyTransform(inner, p))`).
+ *
+ * Since each transform is scale → rotate → translate, the composite is again a
+ * transform of that same form: scales multiply, rotations add, and the outer
+ * transform maps the inner's translation.
+ */
+export function composeTransforms(outer: Transform, inner: Transform): Transform {
+    return {
+        scale: outer.scale * inner.scale,
+        rotation: outer.rotation + inner.rotation,
+        position: applyTransform(outer, inner.position),
+    };
+}
