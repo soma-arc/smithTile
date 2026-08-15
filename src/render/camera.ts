@@ -25,16 +25,15 @@ export type Camera = {
     center: Vec2;
 };
 
-/** Fixed reference frame computed once from the Hat's extent. */
-let refFrameCache: { cx: number; cy: number; w: number; h: number } | null = null;
-function refFrame() {
-    if (refFrameCache) return refFrameCache;
-    const hat = createSmithTile(1, SQRT3, IDENTITY_TRANSFORM).shape.vertices.map((v) => v.position);
+type Frame = { cx: number; cy: number; w: number; h: number };
+
+/** Bounding frame of a point set, padded by 28% on each axis (the Hat margin). */
+function frameOfPoints(points: readonly Vec2[]): Frame {
     let mnx = Infinity;
     let mny = Infinity;
     let mxx = -Infinity;
     let mxy = -Infinity;
-    for (const p of hat) {
+    for (const p of points) {
         mnx = Math.min(mnx, p.x);
         mny = Math.min(mny, p.y);
         mxx = Math.max(mxx, p.x);
@@ -42,21 +41,16 @@ function refFrame() {
     }
     const mx = (mxx - mnx) * 0.28;
     const my = (mxy - mny) * 0.28;
-    refFrameCache = {
+    return {
         cx: (mnx + mxx) / 2,
         cy: (mny + mxy) / 2,
         w: mxx - mnx + 2 * mx,
         h: mxy - mny + 2 * my,
     };
-    return refFrameCache;
 }
 
-/**
- * Build a camera for the given zoom (1 = fit the Hat frame) and whole-scene
- * rotation in degrees (counterclockwise, about the frame center).
- */
-export function createCamera(zoom: number, rotationDeg = 0): Camera {
-    const rf = refFrame();
+/** A camera that fits `frame` into the canvas at `zoom`, rotated about its center. */
+function cameraFromFrame(rf: Frame, zoom: number, rotationDeg: number): Camera {
     const sc = Math.min((CANVAS_W - 2 * PAD) / rf.w, (CANVAS_H - 2 * PAD) / rf.h) * zoom;
     const rad = (rotationDeg * Math.PI) / 180;
     const cos = Math.cos(rad);
@@ -73,4 +67,33 @@ export function createCamera(zoom: number, rotationDeg = 0): Camera {
         viewBox: [0, 0, CANVAS_W, CANVAS_H],
         center: { x: rf.cx, y: rf.cy },
     };
+}
+
+/** Fixed reference frame computed once from the Hat's extent. */
+let refFrameCache: Frame | null = null;
+function refFrame(): Frame {
+    if (!refFrameCache) {
+        const hat = createSmithTile(1, SQRT3, IDENTITY_TRANSFORM).shape.vertices.map(
+            (v) => v.position,
+        );
+        refFrameCache = frameOfPoints(hat);
+    }
+    return refFrameCache;
+}
+
+/**
+ * Build a camera for the given zoom (1 = fit the Hat frame) and whole-scene
+ * rotation in degrees (counterclockwise, about the frame center). The frame is
+ * invariant to (a, b), so a single tile deforms in place.
+ */
+export function createCamera(zoom: number, rotationDeg = 0): Camera {
+    return cameraFromFrame(refFrame(), zoom, rotationDeg);
+}
+
+/**
+ * Build a camera that fits the given world points (e.g. a whole patch's
+ * vertices), for scenes whose extent is not the fixed Hat frame.
+ */
+export function createFitCamera(points: readonly Vec2[], zoom = 1, rotationDeg = 0): Camera {
+    return cameraFromFrame(frameOfPoints(points), zoom, rotationDeg);
 }

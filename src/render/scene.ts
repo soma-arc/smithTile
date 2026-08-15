@@ -20,8 +20,8 @@ import {
     transformedGridKites,
     transformKite,
 } from '../kiteGrid';
-import { createSmithTile, smithTileWorldVertices } from '../smithTile';
-import type { Transform } from '../Transform';
+import { type Port, type SmithTile, smithTileWorldVertices } from '../smithTile';
+import { IDENTITY_TRANSFORM } from '../Transform';
 import type { Vec2 } from '../Vec2';
 import type { Camera } from './camera';
 import { COLOR } from './colors';
@@ -70,32 +70,85 @@ export type Overlays = {
     ports: boolean;
 };
 
-/** What exists in the world to be drawn. Tile list is future-proofed for tilings. */
+/** Patch connection ports: the single plug plus the remaining open sockets. */
+export type PatchPorts = { plug: Port; sockets: readonly Port[] };
+
+/**
+ * What exists in the world to be drawn: a set of placed tiles plus optional
+ * patch connection ports. A single interactive Tile(a, b) is just one tile;
+ * a composed patch (e.g. T2x) is its full tile list.
+ */
 export type SceneWorld = {
-    a: number;
-    b: number;
-    transform: Transform;
+    tiles: readonly SmithTile[];
     overlays: Overlays;
+    ports?: PatchPorts;
 };
 
+/** Per-tile geometry resolved once: screen vertices + local vertices + flags. */
+type TileGeom = {
+    tile: SmithTile;
+    verts: SmithTile['shape']['vertices'];
+    edges: SmithTile['shape']['edges'];
+    local: Vec2[]; // untransformed, for polykite math
+    V: Vec2[]; // screen-space boundary
+    showDec: boolean;
+    N: number;
+};
+
+/**
+ * A port drawn as a short arrow from its position along its inward heading.
+ * The screen direction is derived from two projected points so it tracks the
+ * camera's rotation and Y-flip, exactly like the edge-vector arrowheads.
+ */
+function portArrow(port: Port, color: string, P: (p: Vec2) => Vec2): Drawable[] {
+    const base = P(port.position);
+    const eps = 1e-3;
+    const ahead = P({
+        x: port.position.x + Math.cos(port.inwardAngleRad) * eps,
+        y: port.position.y + Math.sin(port.inwardAngleRad) * eps,
+    });
+    const ang = Math.atan2(ahead.y - base.y, ahead.x - base.x);
+    const L = 24;
+    const head = 8;
+    const tip = { x: base.x + Math.cos(ang) * L, y: base.y + Math.sin(ang) * L };
+    return [
+        { kind: 'circle', center: base, r: 3, style: { fill: color } },
+        { kind: 'segment', a: base, b: tip, style: { stroke: color, width: 2.4, cap: 'round' } },
+        {
+            kind: 'polygon',
+            points: [
+                tip,
+                { x: tip.x - Math.cos(ang - 0.5) * head, y: tip.y - Math.sin(ang - 0.5) * head },
+                { x: tip.x - Math.cos(ang + 0.5) * head, y: tip.y - Math.sin(ang + 0.5) * head },
+            ],
+            style: { fill: color },
+        },
+    ];
+}
+
 export function buildScene(world: SceneWorld, camera: Camera): Scene {
-    const { a, b, transform, overlays } = world;
+    const { overlays } = world;
     const P = camera.project;
 
-    const tile = createSmithTile(a, b, transform);
-    const verts = tile.shape.vertices; // per-vertex geometry (angle, port candidate)
-    const edges = tile.shape.edges; // per-edge geometry (A / B kind)
-    const N = verts.length; // boundary vertex/edge count
-    const localVertices = verts.map((v) => v.position); // for polykite math (untransformed)
-    const V = smithTileWorldVertices(tile).map(P); // screen-space boundary
-    const showDec = overlays.polykite && polykiteValid(a, b);
+    const geoms: TileGeom[] = world.tiles.map((tile) => {
+        const verts = tile.shape.vertices;
+        return {
+            tile,
+            verts,
+            edges: tile.shape.edges,
+            local: verts.map((v) => v.position),
+            V: smithTileWorldVertices(tile).map(P),
+            showDec: overlays.polykite && polykiteValid(tile.shape.a, tile.shape.b),
+            N: verts.length,
+        };
+    });
 
     const layers: SceneLayer[] = [];
 
-    // 1. reference grid
+    // 1. reference grid (world lattice, shared by all tiles)
     if (overlays.grid) {
         const items: Drawable[] = [];
-        const grid = transformedGridKites(transform);
+        const grid = transformedGridKites(IDENTITY_TRANSFORM);
         for (const kite of grid) {
             items.push({
                 kind: 'polygon',
@@ -114,55 +167,61 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
         layers.push({ id: 'grid', items });
     }
 
-    // 2. exact polykite decomposition
-    if (showDec) {
-        const items: Drawable[] = kitesInside(localVertices).map((kite, i) => ({
-            kind: 'polygon',
-            points: transformKite(kite, transform).map(P),
-            style: {
-                fill: i % 2 ? COLOR.decompFillOdd : COLOR.decompFillEven,
-                stroke: COLOR.kiteStroke,
-                width: 1,
-            },
-        }));
-        layers.push({ id: 'decomposition', items });
+    // 2. exact polykite decomposition (per tile, where the ratio is valid)
+    {
+        const items: Drawable[] = [];
+        for (const g of geoms) {
+            if (!g.showDec) continue;
+            kitesInside(g.local).forEach((kite, i) => {
+                items.push({
+                    kind: 'polygon',
+                    points: transformKite(kite, g.tile.transform).map(P),
+                    style: {
+                        fill: i % 2 ? COLOR.decompFillOdd : COLOR.decompFillEven,
+                        stroke: COLOR.kiteStroke,
+                        width: 1,
+                    },
+                });
+            });
+        }
+        if (items.length) layers.push({ id: 'decomposition', items });
     }
 
-    // 3. tile fill (skipped when the decomposition provides the fill)
-    if (!showDec) {
-        layers.push({
-            id: 'fill',
-            items: [{ kind: 'polygon', points: V, style: { fill: COLOR.fill } }],
-        });
+    // 3. tile fill (per tile, skipped where the decomposition provides the fill)
+    {
+        const items: Drawable[] = [];
+        for (const g of geoms) {
+            if (g.showDec) continue;
+            items.push({ kind: 'polygon', points: g.V, style: { fill: COLOR.fill } });
+        }
+        if (items.length) layers.push({ id: 'fill', items });
     }
 
     // 4/5. boundary or A/B edge distinction
     if (!overlays.ab) {
-        layers.push({
-            id: 'boundary',
-            items: [
-                {
-                    kind: 'polygon',
-                    points: V,
-                    style: { fill: 'none', stroke: COLOR.boundary, width: 2.4, join: 'round' },
-                },
-            ],
-        });
+        const items: Drawable[] = geoms.map((g) => ({
+            kind: 'polygon',
+            points: g.V,
+            style: { fill: 'none', stroke: COLOR.boundary, width: 2.4, join: 'round' },
+        }));
+        layers.push({ id: 'boundary', items });
     } else {
         const items: Drawable[] = [];
-        for (let i = 0; i < N; i++) {
-            const isA = edges[i].kind === 'A';
-            items.push({
-                kind: 'segment',
-                a: V[i],
-                b: V[(i + 1) % N],
-                style: {
-                    stroke: isA ? COLOR.aEdge : COLOR.bEdge,
-                    width: 2.8,
-                    dash: isA ? undefined : '6 4',
-                    cap: 'round',
-                },
-            });
+        for (const g of geoms) {
+            for (let i = 0; i < g.N; i++) {
+                const isA = g.edges[i].kind === 'A';
+                items.push({
+                    kind: 'segment',
+                    a: g.V[i],
+                    b: g.V[(i + 1) % g.N],
+                    style: {
+                        stroke: isA ? COLOR.aEdge : COLOR.bEdge,
+                        width: 2.8,
+                        dash: isA ? undefined : '6 4',
+                        cap: 'round',
+                    },
+                });
+            }
         }
         layers.push({ id: 'edges', items });
     }
@@ -170,24 +229,26 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     // 6. direction vectors (arrowheads at edge midpoints)
     if (overlays.vectors) {
         const items: Drawable[] = [];
-        for (let i = 0; i < N; i++) {
-            const p1 = V[i];
-            const p2 = V[(i + 1) % N];
-            const mx = (p1.x + p2.x) / 2;
-            const my = (p1.y + p2.y) / 2;
-            const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-            const L = 7;
-            const ax = mx + Math.cos(ang) * 3;
-            const ay = my + Math.sin(ang) * 3;
-            items.push({
-                kind: 'polygon',
-                points: [
-                    { x: ax, y: ay },
-                    { x: ax - Math.cos(ang - 0.5) * L, y: ay - Math.sin(ang - 0.5) * L },
-                    { x: ax - Math.cos(ang + 0.5) * L, y: ay - Math.sin(ang + 0.5) * L },
-                ],
-                style: { fill: COLOR.vector },
-            });
+        for (const g of geoms) {
+            for (let i = 0; i < g.N; i++) {
+                const p1 = g.V[i];
+                const p2 = g.V[(i + 1) % g.N];
+                const mx = (p1.x + p2.x) / 2;
+                const my = (p1.y + p2.y) / 2;
+                const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                const L = 7;
+                const ax = mx + Math.cos(ang) * 3;
+                const ay = my + Math.sin(ang) * 3;
+                items.push({
+                    kind: 'polygon',
+                    points: [
+                        { x: ax, y: ay },
+                        { x: ax - Math.cos(ang - 0.5) * L, y: ay - Math.sin(ang - 0.5) * L },
+                        { x: ax - Math.cos(ang + 0.5) * L, y: ay - Math.sin(ang + 0.5) * L },
+                    ],
+                    style: { fill: COLOR.vector },
+                });
+            }
         }
         layers.push({ id: 'vectors', items });
     }
@@ -195,24 +256,26 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     // 7. edge-length labels (a / b)
     if (overlays.lengths) {
         const items: Drawable[] = [];
-        for (let i = 0; i < N; i++) {
-            const p1 = V[i];
-            const p2 = V[(i + 1) % N];
-            const isA = edges[i].kind === 'A';
-            const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-            const nx = Math.sin(ang);
-            const ny = -Math.cos(ang);
-            items.push({
-                kind: 'text',
-                at: { x: (p1.x + p2.x) / 2 + nx * 13, y: (p1.y + p2.y) / 2 + ny * 13 },
-                text: isA ? 'a' : 'b',
-                style: {
-                    fill: isA ? COLOR.aEdge : COLOR.bEdge,
-                    size: 13,
-                    italic: true,
-                    family: 'Barlow, sans-serif',
-                },
-            });
+        for (const g of geoms) {
+            for (let i = 0; i < g.N; i++) {
+                const p1 = g.V[i];
+                const p2 = g.V[(i + 1) % g.N];
+                const isA = g.edges[i].kind === 'A';
+                const ang = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                const nx = Math.sin(ang);
+                const ny = -Math.cos(ang);
+                items.push({
+                    kind: 'text',
+                    at: { x: (p1.x + p2.x) / 2 + nx * 13, y: (p1.y + p2.y) / 2 + ny * 13 },
+                    text: isA ? 'a' : 'b',
+                    style: {
+                        fill: isA ? COLOR.aEdge : COLOR.bEdge,
+                        size: 13,
+                        italic: true,
+                        family: 'Barlow, sans-serif',
+                    },
+                });
+            }
         }
         layers.push({ id: 'lengths', items });
     }
@@ -220,84 +283,96 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     // 8. vertex numbers, or plain dots
     if (overlays.vertexNums) {
         const items: Drawable[] = [];
-        for (let i = 0; i < N; i++) {
-            items.push({
-                kind: 'circle',
-                center: V[i],
-                r: 9,
-                style: { fill: COLOR.vertexFill, stroke: COLOR.vertexDot, width: 1.4 },
-            });
-            items.push({
-                kind: 'text',
-                at: { x: V[i].x, y: V[i].y + 0.5 },
-                text: String(i),
-                style: {
-                    fill: COLOR.vertexDot,
-                    size: 10.5,
-                    weight: 600,
-                    family: 'Barlow Condensed, sans-serif',
-                },
-            });
+        for (const g of geoms) {
+            for (let i = 0; i < g.N; i++) {
+                items.push({
+                    kind: 'circle',
+                    center: g.V[i],
+                    r: 9,
+                    style: { fill: COLOR.vertexFill, stroke: COLOR.vertexDot, width: 1.4 },
+                });
+                items.push({
+                    kind: 'text',
+                    at: { x: g.V[i].x, y: g.V[i].y + 0.5 },
+                    text: String(i),
+                    style: {
+                        fill: COLOR.vertexDot,
+                        size: 10.5,
+                        weight: 600,
+                        family: 'Barlow Condensed, sans-serif',
+                    },
+                });
+            }
         }
         layers.push({ id: 'vertices', items });
     } else {
-        layers.push({
-            id: 'vertices',
-            items: V.map((p) => ({
-                kind: 'circle',
-                center: p,
-                r: 2.4,
-                style: { fill: COLOR.vertexDot },
-            })),
-        });
+        const items: Drawable[] = [];
+        for (const g of geoms) {
+            for (const p of g.V) {
+                items.push({ kind: 'circle', center: p, r: 2.4, style: { fill: COLOR.vertexDot } });
+            }
+        }
+        layers.push({ id: 'vertices', items });
     }
 
     // port candidates: a colored ring around each socket/plug vertex, sitting
     // outside the vertex-number disc so both overlays can be shown together.
     if (overlays.ports) {
         const items: Drawable[] = [];
-        for (let i = 0; i < N; i++) {
-            const pc = verts[i].portCandidate;
-            if (!pc) continue;
-            items.push({
-                kind: 'circle',
-                center: V[i],
-                r: 12,
-                style: {
-                    fill: 'none',
-                    stroke: pc === 'socket' ? COLOR.socketRing : COLOR.plugRing,
-                    width: 2.4,
-                },
-            });
+        for (const g of geoms) {
+            for (let i = 0; i < g.N; i++) {
+                const pc = g.verts[i].portCandidate;
+                if (!pc) continue;
+                items.push({
+                    kind: 'circle',
+                    center: g.V[i],
+                    r: 12,
+                    style: {
+                        fill: 'none',
+                        stroke: pc === 'socket' ? COLOR.socketRing : COLOR.plugRing,
+                        width: 2.4,
+                    },
+                });
+            }
         }
         layers.push({ id: 'ports', items });
     }
 
-    // interior-angle labels (from the fixed vertex template), placed just
-    // inside each vertex toward the tile's centroid.
+    // interior-angle labels, placed just inside each vertex toward the centroid.
     if (overlays.angles) {
-        const c = centroid(V);
         const items: Drawable[] = [];
-        for (let i = 0; i < N; i++) {
-            const p = V[i];
-            const dx = c.x - p.x;
-            const dy = c.y - p.y;
-            const len = Math.hypot(dx, dy) || 1;
-            const off = 16;
-            const deg = Math.round((verts[i].interiorAngle * 180) / Math.PI);
-            items.push({
-                kind: 'text',
-                at: { x: p.x + (dx / len) * off, y: p.y + (dy / len) * off },
-                text: `${deg}°`,
-                style: {
-                    fill: COLOR.vertexDot,
-                    size: 10.5,
-                    weight: 600,
-                    family: 'Barlow Condensed, sans-serif',
-                },
-            });
+        for (const g of geoms) {
+            const c = centroid(g.V);
+            for (let i = 0; i < g.N; i++) {
+                const p = g.V[i];
+                const dx = c.x - p.x;
+                const dy = c.y - p.y;
+                const len = Math.hypot(dx, dy) || 1;
+                const off = 16;
+                const deg = Math.round((g.verts[i].interiorAngle * 180) / Math.PI);
+                items.push({
+                    kind: 'text',
+                    at: { x: p.x + (dx / len) * off, y: p.y + (dy / len) * off },
+                    text: `${deg}°`,
+                    style: {
+                        fill: COLOR.vertexDot,
+                        size: 10.5,
+                        weight: 600,
+                        family: 'Barlow Condensed, sans-serif',
+                    },
+                });
+            }
         }
         layers.push({ id: 'angles', items });
+    }
+
+    // patch connection ports (plug + open sockets) drawn as colored arrows.
+    if (world.ports) {
+        const items: Drawable[] = [...portArrow(world.ports.plug, COLOR.plugRing, P)];
+        for (const socket of world.ports.sockets) {
+            items.push(...portArrow(socket, COLOR.socketRing, P));
+        }
+        layers.push({ id: 'patch-ports', items });
     }
 
     return { layers, viewBox: camera.viewBox };

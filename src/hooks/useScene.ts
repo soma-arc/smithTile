@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { createCamera } from '../render/camera';
 import { buildScene, type Scene } from '../render/scene';
+import { createSmithTile } from '../smithTile';
 import type { TileState } from '../state/tileReducer';
 import { IDENTITY_TRANSFORM } from '../Transform';
 
@@ -10,13 +11,11 @@ export function useScene(state: TileState): Scene {
     const { a, b, zoom, rotationDeg, toggles } = state;
     return useMemo(
         () =>
-            // Rotation is a camera (view) operation; the tile keeps its natural
-            // placement, so its transform stays identity.
+            // The interactive view is a one-tile world. Rotation is a camera (view)
+            // operation, so the tile keeps its natural placement (identity transform).
             buildScene(
                 {
-                    a,
-                    b,
-                    transform: IDENTITY_TRANSFORM,
+                    tiles: [createSmithTile(a, b, IDENTITY_TRANSFORM)],
                     overlays: {
                         grid: toggles.showGrid,
                         polykite: toggles.showPolykite,
