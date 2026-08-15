@@ -13,6 +13,8 @@ export interface Strings {
     ratioLabel: string;
     zoom: string;
     rotation: string;
+    shape: string;
+    shapeTile: string;
     presets: string;
     display: string;
     grid: string;
@@ -52,6 +54,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         ratioLabel: '比率 b / a',
         zoom: '表示スケール',
         rotation: '回転',
+        shape: '図形',
+        shapeTile: 'Tile(a, b)',
         presets: 'プリセット',
         display: '表示',
         grid: '参照グリッド (kite)',
@@ -90,6 +94,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         ratioLabel: 'Ratio b / a',
         zoom: 'View scale',
         rotation: 'Rotation',
+        shape: 'Shape',
+        shapeTile: 'Tile(a, b)',
         presets: 'Presets',
         display: 'Display',
         grid: 'Reference grid (kite)',

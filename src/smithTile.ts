@@ -306,11 +306,11 @@ function getPortFromVertex(tile: SmithTile, vertexIndex: number): Port {
     };
 }
 
-export function createArticulatedSmithPatchT(a: number, b: number) {
+export function createArticulatedSmithPatchT(a: number, b: number): SmithPatch {
     const tile = createSmithTile(a, b, { position: { x: 0, y: 0 }, rotation: 0, scale: 1 });
     const patch = {
         tiles: [tile],
-        plug: getPortFromVertex(tile, 0),
+        plug: getPortFromVertex(tile, 4),
         sockets: [getPortFromVertex(tile, 12), getPortFromVertex(tile, 2)],
         transform: { position: { x: 0, y: 0 }, rotation: 0, scale: 1 },
     };
@@ -320,3 +320,7 @@ export function createArticulatedSmithPatchT(a: number, b: number) {
 export const T = createArticulatedSmithPatchT(1, 1);
 export const T2x = attachPatch(T, 0, T);
 export const T2y = attachPatch(T, 1, T);
+
+/** Selectable prebuilt patches, keyed for the UI. */
+export type PatchKey = 'T' | 'T2x' | 'T2y';
+export const PATCHES: Record<PatchKey, SmithPatch> = { T, T2x, T2y };
