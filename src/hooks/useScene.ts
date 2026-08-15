@@ -26,7 +26,11 @@ export function useScene(state: TileState): Scene {
         // one-tile world on the fixed Hat frame.
         if (patch) {
             const p = PATCHES[patch];
-            const points = p.tiles.flatMap((t) => smithTileWorldVertices(t));
+            const points = [
+                ...p.tiles.flatMap((t) => smithTileWorldVertices(t)),
+                p.plug.position,
+                ...p.sockets.map((s) => s.position),
+            ];
             return buildScene(
                 { tiles: p.tiles, overlays, ports: { plug: p.plug, sockets: p.sockets } },
                 createFitCamera(points, zoom, rotationDeg),

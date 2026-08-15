@@ -30,6 +30,7 @@ export interface EdgeSpec {
 type TileVertexSpec = {
     interiorAngle: number;
     portCandidate: PortCandidate;
+    inwardDirection: number | null;
 };
 
 export const SQRT3 = Math.sqrt(3);
@@ -81,8 +82,10 @@ const VERTEX_TEMPLATE: readonly TileVertexSpec[] = EDGE_TEMPLATE.map((edge, i) =
     const interiorDirection = 6 - turn;
     const portCandidate =
         interiorDirection === 4 ? 'socket' : interiorDirection === 8 ? 'plug' : null; // 120° socket, 240° plug
+    const inwardDirection =
+        portCandidate !== null ? (edge.direction - interiorDirection / 2) % 12 : null;
 
-    return { interiorAngle: interiorDirection * (Math.PI / 6), portCandidate };
+    return { interiorAngle: interiorDirection * (Math.PI / 6), portCandidate, inwardDirection };
 });
 
 /** Throws if (a, b) is outside the valid domain. */
@@ -290,28 +293,66 @@ export function attachPatch(
 
 function getPortFromVertex(tile: SmithTile, vertexIndex: number): Port {
     const vertex = tile.shape.vertices[vertexIndex];
-    const interiorAngle = vertex.interiorAngle / 2;
+    if (vertex.portCandidate === null) {
+        throw new Error(`Vertex ${vertexIndex} is not a port candidate`);
+    }
     return {
         position: applyTransform(tile.transform, vertex.position),
-        inwardAngleRad: interiorAngle + tile.transform.rotation,
+        inwardAngleRad:
+            vertex.inwardDirection !== null
+                ? vertex.interiorAngle + (vertex.inwardDirection * Math.PI) / 6
+                : 0,
     };
 }
 
-export function createArticulatedSmithPatchT(a: number, b: number): SmithPatch {
-    const tile = createSmithTile(a, b, { position: { x: 0, y: 0 }, rotation: 0, scale: 1 });
+const ARTICULATED_PLUG_VERTEX_INDEX = 4;
+
+export function identityPatch(): SmithPatch {
     const patch = {
-        tiles: [tile],
-        plug: getPortFromVertex(tile, 4),
-        sockets: [getPortFromVertex(tile, 12), getPortFromVertex(tile, 2)],
+        tiles: [],
+        plug: { position: { x: 0, y: 0 }, inwardAngleRad: 0 },
+        sockets: [],
         transform: { position: { x: 0, y: 0 }, rotation: 0, scale: 1 },
     };
     return patch;
 }
 
-export const T = createArticulatedSmithPatchT(1, 1);
-export const T2x = attachPatch(T, 0, T);
-export const T2y = attachPatch(T, 1, T);
+export function createArticulatedSpectre(socketIndices: number[]): SmithPatch {
+    const tile = createSmithTile(1, 1, { position: { x: 0, y: 0 }, rotation: 0, scale: 1 });
+    const patch = {
+        tiles: [tile],
+        plug: getPortFromVertex(tile, ARTICULATED_PLUG_VERTEX_INDEX),
+        sockets: socketIndices.map((index) => getPortFromVertex(tile, index)),
+        transform: { position: { x: 0, y: 0 }, rotation: 0, scale: 1 },
+    };
+    return patch;
+}
+
+export function createArticulatedSmithPatchT0(): SmithPatch {
+    return createArticulatedSpectre([12, 2]);
+}
+
+export function createArticulatedSmithPatchN0(): SmithPatch {
+    return createArticulatedSpectre([10]);
+}
+
+export function createArticulatedSmithPatchAa0(): SmithPatch {
+    return createArticulatedSpectre([8, 10]);
+}
+
+export function createArticulatedSmithPatchAb0(): SmithPatch {
+    return createArticulatedSpectre([12, 0]);
+}
+
+export const S0 = identityPatch();
+export const N0 = createArticulatedSmithPatchN0();
+export const T0 = createArticulatedSmithPatchT0();
+export const Aa0 = createArticulatedSmithPatchAa0();
+export const Ab0 = createArticulatedSmithPatchAb0();
+
+export const T2x = attachPatch(T0, 0, T0);
+export const T2y = attachPatch(T0, 1, T0);
 
 /** Selectable prebuilt patches, keyed for the UI. */
-export type PatchKey = 'T' | 'T2x' | 'T2y';
-export const PATCHES: Record<PatchKey, SmithPatch> = { T, T2x, T2y };
+export type PatchKey = 'S0' | 'N0' | 'T0' | 'Aa0' | 'Ab0' | 'T2x' | 'T2y';
+export const PATCHES: Record<PatchKey, SmithPatch> = { S0, N0, T0, Aa0, Ab0, T2x, T2y };

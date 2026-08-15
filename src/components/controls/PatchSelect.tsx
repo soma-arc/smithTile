@@ -2,31 +2,34 @@
 
 import { useTileDispatch, useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
-import type { PatchKey } from '../../smithTile';
-import { Segmented } from '../ui/Segmented';
+import { PATCHES, type PatchKey } from '../../smithTile';
 
-type Choice = 'tile' | PatchKey;
+const PATCH_KEYS = Object.keys(PATCHES) as PatchKey[];
 
 export function PatchSelect() {
     const { lang, patch } = useTileState();
     const dispatch = useTileDispatch();
     const t = TRANSLATIONS[lang];
 
-    const options: readonly { value: Choice; label: string }[] = [
-        { value: 'tile', label: t.shapeTile },
-        { value: 'T', label: 'T' },
-        { value: 'T2x', label: 'T2x' },
-        { value: 'T2y', label: 'T2y' },
-    ];
-
     return (
-        <Segmented
-            name="shape-select"
-            value={patch ?? 'tile'}
-            options={options}
-            onChange={(value) =>
-                dispatch({ type: 'setPatch', patch: value === 'tile' ? null : value })
-            }
-        />
+        <div className="shape-grid">
+            <button
+                type="button"
+                className={`btn shape-opt${patch === null ? ' active' : ''}`}
+                onClick={() => dispatch({ type: 'setPatch', patch: null })}
+            >
+                {t.shapeTile}
+            </button>
+            {PATCH_KEYS.map((key) => (
+                <button
+                    key={key}
+                    type="button"
+                    className={`btn shape-opt${patch === key ? ' active' : ''}`}
+                    onClick={() => dispatch({ type: 'setPatch', patch: key })}
+                >
+                    {key}
+                </button>
+            ))}
+        </div>
     );
 }

@@ -109,6 +109,21 @@ body {
     border-color: var(--color-accent);
 }
 
+.shape-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+.shape-opt {
+    font-size: 12.5px;
+    padding: 6px 10px;
+}
+.shape-opt.active {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-color: var(--color-accent);
+}
+
 /* range input */
 input[type="range"] {
     -webkit-appearance: none;

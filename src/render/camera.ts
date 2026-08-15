@@ -29,6 +29,7 @@ type Frame = { cx: number; cy: number; w: number; h: number };
 
 /** Bounding frame of a point set, padded by 28% on each axis (the Hat margin). */
 function frameOfPoints(points: readonly Vec2[]): Frame {
+    if (points.length === 0) return { cx: 0, cy: 0, w: 4, h: 4 };
     let mnx = Infinity;
     let mny = Infinity;
     let mxx = -Infinity;
@@ -39,14 +40,16 @@ function frameOfPoints(points: readonly Vec2[]): Frame {
         mxx = Math.max(mxx, p.x);
         mxy = Math.max(mxy, p.y);
     }
-    const mx = (mxx - mnx) * 0.28;
-    const my = (mxy - mny) * 0.28;
-    return {
-        cx: (mnx + mxx) / 2,
-        cy: (mny + mxy) / 2,
-        w: mxx - mnx + 2 * mx,
-        h: mxy - mny + 2 * my,
-    };
+    const spanX = mxx - mnx;
+    const spanY = mxy - mny;
+    let w = spanX * 1.56; // span + 28% margin on each side
+    let h = spanY * 1.56;
+    // Guard degenerate extents (single point or an axis-aligned line) so the
+    // scale stays finite.
+    const MIN = 1;
+    if (w < MIN) w = Math.max(h, MIN);
+    if (h < MIN) h = Math.max(w, MIN);
+    return { cx: (mnx + mxx) / 2, cy: (mny + mxy) / 2, w, h };
 }
 
 /** A camera that fits `frame` into the canvas at `zoom`, rotated about its center. */
