@@ -113,48 +113,39 @@ export function closureError(a: number, b: number): number {
     return Math.hypot(x, y);
 }
 
-export type TileVertex = {
+export type TileVertex = TileVertexSpec & {
     position: Vec2;
-    interiorAngle: number;
-    portCandidate: PortCandidate;
 };
 
-function createTileVertices(a: number, b: number): readonly TileVertex[] {
-    validateParameters(a, b);
-    const vertices: TileVertex[] = [];
-    let position: Vec2 = { x: 0, y: 0 };
+/** Boundary vertex positions for (a, b), by walking the edge template once. */
+function basisPositions(a: number, b: number): Vec2[] {
+    const out: Vec2[] = [];
+    let p: Vec2 = { x: 0, y: 0 };
     for (let i = 0; i < EDGE_COUNT; i++) {
-        const edge = EDGE_TEMPLATE[i];
-        const spec = VERTEX_TEMPLATE[i];
-        vertices.push({
-            position,
-            interiorAngle: spec.interiorAngle,
-            portCandidate: spec.portCandidate,
-        });
-        const e = edgeVector(edge, a, b);
-        position = { x: position.x + e.x, y: position.y + e.y };
+        out.push(p);
+        const e = edgeVector(EDGE_TEMPLATE[i], a, b);
+        p = { x: p.x + e.x, y: p.y + e.y };
     }
-    return vertices;
+    return out;
 }
 
-/** Basis vertices for a = 1, b = 0 (used by the linear-combination view). */
-const BASIS_A: readonly TileVertex[] = createTileVertices(1, 0);
-/** Basis vertices for a = 0, b = 1. */
-const BASIS_B: readonly TileVertex[] = createTileVertices(0, 1);
+/** Basis positions for a = 1, b = 0 and a = 0, b = 1, computed once. */
+const BASIS_A: readonly Vec2[] = basisPositions(1, 0);
+const BASIS_B: readonly Vec2[] = basisPositions(0, 1);
 
 /**
- * Vertices via the linear basis: `P(a, b) = a·P(1, 0) + b·P(0, 1)`.
- * Equivalent to `createTileVertices` but expressed through the basis.
+ * Vertices for Tile(a, b). Positions use the linear basis
+ * `P(a, b) = a·P(1, 0) + b·P(0, 1)`, so no trig runs per call; the per-vertex
+ * angle / port metadata is (a, b)-independent and comes from VERTEX_TEMPLATE.
  */
-function verticesFromBasis(a: number, b: number): TileVertex[] {
+function createTileVertices(a: number, b: number): readonly TileVertex[] {
     validateParameters(a, b);
-    return BASIS_A.map((pa, i) => ({
+    return VERTEX_TEMPLATE.map((spec, i) => ({
         position: {
-            x: a * pa.position.x + b * BASIS_B[i].position.x,
-            y: a * pa.position.y + b * BASIS_B[i].position.y,
+            x: a * BASIS_A[i].x + b * BASIS_B[i].x,
+            y: a * BASIS_A[i].y + b * BASIS_B[i].y,
         },
-        interiorAngle: pa.interiorAngle,
-        portCandidate: pa.portCandidate,
+        ...spec,
     }));
 }
 
@@ -212,7 +203,7 @@ export type SmithTile = {
 //   const wrigglyPorts: PortLayout = { plugVertexIndex: 6, socketVertices: [1, 11] }; // socket vertices are in CW order
 export function createSmithTile(a: number, b: number, transform: Transform): SmithTile {
     validateParameters(a, b);
-    const vertices = verticesFromBasis(a, b);
+    const vertices = createTileVertices(a, b);
     const shape: SmithTileShape = { a, b, vertices, edges: EDGE_TEMPLATE };
     return { shape, transform };
 }
