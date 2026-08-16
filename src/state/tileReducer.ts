@@ -27,6 +27,7 @@ export type Toggles = {
     showLengths: boolean;
     showAngles: boolean;
     showPorts: boolean;
+    showComponentColors: boolean;
 };
 
 export type TileState = {
@@ -59,6 +60,7 @@ export const initialTileState: TileState = {
         showLengths: false,
         showAngles: false,
         showPorts: false,
+        showComponentColors: true,
     },
     presetName: 'hat',
     rotationDeg: 0,

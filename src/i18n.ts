@@ -26,6 +26,7 @@ export interface Strings {
     lengths: string;
     angles: string;
     ports: string;
+    componentColors: string;
     legendSocket: string;
     legendPlug: string;
     info: string;
@@ -68,6 +69,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         lengths: '辺長ラベル a / b',
         angles: '内角ラベル (°)',
         ports: 'ポート候補',
+        componentColors: 'コンポーネント色分け',
         legendSocket: 'ソケット候補 (120°)',
         legendPlug: 'プラグ候補 (240°)',
         info: '情報',
@@ -109,6 +111,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         lengths: 'Edge-length labels a / b',
         angles: 'Interior angles (°)',
         ports: 'Port candidates',
+        componentColors: 'Component colors',
         legendSocket: 'Socket candidate (120°)',
         legendPlug: 'Plug candidate (240°)',
         info: 'Info',

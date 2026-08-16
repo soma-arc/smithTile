@@ -20,7 +20,12 @@ import {
     transformedGridKites,
     transformKite,
 } from '../kiteGrid';
-import { type Port, type SmithTile, smithTileWorldVertices } from '../smithTile';
+import {
+    type PatchColorGroup,
+    type Port,
+    type SmithTile,
+    smithTileWorldVertices,
+} from '../smithTile';
 import { IDENTITY_TRANSFORM } from '../Transform';
 import type { Vec2 } from '../Vec2';
 import type { Camera } from './camera';
@@ -83,6 +88,12 @@ export type SceneWorld = {
     tiles: readonly SmithTile[];
     overlays: Overlays;
     ports?: PatchPorts;
+    /**
+     * Per-component fill colors for a patch (see `patchColorGroups`). When set,
+     * the fill layer paints each group's tiles in its color instead of the flat
+     * `COLOR.fill`.
+     */
+    componentFills?: readonly PatchColorGroup[];
 };
 
 /** Per-tile geometry resolved once: screen vertices + local vertices + flags. */
@@ -203,12 +214,26 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
         if (items.length) layers.push({ id: 'decomposition', items });
     }
 
-    // 3. tile fill (per tile, skipped where the decomposition provides the fill)
+    // 3. tile fill (per tile, skipped where the decomposition provides the fill).
+    // When component colors are supplied, each group paints its own tiles;
+    // otherwise every tile gets the flat fill.
     {
         const items: Drawable[] = [];
-        for (const g of geoms) {
-            if (g.showDec) continue;
-            items.push({ kind: 'polygon', points: g.V, style: { fill: COLOR.fill } });
+        if (world.componentFills) {
+            for (const group of world.componentFills) {
+                for (const tile of group.tiles) {
+                    items.push({
+                        kind: 'polygon',
+                        points: smithTileWorldVertices(tile).map(P),
+                        style: { fill: group.fill },
+                    });
+                }
+            }
+        } else {
+            for (const g of geoms) {
+                if (g.showDec) continue;
+                items.push({ kind: 'polygon', points: g.V, style: { fill: COLOR.fill } });
+            }
         }
         if (items.length) layers.push({ id: 'fill', items });
     }

@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { createCamera, createFitCamera } from '../render/camera';
 import { buildScene, type Overlays, type Scene } from '../render/scene';
-import { createSmithTile, PATCHES, smithTileWorldVertices } from '../smithTile';
+import { createSmithTile, PATCHES, patchColorGroups, smithTileWorldVertices } from '../smithTile';
 import type { TileState } from '../state/tileReducer';
 import { IDENTITY_TRANSFORM } from '../Transform';
 
@@ -33,7 +33,12 @@ export function useScene(state: TileState): Scene {
                 ...p.sockets.map((s) => s.position),
             ];
             return buildScene(
-                { tiles: p.tiles, overlays, ports: { plug: p.plug, sockets: p.sockets } },
+                {
+                    tiles: p.tiles,
+                    overlays,
+                    ports: { plug: p.plug, sockets: p.sockets },
+                    componentFills: toggles.showComponentColors ? patchColorGroups(p) : undefined,
+                },
                 createFitCamera(points, zoom, rotationDeg),
             );
         }
