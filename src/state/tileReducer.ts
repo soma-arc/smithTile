@@ -8,6 +8,15 @@ import { type PatchKey, type Preset, SQRT3 } from '../smithTile';
 
 export type Mode = 'ratio' | 'independent';
 
+/** Camera zoom bounds, shared by the slider and mouse-wheel zoom. */
+export const ZOOM_MIN = 0.35;
+export const ZOOM_MAX = 3;
+
+/** Clamp a zoom factor into the allowed range. */
+export function clampZoom(z: number): number {
+    return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+}
+
 export type Toggles = {
     showGrid: boolean;
     showPolykite: boolean;
@@ -104,7 +113,7 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
             return custom(state, { a: 1, b: nonNegative(action.ratio) });
 
         case 'setZoom':
-            return { ...state, zoom: action.zoom };
+            return { ...state, zoom: clampZoom(action.zoom) };
 
         case 'setRotation':
             return { ...state, rotationDeg: action.deg };

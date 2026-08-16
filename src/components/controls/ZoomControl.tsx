@@ -1,4 +1,5 @@
 import { useTileDispatch, useTileState } from '../../hooks/useTileState';
+import { ZOOM_MAX, ZOOM_MIN } from '../../state/tileReducer';
 import { TRANSLATIONS } from '../../i18n';
 
 export function ZoomControl() {
@@ -13,8 +14,8 @@ export function ZoomControl() {
             <input
                 id="zoom-range"
                 type="range"
-                min={0.35}
-                max={3}
+                min={ZOOM_MIN}
+                max={ZOOM_MAX}
                 step={0.05}
                 value={zoom}
                 onChange={(e) =>
