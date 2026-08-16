@@ -23,6 +23,7 @@ export type Toggles = {
     showAB: boolean;
     showVectors: boolean;
     showVertexNums: boolean;
+    showVertexDots: boolean;
     showLengths: boolean;
     showAngles: boolean;
     showPorts: boolean;
@@ -54,6 +55,7 @@ export const initialTileState: TileState = {
         showAB: false,
         showVectors: false,
         showVertexNums: false,
+        showVertexDots: true,
         showLengths: false,
         showAngles: false,
         showPorts: false,

@@ -22,6 +22,7 @@ export interface Strings {
     abEdges: string;
     vectors: string;
     vertexNums: string;
+    vertexDots: string;
     lengths: string;
     angles: string;
     ports: string;
@@ -63,6 +64,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         abEdges: 'A / B 辺を区別',
         vectors: '方向ベクトル',
         vertexNums: '頂点番号 (14辺)',
+        vertexDots: '頂点の点',
         lengths: '辺長ラベル a / b',
         angles: '内角ラベル (°)',
         ports: 'ポート候補',
@@ -103,6 +105,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         abEdges: 'Distinguish A / B edges',
         vectors: 'Direction vectors',
         vertexNums: 'Vertex numbers (14)',
+        vertexDots: 'Vertex dots',
         lengths: 'Edge-length labels a / b',
         angles: 'Interior angles (°)',
         ports: 'Port candidates',

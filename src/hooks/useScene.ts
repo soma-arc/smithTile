@@ -16,6 +16,7 @@ export function useScene(state: TileState): Scene {
             ab: toggles.showAB,
             vectors: toggles.showVectors,
             vertexNums: toggles.showVertexNums,
+            vertexDots: toggles.showVertexDots,
             lengths: toggles.showLengths,
             angles: toggles.showAngles,
             ports: toggles.showPorts,

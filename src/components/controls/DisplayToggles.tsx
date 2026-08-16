@@ -12,6 +12,7 @@ export function DisplayToggles() {
         { key: 'showAB', label: t.abEdges },
         { key: 'showVectors', label: t.vectors },
         { key: 'showVertexNums', label: t.vertexNums },
+        { key: 'showVertexDots', label: t.vertexDots },
         { key: 'showLengths', label: t.lengths },
         { key: 'showAngles', label: t.angles },
         { key: 'showPorts', label: t.ports },

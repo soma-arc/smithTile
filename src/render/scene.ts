@@ -65,6 +65,7 @@ export type Overlays = {
     ab: boolean;
     vectors: boolean;
     vertexNums: boolean;
+    vertexDots: boolean;
     lengths: boolean;
     angles: boolean;
     ports: boolean;
@@ -305,7 +306,7 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
             }
         }
         layers.push({ id: 'vertices', items });
-    } else {
+    } else if (overlays.vertexDots) {
         const items: Drawable[] = [];
         for (const g of geoms) {
             for (const p of g.V) {
