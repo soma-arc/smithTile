@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { createSmithTile, smithTileWorldVertices, T2x } from '../smithTile';
+import { createSmithTile, Ma0, smithTileWorldVertices } from '../smithTile';
 import { IDENTITY_TRANSFORM } from '../Transform';
 import { CANVAS_H, CANVAS_W, createCamera, createFitCamera } from './camera';
 import { buildScene, type Overlays, type SceneWorld } from './scene';
@@ -15,6 +15,7 @@ const NO_OVERLAYS: Overlays = {
     ab: false,
     vectors: false,
     vertexNums: false,
+    vertexDots: true,
     lengths: false,
     angles: false,
     ports: false,
@@ -135,29 +136,30 @@ describe('buildScene', () => {
 });
 
 describe('buildScene — patches (multiple tiles)', () => {
-    const patchPoints = T2x.tiles.flatMap((t) => smithTileWorldVertices(t));
+    const patchPoints = Ma0.tiles.flatMap((t) => smithTileWorldVertices(t));
     const patchCam = createFitCamera(patchPoints);
     const patchWorld: SceneWorld = {
-        tiles: T2x.tiles,
+        tiles: Ma0.tiles,
         overlays: NO_OVERLAYS,
-        ports: { plug: T2x.plug, sockets: T2x.sockets },
+        ports: { plug: Ma0.plug, sockets: Ma0.sockets },
     };
 
     it('draws one boundary polygon per tile', () => {
         const boundary = buildScene(patchWorld, patchCam).layers.find((l) => l.id === 'boundary');
-        expect(boundary?.items).toHaveLength(T2x.tiles.length); // T2x = 2 tiles
+        expect(boundary?.items).toHaveLength(Ma0.tiles.length);
         expect(boundary?.items.every((d) => d.kind === 'polygon')).toBe(true);
     });
 
     it('draws the plug + open sockets as arrows in a patch-ports layer', () => {
         const ports = buildScene(patchWorld, patchCam).layers.find((l) => l.id === 'patch-ports');
-        // each port arrow is 3 drawables (base dot + shaft + head); plug + sockets.
-        const portCount = 1 + T2x.sockets.length;
-        expect(ports?.items).toHaveLength(portCount * 3);
+        // plug arrow = 3 drawables (base dot + shaft + head); each socket adds a
+        // 4th (its order label).
+        const expected = 3 + Ma0.sockets.length * 4;
+        expect(ports?.items).toHaveLength(expected);
     });
 
     it('omits the patch-ports layer when no ports are given', () => {
-        const ids = buildScene({ tiles: T2x.tiles, overlays: NO_OVERLAYS }, patchCam).layers.map(
+        const ids = buildScene({ tiles: Ma0.tiles, overlays: NO_OVERLAYS }, patchCam).layers.map(
             (l) => l.id,
         );
         expect(ids).not.toContain('patch-ports');
