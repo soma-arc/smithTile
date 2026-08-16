@@ -101,7 +101,7 @@ type TileGeom = {
  * The screen direction is derived from two projected points so it tracks the
  * camera's rotation and Y-flip, exactly like the edge-vector arrowheads.
  */
-function portArrow(port: Port, color: string, P: (p: Vec2) => Vec2): Drawable[] {
+function portArrow(port: Port, color: string, P: (p: Vec2) => Vec2, label?: string): Drawable[] {
     const base = P(port.position);
     const eps = 1e-3;
     const ahead = P({
@@ -112,7 +112,7 @@ function portArrow(port: Port, color: string, P: (p: Vec2) => Vec2): Drawable[] 
     const L = 24;
     const head = 8;
     const tip = { x: base.x + Math.cos(ang) * L, y: base.y + Math.sin(ang) * L };
-    return [
+    const items: Drawable[] = [
         { kind: 'circle', center: base, r: 3, style: { fill: color } },
         { kind: 'segment', a: base, b: tip, style: { stroke: color, width: 2.4, cap: 'round' } },
         {
@@ -125,6 +125,21 @@ function portArrow(port: Port, color: string, P: (p: Vec2) => Vec2): Drawable[] 
             style: { fill: color },
         },
     ];
+    // Order label, placed just beyond the arrow tip along its heading.
+    if (label !== undefined) {
+        items.push({
+            kind: 'text',
+            at: { x: base.x + Math.cos(ang) * (L + 11), y: base.y + Math.sin(ang) * (L + 11) },
+            text: label,
+            style: {
+                fill: color,
+                size: 12,
+                weight: 700,
+                family: 'Barlow Condensed, sans-serif',
+            },
+        });
+    }
+    return items;
 }
 
 export function buildScene(world: SceneWorld, camera: Camera): Scene {
@@ -370,9 +385,9 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     // patch connection ports (plug + open sockets) drawn as colored arrows.
     if (world.ports) {
         const items: Drawable[] = [...portArrow(world.ports.plug, COLOR.plugRing, P)];
-        for (const socket of world.ports.sockets) {
-            items.push(...portArrow(socket, COLOR.socketRing, P));
-        }
+        world.ports.sockets.forEach((socket, i) => {
+            items.push(...portArrow(socket, COLOR.socketRing, P, String(i)));
+        });
         layers.push({ id: 'patch-ports', items });
     }
 
