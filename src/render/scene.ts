@@ -94,6 +94,11 @@ export type SceneWorld = {
      * `COLOR.fill`.
      */
     componentFills?: readonly PatchColorGroup[];
+    /**
+     * Per-component outline segments for a patch (see `componentBorders`). When
+     * set, each component's boundary is stroked on top of the fill.
+     */
+    componentBorders?: readonly { color: string; segments: readonly (readonly [Vec2, Vec2])[] }[];
 };
 
 /** Per-tile geometry resolved once: screen vertices + local vertices + flags. */
@@ -238,12 +243,19 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
         if (items.length) layers.push({ id: 'fill', items });
     }
 
-    // 4/5. boundary or A/B edge distinction
+    // 4/5. boundary or A/B edge distinction. Under component borders the per-tile
+    // grid recedes to a faint line so the bold component seams dominate.
     if (!overlays.ab) {
+        const faint = !!world.componentBorders;
         const items: Drawable[] = geoms.map((g) => ({
             kind: 'polygon',
             points: g.V,
-            style: { fill: 'none', stroke: COLOR.boundary, width: 2.4, join: 'round' },
+            style: {
+                fill: 'none',
+                stroke: faint ? COLOR.tileGridFaint : COLOR.boundary,
+                width: faint ? 1 : 2.4,
+                join: 'round',
+            },
         }));
         layers.push({ id: 'boundary', items });
     } else {
@@ -414,6 +426,23 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
             items.push(...portArrow(socket, COLOR.socketRing, P, String(i)));
         });
         layers.push({ id: 'patch-ports', items });
+    }
+
+    // Topmost: per-component outlines (patch structure), a bold dark line over
+    // the now-faint tile grid so each component's shape reads clearly.
+    if (world.componentBorders) {
+        const items: Drawable[] = [];
+        for (const group of world.componentBorders) {
+            for (const [a, b] of group.segments) {
+                items.push({
+                    kind: 'segment',
+                    a: P(a),
+                    b: P(b),
+                    style: { stroke: COLOR.componentBorder, width: 3.4, cap: 'round' },
+                });
+            }
+        }
+        if (items.length) layers.push({ id: 'component-borders', items });
     }
 
     return { layers, viewBox: camera.viewBox };

@@ -1,0 +1,59 @@
+/**
+ * Per-component boundary extraction for a patch — a render-layer utility.
+ *
+ * For a selected patch, each named component (see `patchColorGroups`) is a set
+ * of unit spectre tiles. The outline of a component's tile-union is exactly the
+ * set of boundary edges that are NOT shared by two of its own tiles: an edge
+ * seen once is on the perimeter, an edge seen twice is interior. Because every
+ * tile edge is unit length (`Tile(1, 1)`), neighbors always meet edge-to-edge,
+ * so this whole-edge tally is exact — no reliance on the Hat/Turtle kite grid.
+ */
+
+import { patchColorGroups, type SmithPatch, smithTileWorldVertices } from '../smithTile';
+import type { Vec2 } from '../Vec2';
+
+export type ComponentBorder = { color: string; segments: [Vec2, Vec2][] };
+
+/** Quantize a coordinate so endpoints computed via different transform paths
+ *  (accumulated float error under 30°-multiple rotations) still match. */
+const EPS = 1e-6;
+function round(v: number): number {
+    const n = Math.round(v / EPS) * EPS;
+    return Object.is(n, -0) ? 0 : n;
+}
+function ptKey(p: Vec2): string {
+    return `${round(p.x)},${round(p.y)}`;
+}
+/** Orientation-independent key for the edge {p, q}. */
+function edgeKey(p: Vec2, q: Vec2): string {
+    const a = ptKey(p);
+    const b = ptKey(q);
+    return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+/**
+ * The outline segments of each colored component of `patch`, in world space.
+ * Empty/id components are already excluded by `patchColorGroups`.
+ */
+export function componentBorders(patch: SmithPatch): ComponentBorder[] {
+    return patchColorGroups(patch).map(({ fill, tiles }) => {
+        // Tally each undirected edge; remember its endpoints for the survivors.
+        const count = new Map<string, number>();
+        const ends = new Map<string, [Vec2, Vec2]>();
+        for (const tile of tiles) {
+            const v = smithTileWorldVertices(tile);
+            for (let i = 0; i < v.length; i++) {
+                const a = v[i];
+                const b = v[(i + 1) % v.length];
+                const k = edgeKey(a, b);
+                count.set(k, (count.get(k) ?? 0) + 1);
+                if (!ends.has(k)) ends.set(k, [a, b]);
+            }
+        }
+        const segments: [Vec2, Vec2][] = [];
+        for (const [k, n] of count) {
+            if (n === 1) segments.push(ends.get(k) as [Vec2, Vec2]);
+        }
+        return { color: fill, segments };
+    });
+}

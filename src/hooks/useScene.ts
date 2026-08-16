@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { createCamera, createFitCamera } from '../render/camera';
+import { componentBorders } from '../render/patchBorders';
 import { buildScene, type Overlays, type Scene } from '../render/scene';
 import { createSmithTile, PATCHES, patchColorGroups, smithTileWorldVertices } from '../smithTile';
 import type { TileState } from '../state/tileReducer';
@@ -38,6 +39,9 @@ export function useScene(state: TileState): Scene {
                     overlays,
                     ports: { plug: p.plug, sockets: p.sockets },
                     componentFills: toggles.showComponentColors ? patchColorGroups(p) : undefined,
+                    componentBorders: toggles.showComponentBorders
+                        ? componentBorders(p)
+                        : undefined,
                 },
                 createFitCamera(points, zoom, rotationDeg),
             );

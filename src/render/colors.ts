@@ -4,6 +4,8 @@ export const COLOR = {
     aEdge: '#5980a6',
     bEdge: '#1d2d3d',
     boundary: '#1d2d3d',
+    componentBorder: '#0b1520', // bold dark line for patch-component outlines
+    tileGridFaint: '#b9c0c8', // faint per-tile grid, used under component borders
     fill: 'rgba(89,128,166,0.13)',
     gridLine: '#c3c3c6',
     gridDot: '#b7b7ba',
