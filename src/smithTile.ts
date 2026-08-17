@@ -478,11 +478,10 @@ function composeS(N: SmithPatch, Ab: SmithPatch, Ma: SmithPatch, Mb: SmithPatch)
     const T = createArticulatedPatchT();
     const closedN = applyPatch(N, [EMPTY_PATCH]);
     const closedMa = applyPatch(Ma, [EMPTY_PATCH]);
-    const closedMb = applyPatch(Mb, [EMPTY_PATCH]);
 
-    // Caution: 図ではMa, Mbがすべて閉じているように略されている（ミス？）
-    // また、Ma, Mbの誤植がある。色で見分けがつく
-    const tm = applyPatch(T, [closedMb, Ma]);
+    // Caution: 図ではMa, Mbがすべて閉じているように略されている
+    // T(Ma, Ma)→T(Ma, Ma(x))
+    const tm = applyPatch(T, [closedMa, Ma]);
     const mm = applyPatch(Ma, [applyPatch(Ab, [tm, closedN])]);
     const tt = applyPatch(T, [mm, closedMa]);
     const patch = applyPatch(Mb, [tt]);
@@ -579,6 +578,7 @@ function nextArticulatedLevel(prev: ArticulatedLevel): ArticulatedLevel {
 }
 
 const level1 = nextArticulatedLevel(level0);
+const level2 = nextArticulatedLevel(level1);
 
 export const colorMap: Record<PatchFunctionKey, string> = {
     I: 'orange',
@@ -626,7 +626,12 @@ export const PATCHES = { S0, N0, Aa0, Ab0, Ma0, Mb0,
     Ab1: level1.Ab,
     Ma1: level1.Ma,
     Mb1: level1.Mb,
-    idN1: applyPatch(level1.N, [IDENTITY_PATCH]),
-    idAa1: applyPatch(level1.Aa, [IDENTITY_PATCH, IDENTITY_PATCH])
+    I2: level2.I!,
+    S2: level2.S,
+    N2: level2.N,
+    Aa2: level2.Aa,
+    Ab2: level2.Ab,
+    Ma2: level2.Ma,
+    Mb2: level2.Mb,
  } satisfies Record<string, SmithPatch>;
 export type PatchKey = keyof typeof PATCHES;
