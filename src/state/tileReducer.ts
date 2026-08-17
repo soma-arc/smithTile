@@ -27,6 +27,7 @@ export type Toggles = {
     showLengths: boolean;
     showAngles: boolean;
     showPorts: boolean;
+    showPatchPorts: boolean;
     showComponentColors: boolean;
     showComponentBorders: boolean;
 };
@@ -61,6 +62,7 @@ export const initialTileState: TileState = {
         showLengths: false,
         showAngles: false,
         showPorts: false,
+        showPatchPorts: true,
         showComponentColors: true,
         showComponentBorders: true,
     },

@@ -37,7 +37,9 @@ export function useScene(state: TileState): Scene {
                 {
                     tiles: p.tiles,
                     overlays,
-                    ports: { plug: p.plug, sockets: p.sockets },
+                    ports: toggles.showPatchPorts
+                        ? { plug: p.plug, sockets: p.sockets }
+                        : undefined,
                     componentFills: toggles.showComponentColors ? patchColorGroups(p) : undefined,
                     componentBorders: toggles.showComponentBorders
                         ? componentBorders(p)

@@ -16,6 +16,7 @@ export function DisplayToggles() {
         { key: 'showLengths', label: t.lengths },
         { key: 'showAngles', label: t.angles },
         { key: 'showPorts', label: t.ports },
+        { key: 'showPatchPorts', label: t.patchPorts },
         { key: 'showComponentColors', label: t.componentColors },
         { key: 'showComponentBorders', label: t.componentBorders },
     ];
