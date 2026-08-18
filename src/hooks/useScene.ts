@@ -4,7 +4,8 @@ import { useMemo } from 'react';
 import { createCamera, createFitCamera } from '../render/camera';
 import { componentBorders } from '../render/patchBorders';
 import { buildScene, type Overlays, type Scene } from '../render/scene';
-import { createSmithTile, PATCHES, patchColorGroups, smithTileWorldVertices } from '../smithTile';
+import { PATCHES, patchColorGroups } from '../smithPatch';
+import { createSmithTile, smithTileWorldVertices } from '../smithTile';
 import type { TileState } from '../state/tileReducer';
 import { IDENTITY_TRANSFORM } from '../Transform';
 

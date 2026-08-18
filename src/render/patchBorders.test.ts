@@ -3,12 +3,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { colorMap, EDGE_COUNT, N0, PATCHES, smithTileWorldVertices } from '../smithTile';
+import { colorMap, N0, PATCHES } from '../smithPatch';
+import { EDGE_COUNT, smithTileWorldVertices } from '../smithTile';
 import { componentBorders } from './patchBorders';
 
 const EPS = 1e-6;
-const ptKey = (p: { x: number; y: number }) =>
-    `${Math.round(p.x / EPS)},${Math.round(p.y / EPS)}`;
+const ptKey = (p: { x: number; y: number }) => `${Math.round(p.x / EPS)},${Math.round(p.y / EPS)}`;
 
 describe('componentBorders', () => {
     it('a single-tile component outlines all 14 edges', () => {
@@ -45,7 +45,7 @@ describe('componentBorders', () => {
         }
     });
 
-    it('outline segments reuse the tiles\' own world vertices', () => {
+    it("outline segments reuse the tiles' own world vertices", () => {
         // sanity: N0's outline endpoints all lie among its tile vertices
         const verts = new Set(N0.tiles.flatMap((t) => smithTileWorldVertices(t)).map(ptKey));
         for (const [p, q] of componentBorders(N0)[0].segments) {

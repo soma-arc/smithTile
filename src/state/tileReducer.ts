@@ -4,7 +4,8 @@
  */
 
 import type { Lang } from '../i18n';
-import { type PatchKey, type Preset, SQRT3 } from '../smithTile';
+import type { PatchKey } from '../smithPatch';
+import { type Preset, SQRT3 } from '../smithTile';
 
 export type Mode = 'ratio' | 'independent';
 

@@ -2,7 +2,7 @@
 
 import { useTileDispatch, useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
-import { PATCHES, type PatchKey } from '../../smithTile';
+import { PATCHES, type PatchKey } from '../../smithPatch';
 
 const PATCH_KEYS = Object.keys(PATCHES) as PatchKey[];
 

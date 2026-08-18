@@ -20,12 +20,8 @@ import {
     transformedGridKites,
     transformKite,
 } from '../kiteGrid';
-import {
-    type PatchColorGroup,
-    type Port,
-    type SmithTile,
-    smithTileWorldVertices,
-} from '../smithTile';
+import type { PatchColorGroup, Port } from '../smithPatch';
+import { type SmithTile, smithTileWorldVertices } from '../smithTile';
 import { IDENTITY_TRANSFORM } from '../Transform';
 import type { Vec2 } from '../Vec2';
 import type { Camera } from './camera';

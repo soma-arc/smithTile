@@ -9,7 +9,8 @@
  * so this whole-edge tally is exact — no reliance on the Hat/Turtle kite grid.
  */
 
-import { patchColorGroups, type SmithPatch, smithTileWorldVertices } from '../smithTile';
+import { patchColorGroups, type SmithPatch } from '../smithPatch';
+import { smithTileWorldVertices } from '../smithTile';
 import type { Vec2 } from '../Vec2';
 
 export type ComponentBorder = { color: string; segments: [Vec2, Vec2][] };

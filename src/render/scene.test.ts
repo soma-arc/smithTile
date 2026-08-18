@@ -4,7 +4,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { createSmithTile, Ma0, smithTileWorldVertices } from '../smithTile';
+import { Ma0 } from '../smithPatch';
+import { createSmithTile, smithTileWorldVertices } from '../smithTile';
 import { IDENTITY_TRANSFORM } from '../Transform';
 import { CANVAS_H, CANVAS_W, createCamera, createFitCamera } from './camera';
 import { buildScene, type Overlays, type SceneWorld } from './scene';
