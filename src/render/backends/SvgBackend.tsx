@@ -1,11 +1,40 @@
 /** SVG backend — renders a Scene as declarative JSX. */
 
+import type { BoundarySegment } from '../../smithTile';
 import type { Vec2 } from '../../Vec2';
 import { assertNever } from '../exhaustive';
 import type { BackendProps, Drawable } from '../scene';
 
 function pointsAttr(points: readonly Vec2[]): string {
     return points.map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
+}
+
+function pathData(segments: readonly BoundarySegment[], closed: boolean): string {
+    const first = segments[0];
+    if (!first) return '';
+    const start = first.kind === 'polyline' ? first.points[0] : first.p0;
+    if (!start) return '';
+
+    const commands = [`M ${start.x} ${start.y}`];
+    for (const segment of segments) {
+        switch (segment.kind) {
+            case 'line':
+                commands.push(`L ${segment.p1.x} ${segment.p1.y}`);
+                break;
+            case 'cubicBezier':
+                commands.push(
+                    `C ${segment.c1.x} ${segment.c1.y} ${segment.c2.x} ${segment.c2.y} ${segment.p1.x} ${segment.p1.y}`,
+                );
+                break;
+            case 'polyline':
+                for (const point of segment.points.slice(1)) {
+                    commands.push(`L ${point.x} ${point.y}`);
+                }
+                break;
+        }
+    }
+    if (closed) commands.push('Z');
+    return commands.join(' ');
 }
 
 function DrawableEl({ d }: { d: Drawable }) {
@@ -23,6 +52,22 @@ function DrawableEl({ d }: { d: Drawable }) {
                     strokeLinejoin={s.join}
                     opacity={s.opacity}
                     // SVG-specific: keep stroke width constant under viewBox scaling.
+                    vectorEffect={s.stroke ? 'non-scaling-stroke' : undefined}
+                />
+            );
+        }
+        case 'path': {
+            const s = d.style;
+            return (
+                <path
+                    d={pathData(d.segments, d.closed)}
+                    fill={s.fill ?? 'none'}
+                    stroke={s.stroke}
+                    strokeWidth={s.width}
+                    strokeDasharray={s.dash}
+                    strokeLinecap={s.cap}
+                    strokeLinejoin={s.join}
+                    opacity={s.opacity}
                     vectorEffect={s.stroke ? 'non-scaling-stroke' : undefined}
                 />
             );

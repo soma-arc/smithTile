@@ -21,8 +21,13 @@ import {
     transformKite,
 } from '../kiteGrid';
 import type { PatchColorGroup, Port } from '../smithPatch';
-import { type SmithTile, smithTileWorldVertices } from '../smithTile';
-import { IDENTITY_TRANSFORM } from '../Transform';
+import {
+    type BoundarySegment,
+    type SmithTile,
+    smithTileBoundary,
+    smithTileWorldVertices,
+} from '../smithTile';
+import { applyTransform, IDENTITY_TRANSFORM } from '../Transform';
 import type { Vec2 } from '../Vec2';
 import type { Camera } from './camera';
 import { COLOR } from './colors';
@@ -50,6 +55,12 @@ export type TextStyle = {
 
 export type Drawable =
     | { kind: 'polygon'; points: readonly Vec2[]; style: Style }
+    | {
+          kind: 'path';
+          segments: readonly BoundarySegment[];
+          closed: boolean;
+          style: Style;
+      }
     | { kind: 'segment'; a: Vec2; b: Vec2; style: Style }
     | { kind: 'circle'; center: Vec2; r: number; style: Style }
     | { kind: 'text'; at: Vec2; text: string; style: TextStyle };
@@ -104,9 +115,28 @@ type TileGeom = {
     edges: SmithTile['shape']['edges'];
     local: Vec2[]; // untransformed, for polykite math
     V: Vec2[]; // screen-space boundary
+    boundary: readonly BoundarySegment[]; // screen-space curved/straight boundary
+    curved: boolean;
     showDec: boolean;
     N: number;
 };
+
+function mapBoundarySegment(segment: BoundarySegment, map: (p: Vec2) => Vec2): BoundarySegment {
+    switch (segment.kind) {
+        case 'line':
+            return { kind: 'line', p0: map(segment.p0), p1: map(segment.p1) };
+        case 'cubicBezier':
+            return {
+                kind: 'cubicBezier',
+                p0: map(segment.p0),
+                c1: map(segment.c1),
+                c2: map(segment.c2),
+                p1: map(segment.p1),
+            };
+        case 'polyline':
+            return { kind: 'polyline', points: segment.points.map(map) };
+    }
+}
 
 /**
  * A port drawn as a short arrow from its position along its inward heading.
@@ -160,12 +190,17 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
 
     const geoms: TileGeom[] = world.tiles.map((tile) => {
         const verts = tile.shape.vertices;
+        const projectLocal = (point: Vec2) => P(applyTransform(tile.transform, point));
         return {
             tile,
             verts,
             edges: tile.shape.edges,
             local: verts.map((v) => v.position),
             V: smithTileWorldVertices(tile).map(P),
+            boundary: smithTileBoundary(tile.shape).map((segment) =>
+                mapBoundarySegment(segment, projectLocal),
+            ),
+            curved: tile.shape.edgeCurve.kind !== 'straight',
             showDec: overlays.polykite && polykiteValid(tile.shape.a, tile.shape.b),
             N: verts.length,
         };
@@ -233,7 +268,16 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
         } else {
             for (const g of geoms) {
                 if (g.showDec) continue;
-                items.push({ kind: 'polygon', points: g.V, style: { fill: COLOR.fill } });
+                items.push(
+                    g.curved
+                        ? {
+                              kind: 'path',
+                              segments: g.boundary,
+                              closed: true,
+                              style: { fill: COLOR.fill },
+                          }
+                        : { kind: 'polygon', points: g.V, style: { fill: COLOR.fill } },
+                );
             }
         }
         if (items.length) layers.push({ id: 'fill', items });
@@ -243,33 +287,39 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     // grid recedes to a faint line so the bold component seams dominate.
     if (!overlays.ab) {
         const faint = !!world.componentBorders;
-        const items: Drawable[] = geoms.map((g) => ({
-            kind: 'polygon',
-            points: g.V,
-            style: {
+        const items: Drawable[] = geoms.map((g) => {
+            const style: Style = {
                 fill: 'none',
                 stroke: faint ? COLOR.tileGridFaint : COLOR.boundary,
                 width: faint ? 1 : 2.4,
                 join: 'round',
-            },
-        }));
+            };
+            return g.curved
+                ? { kind: 'path', segments: g.boundary, closed: true, style }
+                : { kind: 'polygon', points: g.V, style };
+        });
         layers.push({ id: 'boundary', items });
     } else {
         const items: Drawable[] = [];
         for (const g of geoms) {
             for (let i = 0; i < g.N; i++) {
                 const isA = g.edges[i].kind === 'A';
-                items.push({
-                    kind: 'segment',
-                    a: g.V[i],
-                    b: g.V[(i + 1) % g.N],
-                    style: {
-                        stroke: isA ? COLOR.aEdge : COLOR.bEdge,
-                        width: 2.8,
-                        dash: isA ? undefined : '6 4',
-                        cap: 'round',
-                    },
-                });
+                const style: Style = {
+                    stroke: isA ? COLOR.aEdge : COLOR.bEdge,
+                    width: 2.8,
+                    dash: isA ? undefined : '6 4',
+                    cap: 'round',
+                };
+                items.push(
+                    g.curved
+                        ? { kind: 'path', segments: [g.boundary[i]], closed: false, style }
+                        : {
+                              kind: 'segment',
+                              a: g.V[i],
+                              b: g.V[(i + 1) % g.N],
+                              style,
+                          },
+                );
             }
         }
         layers.push({ id: 'edges', items });

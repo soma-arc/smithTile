@@ -14,6 +14,7 @@ export function ModeToggle() {
             options={[
                 { value: 'ratio', label: t.modeRatio },
                 { value: 'independent', label: t.modeIndep },
+                { value: 'spectre', label: t.modeSpectre },
             ]}
             onChange={(mode) => dispatch({ type: 'setMode', mode })}
             containerStyle={{ width: '100%', marginBottom: 'var(--space-3)' }}

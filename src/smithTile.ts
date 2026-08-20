@@ -188,6 +188,85 @@ export function findPreset(key: string): Preset | undefined {
     return PRESETS.find((p) => p.key === key);
 }
 
+export function evaluateCubicBezier(p0: Vec2, p1: Vec2, p2: Vec2, p3: Vec2, t: number): Vec2 {
+    const u = 1 - t;
+
+    const b0 = u * u * u;
+    const b1 = 3 * u * u * t;
+    const b2 = 3 * u * t * t;
+    const b3 = t * t * t;
+
+    return {
+        x: b0 * p0.x + b1 * p1.x + b2 * p2.x + b3 * p3.x,
+        y: b0 * p0.y + b1 * p1.y + b2 * p2.y + b3 * p3.y,
+    };
+}
+
+export type CurveSpec =
+    | { kind: 'straight' }
+    | { kind: 'cubicBezier'; c1: Vec2; c2: Vec2 }
+    | { kind: 'polyline'; points: readonly Vec2[] };
+
+export type BoundarySegment =
+    | {
+          kind: 'line';
+          p0: Vec2;
+          p1: Vec2;
+      }
+    | {
+          kind: 'cubicBezier';
+          p0: Vec2;
+          c1: Vec2;
+          c2: Vec2;
+          p1: Vec2;
+      }
+    | {
+          kind: 'polyline';
+          points: readonly Vec2[];
+      };
+
+export function evaluateCurve(curve: CurveSpec, t: number): Vec2 {
+    const u = Math.max(0, Math.min(1, t));
+
+    switch (curve.kind) {
+        case 'straight':
+            return {
+                x: u,
+                y: 0,
+            };
+
+        case 'cubicBezier':
+            return evaluateCubicBezier({ x: 0, y: 0 }, curve.c1, curve.c2, { x: 1, y: 0 }, t);
+
+        case 'polyline':
+            return evaluatePolyline(curve.points, t);
+    }
+}
+
+function evaluatePolyline(points: readonly Vec2[], t: number): Vec2 {
+    if (points.length < 2) {
+        throw new Error('Polyline requires at least two points');
+    }
+
+    if (t <= 0) return points[0];
+    if (t >= 1) return points[points.length - 1];
+
+    const segmentCount = points.length - 1;
+
+    const position = t * segmentCount;
+    const index = Math.min(Math.floor(position), segmentCount - 1);
+
+    const localT = position - index;
+
+    const p = points[index];
+    const q = points[index + 1];
+
+    return {
+        x: p.x + (q.x - p.x) * localT,
+        y: p.y + (q.y - p.y) * localT,
+    };
+}
+
 type SmithTileShape = {
     a: number;
     b: number;
@@ -195,6 +274,7 @@ type SmithTileShape = {
     vertices: readonly TileVertex[];
     /** Boundary edges in cyclic order; edge i connects vertices[i] → vertices[i+1]. */
     edges: readonly EdgeSpec[];
+    edgeCurve: CurveSpec;
 };
 
 export type SmithTile = {
@@ -202,12 +282,32 @@ export type SmithTile = {
     transform: Transform;
 };
 
+export const STRAIGHT_CURVE: CurveSpec = { kind: 'straight' };
+export const DEFAULT_SPECTRE_CURVE: CurveSpec = {
+    kind: 'cubicBezier',
+
+    c1: {
+        x: 0.25,
+        y: 0.2,
+    },
+
+    c2: {
+        x: 0.75,
+        y: -0.2,
+    },
+};
+
 //   const articulatedPorts: PortLayout = { plugVertexIndex: 4, socketVertices: [11, 1] }; // socket vertices are in CCW order
 //   const wrigglyPorts: PortLayout = { plugVertexIndex: 6, socketVertices: [1, 11] }; // socket vertices are in CW order
-export function createSmithTile(a: number, b: number, transform: Transform): SmithTile {
+export function createSmithTile(
+    a: number,
+    b: number,
+    transform: Transform,
+    edgeCurve: CurveSpec = STRAIGHT_CURVE,
+): SmithTile {
     validateParameters(a, b);
     const vertices = createTileVertices(a, b);
-    const shape: SmithTileShape = { a, b, vertices, edges: EDGE_TEMPLATE };
+    const shape: SmithTileShape = { a, b, vertices, edges: EDGE_TEMPLATE, edgeCurve };
     return { shape, transform };
 }
 
@@ -222,4 +322,105 @@ export function isAperiodic(smithTile: SmithTile): boolean {
     if (a === 0 && b > 0) return false; //'chevron';
     if (Math.abs(a - b) < 1e-9) return false; // 't11';
     return true;
+}
+
+export function smithTileBoundary(shape: SmithTileShape): readonly BoundarySegment[] {
+    return createSmithTileBoundary(shape.vertices, shape.edgeCurve);
+}
+
+function createSmithTileBoundary(
+    vertices: readonly TileVertex[],
+    edgeCurve: CurveSpec,
+): readonly BoundarySegment[] {
+    const segments: BoundarySegment[] = [];
+
+    for (let edgeIndex = 0; edgeIndex < vertices.length; edgeIndex++) {
+        const p = vertices[edgeIndex].position;
+        const q = vertices[(edgeIndex + 1) % vertices.length].position;
+
+        segments.push(placeEdgeCurve(edgeCurve, p, q, edgeIndex % 2 === 1));
+    }
+
+    return segments;
+}
+
+function placeEdgeCurve(
+    curve: CurveSpec,
+    p: Vec2,
+    q: Vec2,
+    swapCurveEndpoints: boolean,
+): BoundarySegment {
+    if (!swapCurveEndpoints) {
+        return placeCurveFromPToQ(curve, p, q);
+    }
+
+    return placeCurveFromQToP(curve, p, q);
+}
+
+function placeCurveFromPToQ(curve: CurveSpec, p: Vec2, q: Vec2): BoundarySegment {
+    switch (curve.kind) {
+        case 'straight':
+            return {
+                kind: 'line',
+                p0: p,
+                p1: q,
+            };
+
+        case 'cubicBezier':
+            return {
+                kind: 'cubicBezier',
+                p0: p,
+                c1: mapCanonicalPointToEdge(p, q, curve.c1),
+                c2: mapCanonicalPointToEdge(p, q, curve.c2),
+                p1: q,
+            };
+
+        case 'polyline':
+            return {
+                kind: 'polyline',
+                points: curve.points.map((point) => mapCanonicalPointToEdge(p, q, point)),
+            };
+    }
+}
+
+function placeCurveFromQToP(curve: CurveSpec, p: Vec2, q: Vec2): BoundarySegment {
+    switch (curve.kind) {
+        case 'straight':
+            return {
+                kind: 'line',
+                p0: p,
+                p1: q,
+            };
+
+        case 'cubicBezier':
+            return {
+                kind: 'cubicBezier',
+                p0: p,
+
+                // curve は q → p に配置されるので、
+                // boundary を p → q に辿ると c2, c1 の順になる。
+                c1: mapCanonicalPointToEdge(q, p, curve.c2),
+                c2: mapCanonicalPointToEdge(q, p, curve.c1),
+
+                p1: q,
+            };
+
+        case 'polyline':
+            return {
+                kind: 'polyline',
+                points: curve.points
+                    .map((point: Vec2) => mapCanonicalPointToEdge(q, p, point))
+                    .reverse(),
+            };
+    }
+}
+
+function mapCanonicalPointToEdge(p: Vec2, q: Vec2, u: Vec2): Vec2 {
+    const dx = q.x - p.x;
+    const dy = q.y - p.y;
+
+    return {
+        x: p.x + u.x * dx - u.y * dy,
+        y: p.y + u.x * dy + u.y * dx,
+    };
 }

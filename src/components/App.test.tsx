@@ -49,4 +49,15 @@ describe('<App> (state + components wiring)', () => {
         // 2 legend swatches + 14 tile edges.
         expect(container.querySelectorAll('svg line')).toHaveLength(16);
     });
+
+    it('draws Spectre as a native cubic Bézier path for Tile(1,1)', async () => {
+        const user = userEvent.setup();
+        const { container } = renderApp();
+
+        await user.click(screen.getByRole('radio', { name: 'Spectre' }));
+
+        expect(screen.getByText(/Spectre\s+Tile\(1, 1\)/)).toBeInTheDocument();
+        expect(container.querySelector('svg path[d*="C"]')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'STL を保存' })).not.toBeInTheDocument();
+    });
 });

@@ -21,6 +21,39 @@ function drawOne(ctx: CanvasRenderingContext2D, d: Drawable): void {
             paint(ctx, d.style);
             break;
         }
+        case 'path': {
+            const first = d.segments[0];
+            if (!first) return;
+            const start = first.kind === 'polyline' ? first.points[0] : first.p0;
+            if (!start) return;
+            ctx.beginPath();
+            ctx.moveTo(start.x, start.y);
+            for (const segment of d.segments) {
+                switch (segment.kind) {
+                    case 'line':
+                        ctx.lineTo(segment.p1.x, segment.p1.y);
+                        break;
+                    case 'cubicBezier':
+                        ctx.bezierCurveTo(
+                            segment.c1.x,
+                            segment.c1.y,
+                            segment.c2.x,
+                            segment.c2.y,
+                            segment.p1.x,
+                            segment.p1.y,
+                        );
+                        break;
+                    case 'polyline':
+                        for (const point of segment.points.slice(1)) {
+                            ctx.lineTo(point.x, point.y);
+                        }
+                        break;
+                }
+            }
+            if (d.closed) ctx.closePath();
+            paint(ctx, d.style);
+            break;
+        }
         case 'segment': {
             ctx.beginPath();
             ctx.moveTo(d.a.x, d.a.y);

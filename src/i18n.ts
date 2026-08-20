@@ -8,6 +8,7 @@ export interface Strings {
     params: string;
     modeIndep: string;
     modeRatio: string;
+    modeSpectre: string;
     aEdges: string;
     bEdges: string;
     ratioLabel: string;
@@ -55,6 +56,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         params: 'パラメータ',
         modeIndep: '独立',
         modeRatio: '比率',
+        modeSpectre: 'Spectre',
         aEdges: 'A辺 ×8',
         bEdges: 'B辺 ×6',
         ratioLabel: '比率 b / a',
@@ -101,6 +103,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         params: 'Parameters',
         modeIndep: 'Independent',
         modeRatio: 'Ratio',
+        modeSpectre: 'Spectre',
         aEdges: 'A-edges ×8',
         bEdges: 'B-edges ×6',
         ratioLabel: 'Ratio b / a',

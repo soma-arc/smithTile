@@ -24,7 +24,8 @@ export function ControlsPanel() {
             <section>
                 <h6>{t.params}</h6>
                 {isTile && <ModeToggle />}
-                {isTile && (mode === 'independent' ? <IndependentControls /> : <RatioControl />)}
+                {isTile && mode === 'independent' && <IndependentControls />}
+                {isTile && mode === 'ratio' && <RatioControl />}
                 <ZoomControl />
                 <RotationControl />
             </section>
@@ -41,7 +42,7 @@ export function ControlsPanel() {
                 <DisplayToggles />
             </section>
 
-            {isTile && (
+            {isTile && mode !== 'spectre' && (
                 <section>
                     <h6>{t.exportStl}</h6>
                     <StlExportPanel />

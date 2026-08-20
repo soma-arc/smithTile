@@ -12,11 +12,13 @@ import { gridKites, hatKites, polykiteValid, transformedGridKites } from './kite
 import {
     closureError,
     createSmithTile,
+    DEFAULT_SPECTRE_CURVE,
     EDGE_COUNT,
     EDGE_TEMPLATE,
     isAperiodic,
     polygonArea,
     SQRT3,
+    smithTileBoundary,
     smithTileWorldVertices,
     validateParameters,
 } from './smithTile';
@@ -54,6 +56,22 @@ describe('Tile(a, b) boundary', () => {
             const next = V[(i + 1) % EDGE_COUNT];
             const expected = EDGE_TEMPLATE[i].kind === 'A' ? a : b;
             expect(dist(V[i], next)).toBeCloseTo(expected, 9);
+        }
+    });
+});
+
+describe('Spectre curved boundary', () => {
+    it('creates one continuous cubic Bézier segment for each edge', () => {
+        const tile = createSmithTile(1, 1, IDENTITY_TRANSFORM, DEFAULT_SPECTRE_CURVE);
+        const boundary = smithTileBoundary(tile.shape);
+
+        expect(boundary).toHaveLength(EDGE_COUNT);
+        expect(boundary.every((segment) => segment.kind === 'cubicBezier')).toBe(true);
+        for (let i = 0; i < boundary.length; i++) {
+            const segment = boundary[i];
+            const next = boundary[(i + 1) % boundary.length];
+            if (segment.kind !== 'cubicBezier' || next.kind !== 'cubicBezier') continue;
+            expect(dist(segment.p1, next.p0)).toBeLessThan(TOL);
         }
     });
 });

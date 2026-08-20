@@ -7,7 +7,7 @@ import type { Lang } from '../i18n';
 import type { PatchKey } from '../smithPatch';
 import { type Preset, SQRT3 } from '../smithTile';
 
-export type Mode = 'ratio' | 'independent';
+export type Mode = 'ratio' | 'independent' | 'spectre';
 
 /** Camera zoom bounds, shared by the slider and mouse-wheel zoom. */
 export const ZOOM_MIN = 0.35;
@@ -99,6 +99,9 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
             return { ...state, lang: action.lang };
 
         case 'setMode':
+            if (action.mode === 'spectre') {
+                return custom(state, { mode: 'spectre', a: 1, b: 1 });
+            }
             if (action.mode === 'ratio') {
                 // Collapse to a = 1, keeping the current ratio.
                 const ratio = state.a > 0 ? state.b / state.a : state.b;
@@ -138,7 +141,7 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 b: p.b,
                 presetName: p.key,
                 // Chevron (a = 0) has no finite ratio; force independent mode.
-                mode: p.a === 0 ? 'independent' : state.mode,
+                mode: p.a === 0 ? 'independent' : state.mode === 'spectre' ? 'ratio' : state.mode,
             };
         }
 

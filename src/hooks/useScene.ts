@@ -5,12 +5,12 @@ import { createCamera, createFitCamera } from '../render/camera';
 import { componentBorders } from '../render/patchBorders';
 import { buildScene, type Overlays, type Scene } from '../render/scene';
 import { PATCHES, patchColorGroups } from '../smithPatch';
-import { createSmithTile, smithTileWorldVertices } from '../smithTile';
+import { createSmithTile, DEFAULT_SPECTRE_CURVE, smithTileWorldVertices } from '../smithTile';
 import type { TileState } from '../state/tileReducer';
 import { IDENTITY_TRANSFORM } from '../Transform';
 
 export function useScene(state: TileState): Scene {
-    const { a, b, zoom, rotationDeg, patch, toggles } = state;
+    const { a, b, mode, zoom, rotationDeg, patch, toggles } = state;
     return useMemo(() => {
         const overlays: Overlays = {
             grid: toggles.showGrid,
@@ -52,9 +52,10 @@ export function useScene(state: TileState): Scene {
 
         // Rotation is a camera (view) operation, so the tile keeps its natural
         // placement (identity transform).
-        return buildScene(
-            { tiles: [createSmithTile(a, b, IDENTITY_TRANSFORM)], overlays },
-            createCamera(zoom, rotationDeg),
-        );
-    }, [a, b, zoom, rotationDeg, patch, toggles]);
+        const tile =
+            mode === 'spectre'
+                ? createSmithTile(1, 1, IDENTITY_TRANSFORM, DEFAULT_SPECTRE_CURVE)
+                : createSmithTile(a, b, IDENTITY_TRANSFORM);
+        return buildScene({ tiles: [tile], overlays }, createCamera(zoom, rotationDeg));
+    }, [a, b, mode, zoom, rotationDeg, patch, toggles]);
 }

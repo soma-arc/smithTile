@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { Ma0 } from '../smithPatch';
-import { createSmithTile, smithTileWorldVertices } from '../smithTile';
+import { createSmithTile, DEFAULT_SPECTRE_CURVE, smithTileWorldVertices } from '../smithTile';
 import { IDENTITY_TRANSFORM } from '../Transform';
 import { CANVAS_H, CANVAS_W, createCamera, createFitCamera } from './camera';
 import { buildScene, type Overlays, type SceneWorld } from './scene';
@@ -133,6 +133,45 @@ describe('buildScene', () => {
                 expect(p.y).toBeLessThanOrEqual(CANVAS_H);
             }
         }
+    });
+});
+
+describe('buildScene — Spectre boundary', () => {
+    const spectreWorld: SceneWorld = {
+        tiles: [createSmithTile(1, 1, IDENTITY_TRANSFORM, DEFAULT_SPECTRE_CURVE)],
+        overlays: NO_OVERLAYS,
+    };
+
+    it('uses the same closed Bézier path for fill and boundary', () => {
+        const scene = buildScene(spectreWorld, camera);
+        const fill = scene.layers.find((layer) => layer.id === 'fill')?.items[0];
+        const boundary = scene.layers.find((layer) => layer.id === 'boundary')?.items[0];
+
+        expect(fill?.kind).toBe('path');
+        expect(boundary?.kind).toBe('path');
+        if (fill?.kind === 'path' && boundary?.kind === 'path') {
+            expect(fill.closed).toBe(true);
+            expect(fill.segments).toHaveLength(14);
+            expect(fill.segments.every((segment) => segment.kind === 'cubicBezier')).toBe(true);
+            expect(boundary.segments).toEqual(fill.segments);
+        }
+    });
+
+    it('keeps all 14 A/B edges as Bézier paths', () => {
+        const scene = buildScene(
+            { ...spectreWorld, overlays: { ...NO_OVERLAYS, ab: true } },
+            camera,
+        );
+        const edges = scene.layers.find((layer) => layer.id === 'edges');
+        expect(edges?.items).toHaveLength(14);
+        expect(
+            edges?.items.every(
+                (item) =>
+                    item.kind === 'path' &&
+                    item.segments.length === 1 &&
+                    item.segments[0].kind === 'cubicBezier',
+            ),
+        ).toBe(true);
     });
 });
 
