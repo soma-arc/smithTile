@@ -44,6 +44,8 @@ export interface Strings {
     legendB: string;
     notPolykiteNote: string;
     shown: string;
+    exportStl: string;
+    saveStl: string;
 }
 
 export const TRANSLATIONS: Record<Lang, Strings> = {
@@ -90,6 +92,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         notPolykiteNote:
             '現在の比率は基礎 kite grid 上の polykite ではありません。背景は Hat の元の格子を参照として表示しています。',
         shown: '表示',
+        exportStl: '3D 出力',
+        saveStl: 'STL を保存',
     },
     en: {
         appTitle: 'Tile(a, b) Visualizer',
@@ -134,5 +138,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         notPolykiteNote:
             "This ratio is not a polykite on the base kite grid. The background shows the Hat's original grid only as a reference.",
         shown: 'shown',
+        exportStl: '3D export',
+        saveStl: 'Save STL',
     },
 };

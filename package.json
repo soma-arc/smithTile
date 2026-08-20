@@ -29,6 +29,8 @@
     "vitest": "^1.6.0"
   },
   "dependencies": {
+    "@jscad/modeling": "^2.13.0",
+    "@jscad/stl-serializer": "^2.1.23",
     "react": "^18",
     "react-dom": "^18"
   }

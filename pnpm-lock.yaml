@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@jscad/modeling':
+        specifier: ^2.13.0
+        version: 2.13.0
+      '@jscad/stl-serializer':
+        specifier: ^2.1.23
+        version: 2.1.23
       react:
         specifier: ^18
         version: 18.3.1
@@ -540,6 +546,15 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@jscad/array-utils@2.1.4':
+    resolution: {integrity: sha512-c31r4zSKsE+4Xfwk2V8monDA0hx5G89QGzaakWVUvuGNowYS9WSsYCwHiTIXodjR+HEnDu4okQ7k/whmP0Ne2g==}
+
+  '@jscad/modeling@2.13.0':
+    resolution: {integrity: sha512-Thv/JJZZOMzQ9rfhP+75PbgrNbBTZduRL+ClaGfGFts9+JdIXcUueqRL3NtZZ/v/hyZCUBkPSRxHIi4icz04tQ==}
+
+  '@jscad/stl-serializer@2.1.23':
+    resolution: {integrity: sha512-bSaz2hte30ig2kT1ogBQIjQVGD0Nu1dDyQ4q+fHBFKKmJ8A7ximnFZj7hgQegm3XUD6pSE5KwzPWspCyRWQ5kA==}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
@@ -1693,6 +1708,15 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@jscad/array-utils@2.1.4': {}
+
+  '@jscad/modeling@2.13.0': {}
+
+  '@jscad/stl-serializer@2.1.23':
+    dependencies:
+      '@jscad/array-utils': 2.1.4
+      '@jscad/modeling': 2.13.0
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true

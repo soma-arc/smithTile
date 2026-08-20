@@ -7,6 +7,7 @@ import { PatchSelect } from './PatchSelect';
 import { PresetGrid } from './PresetGrid';
 import { RatioControl } from './RatioControl';
 import { RotationControl } from './RotationControl';
+import { StlExportPanel } from './StlExportPanel';
 import { ZoomControl } from './ZoomControl';
 
 export function ControlsPanel() {
@@ -39,6 +40,13 @@ export function ControlsPanel() {
                 <h6>{t.display}</h6>
                 <DisplayToggles />
             </section>
+
+            {isTile && (
+                <section>
+                    <h6>{t.exportStl}</h6>
+                    <StlExportPanel />
+                </section>
+            )}
         </aside>
     );
 }
