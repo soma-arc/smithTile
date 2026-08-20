@@ -3,7 +3,7 @@ import { TRANSLATIONS } from '../../i18n';
 import { DisplayToggles } from './DisplayToggles';
 import { IndependentControls } from './IndependentControls';
 import { ModeToggle } from './ModeToggle';
-import { PatchSelect } from './PatchSelect';
+import { ShapeToggle, SpectrePatchSelect } from './PatchSelect';
 import { PresetGrid } from './PresetGrid';
 import { RatioControl } from './RatioControl';
 import { RotationControl } from './RotationControl';
@@ -11,21 +11,29 @@ import { StlExportPanel } from './StlExportPanel';
 import { ZoomControl } from './ZoomControl';
 
 export function ControlsPanel() {
-    const { lang, mode, patch } = useTileState();
+    const { lang, parameterMode, shape } = useTileState();
     const t = TRANSLATIONS[lang];
-    const isTile = patch === null;
+    const isTile = shape.kind === 'tile';
+    const isSpectre = shape.kind === 'spectre';
     return (
         <aside className="controls">
             <section>
                 <h6>{t.shape}</h6>
-                <PatchSelect />
+                <ShapeToggle />
             </section>
+
+            {isSpectre && (
+                <section>
+                    <h6>{t.spectrePatches}</h6>
+                    <SpectrePatchSelect />
+                </section>
+            )}
 
             <section>
                 <h6>{t.params}</h6>
                 {isTile && <ModeToggle />}
-                {isTile && mode === 'independent' && <IndependentControls />}
-                {isTile && mode === 'ratio' && <RatioControl />}
+                {isTile && parameterMode === 'independent' && <IndependentControls />}
+                {isTile && parameterMode === 'ratio' && <RatioControl />}
                 <ZoomControl />
                 <RotationControl />
             </section>
@@ -42,7 +50,7 @@ export function ControlsPanel() {
                 <DisplayToggles />
             </section>
 
-            {isTile && mode !== 'spectre' && (
+            {isTile && (
                 <section>
                     <h6>{t.exportStl}</h6>
                     <StlExportPanel />

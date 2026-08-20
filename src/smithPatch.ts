@@ -382,7 +382,7 @@ export function patchColorGroups(patch: SmithPatch): PatchColorGroup[] {
 
 /** Selectable prebuilt patches, keyed for the UI. Single source of truth: the
  *  `satisfies` keeps each value type-checked while `PatchKey` is derived. */
-export const PATCHES = {
+export const SPECTRE_PATCHES = {
     S0,
     N0,
     Aa0,
@@ -404,4 +404,4 @@ export const PATCHES = {
     Ma2: level2.Ma,
     Mb2: level2.Mb,
 } satisfies Record<string, SmithPatch>;
-export type PatchKey = keyof typeof PATCHES;
+export type SpectrePatchKey = keyof typeof SPECTRE_PATCHES;

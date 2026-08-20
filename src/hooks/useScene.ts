@@ -4,13 +4,13 @@ import { useMemo } from 'react';
 import { createCamera, createFitCamera } from '../render/camera';
 import { componentBorders } from '../render/patchBorders';
 import { buildScene, type Overlays, type Scene } from '../render/scene';
-import { PATCHES, patchColorGroups } from '../smithPatch';
+import { patchColorGroups, SPECTRE_PATCHES } from '../smithPatch';
 import { createSmithTile, DEFAULT_SPECTRE_CURVE, smithTileWorldVertices } from '../smithTile';
 import type { TileState } from '../state/tileReducer';
 import { IDENTITY_TRANSFORM } from '../Transform';
 
 export function useScene(state: TileState): Scene {
-    const { a, b, mode, zoom, rotationDeg, patch, toggles } = state;
+    const { a, b, shape, zoom, rotationDeg, toggles } = state;
     return useMemo(() => {
         const overlays: Overlays = {
             grid: toggles.showGrid,
@@ -24,11 +24,10 @@ export function useScene(state: TileState): Scene {
             ports: toggles.showPorts,
         };
 
-        // A selected patch renders its full tile list (fit to its extent), with
-        // its connection ports; otherwise the interactive Tile(a, b) is a
-        // one-tile world on the fixed Hat frame.
-        if (patch) {
-            const p = PATCHES[patch];
+        // A selected Spectre patch renders its full tile list (fit to its extent)
+        // and connection ports. Tile(a,b) and a single Spectre use the fixed frame.
+        if (shape.kind === 'spectre' && shape.patch) {
+            const p = SPECTRE_PATCHES[shape.patch];
             const points = [
                 ...p.tiles.flatMap((t) => smithTileWorldVertices(t)),
                 p.plug.position,
@@ -53,7 +52,7 @@ export function useScene(state: TileState): Scene {
 
         // Rotation is a camera (view) operation, so the tile keeps its natural
         // placement (identity transform).
-        const isSpectre = mode === 'spectre';
+        const isSpectre = shape.kind === 'spectre';
         const tile = isSpectre
             ? createSmithTile(1, 1, IDENTITY_TRANSFORM)
             : createSmithTile(a, b, IDENTITY_TRANSFORM);
@@ -65,5 +64,5 @@ export function useScene(state: TileState): Scene {
             },
             createCamera(zoom, rotationDeg),
         );
-    }, [a, b, mode, zoom, rotationDeg, patch, toggles]);
+    }, [a, b, shape, zoom, rotationDeg, toggles]);
 }

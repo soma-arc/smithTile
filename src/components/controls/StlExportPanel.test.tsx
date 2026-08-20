@@ -51,6 +51,7 @@ describe('<StlExportPanel>', () => {
                 <App />
             </TileStateProvider>,
         );
+        await user.click(screen.getByRole('radio', { name: 'Spectre' }));
         await user.click(screen.getByRole('button', { name: 'Ma0' }));
         expect(screen.queryByRole('button', { name: 'STL を保存' })).not.toBeInTheDocument();
     });

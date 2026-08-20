@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { colorMap, N0, PATCHES } from '../smithPatch';
+import { colorMap, N0, SPECTRE_PATCHES } from '../smithPatch';
 import { EDGE_COUNT, smithTileWorldVertices } from '../smithTile';
 import { componentBorders } from './patchBorders';
 
@@ -20,7 +20,7 @@ describe('componentBorders', () => {
 
     it('drops interior edges of a patch with multi-tile components', () => {
         // N1 has 90 tiles grouped into several multi-tile components.
-        const patch = PATCHES.N1;
+        const patch = SPECTRE_PATCHES.N1;
         const borders = componentBorders(patch);
         expect(borders.length).toBeGreaterThan(1); // several colored components
         for (const b of borders) {
@@ -33,7 +33,7 @@ describe('componentBorders', () => {
     });
 
     it('every component outline is a set of closed loops (even endpoint degree)', () => {
-        for (const patch of Object.values(PATCHES)) {
+        for (const patch of Object.values(SPECTRE_PATCHES)) {
             for (const b of componentBorders(patch)) {
                 const degree = new Map<string, number>();
                 for (const { tile, edgeIndex } of b.edges) {

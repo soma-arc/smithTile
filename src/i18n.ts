@@ -8,7 +8,6 @@ export interface Strings {
     params: string;
     modeIndep: string;
     modeRatio: string;
-    modeSpectre: string;
     aEdges: string;
     bEdges: string;
     ratioLabel: string;
@@ -16,6 +15,9 @@ export interface Strings {
     rotation: string;
     shape: string;
     shapeTile: string;
+    shapeSpectre: string;
+    spectrePatches: string;
+    spectreSingle: string;
     presets: string;
     display: string;
     grid: string;
@@ -56,7 +58,6 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         params: 'パラメータ',
         modeIndep: '独立',
         modeRatio: '比率',
-        modeSpectre: 'Spectre',
         aEdges: 'A辺 ×8',
         bEdges: 'B辺 ×6',
         ratioLabel: '比率 b / a',
@@ -64,6 +65,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         rotation: '回転',
         shape: '図形',
         shapeTile: 'Tile(a, b)',
+        shapeSpectre: 'Spectre',
+        spectrePatches: 'Spectre パッチ',
+        spectreSingle: 'Single',
         presets: 'プリセット',
         display: '表示',
         grid: '参照グリッド (kite)',
@@ -103,7 +107,6 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         params: 'Parameters',
         modeIndep: 'Independent',
         modeRatio: 'Ratio',
-        modeSpectre: 'Spectre',
         aEdges: 'A-edges ×8',
         bEdges: 'B-edges ×6',
         ratioLabel: 'Ratio b / a',
@@ -111,6 +114,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         rotation: 'Rotation',
         shape: 'Shape',
         shapeTile: 'Tile(a, b)',
+        shapeSpectre: 'Spectre',
+        spectrePatches: 'Spectre patches',
+        spectreSingle: 'Single',
         presets: 'Presets',
         display: 'Display',
         grid: 'Reference grid (kite)',

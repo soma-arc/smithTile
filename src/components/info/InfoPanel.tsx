@@ -18,12 +18,14 @@ const POLYKITE_NO_TAG = {
 };
 
 export function InfoPanel() {
-    const { a, b, lang, mode } = useTileState();
+    const { a: tileA, b: tileB, lang, shape } = useTileState();
     const t = TRANSLATIONS[lang];
+    const isSpectre = shape.kind === 'spectre';
+    const a = isSpectre ? 1 : tileA;
+    const b = isSpectre ? 1 : tileB;
 
     const pkValid = polykiteValid(a, b);
-    const isException =
-        mode !== 'spectre' && !isAperiodic(createSmithTile(a, b, IDENTITY_TRANSFORM));
+    const isException = !isSpectre && !isAperiodic(createSmithTile(a, b, IDENTITY_TRANSFORM));
     const ratioStr =
         a > 0 ? (Math.abs(b / a - SQRT3) < 1e-6 ? '√3 ≈ 1.732' : (b / a).toFixed(3)) : '∞';
     const err = closureError(a, b);
