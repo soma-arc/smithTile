@@ -10,10 +10,11 @@
  */
 
 import { patchColorGroups, type SmithPatch } from '../smithPatch';
-import { smithTileWorldVertices } from '../smithTile';
+import { type SmithTile, smithTileWorldVertices } from '../smithTile';
 import type { Vec2 } from '../Vec2';
 
-export type ComponentBorder = { color: string; segments: [Vec2, Vec2][] };
+export type ComponentBoundaryEdge = { tile: SmithTile; edgeIndex: number };
+export type ComponentBorder = { color: string; edges: ComponentBoundaryEdge[] };
 
 /** Quantize a coordinate so endpoints computed via different transform paths
  *  (accumulated float error under 30°-multiple rotations) still match. */
@@ -33,14 +34,16 @@ function edgeKey(p: Vec2, q: Vec2): string {
 }
 
 /**
- * The outline segments of each colored component of `patch`, in world space.
- * Empty/id components are already excluded by `patchColorGroups`.
+ * References to the outline edges of each colored component. Adjacency is
+ * resolved from the straight skeleton, while the eventual boundary appearance
+ * remains a rendering concern.
  */
 export function componentBorders(patch: SmithPatch): ComponentBorder[] {
     return patchColorGroups(patch).map(({ fill, tiles }) => {
-        // Tally each undirected edge; remember its endpoints for the survivors.
+        // Tally each undirected skeleton edge; remember its tile/edge reference
+        // so rendering can apply any compatible canonical edge curve later.
         const count = new Map<string, number>();
-        const ends = new Map<string, [Vec2, Vec2]>();
+        const refs = new Map<string, ComponentBoundaryEdge>();
         for (const tile of tiles) {
             const v = smithTileWorldVertices(tile);
             for (let i = 0; i < v.length; i++) {
@@ -48,13 +51,13 @@ export function componentBorders(patch: SmithPatch): ComponentBorder[] {
                 const b = v[(i + 1) % v.length];
                 const k = edgeKey(a, b);
                 count.set(k, (count.get(k) ?? 0) + 1);
-                if (!ends.has(k)) ends.set(k, [a, b]);
+                if (!refs.has(k)) refs.set(k, { tile, edgeIndex: i });
             }
         }
-        const segments: [Vec2, Vec2][] = [];
+        const edges: ComponentBoundaryEdge[] = [];
         for (const [k, n] of count) {
-            if (n === 1) segments.push(ends.get(k) as [Vec2, Vec2]);
+            if (n === 1) edges.push(refs.get(k) as ComponentBoundaryEdge);
         }
-        return { color: fill, segments };
+        return { color: fill, edges };
     });
 }

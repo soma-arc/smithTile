@@ -138,7 +138,8 @@ describe('buildScene', () => {
 
 describe('buildScene — Spectre boundary', () => {
     const spectreWorld: SceneWorld = {
-        tiles: [createSmithTile(1, 1, IDENTITY_TRANSFORM, DEFAULT_SPECTRE_CURVE)],
+        tiles: [createSmithTile(1, 1, IDENTITY_TRANSFORM)],
+        edgeCurve: DEFAULT_SPECTRE_CURVE,
         overlays: NO_OVERLAYS,
     };
 

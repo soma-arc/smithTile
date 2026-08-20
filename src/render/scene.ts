@@ -23,6 +23,7 @@ import {
 import type { PatchColorGroup, Port } from '../smithPatch';
 import {
     type BoundarySegment,
+    type CurveSpec,
     type SmithTile,
     smithTileBoundary,
     smithTileWorldVertices,
@@ -93,6 +94,8 @@ export type PatchPorts = { plug: Port; sockets: readonly Port[] };
  */
 export type SceneWorld = {
     tiles: readonly SmithTile[];
+    /** One canonical 0→1 curve, placed on every edge with the fixed alternating orientation. */
+    edgeCurve?: CurveSpec;
     overlays: Overlays;
     ports?: PatchPorts;
     /**
@@ -102,10 +105,13 @@ export type SceneWorld = {
      */
     componentFills?: readonly PatchColorGroup[];
     /**
-     * Per-component outline segments for a patch (see `componentBorders`). When
-     * set, each component's boundary is stroked on top of the fill.
+     * Per-component outline edge references for a patch (see `componentBorders`).
+     * When set, each component's boundary is stroked on top of the fill.
      */
-    componentBorders?: readonly { color: string; segments: readonly (readonly [Vec2, Vec2])[] }[];
+    componentBorders?: readonly {
+        color: string;
+        edges: readonly { tile: SmithTile; edgeIndex: number }[];
+    }[];
 };
 
 /** Per-tile geometry resolved once: screen vertices + local vertices + flags. */
@@ -188,24 +194,29 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     const { overlays } = world;
     const P = camera.project;
 
-    const geoms: TileGeom[] = world.tiles.map((tile) => {
+    const geomCache = new WeakMap<SmithTile, TileGeom>();
+    const resolveGeom = (tile: SmithTile): TileGeom => {
+        const cached = geomCache.get(tile);
+        if (cached) return cached;
         const verts = tile.shape.vertices;
         const projectLocal = (point: Vec2) => P(applyTransform(tile.transform, point));
-        return {
+        const localBoundary = smithTileBoundary(tile.shape, world.edgeCurve);
+        const geom: TileGeom = {
             tile,
             verts,
             edges: tile.shape.edges,
             local: verts.map((v) => v.position),
             V: smithTileWorldVertices(tile).map(P),
-            boundary: smithTileBoundary(tile.shape).map((segment) =>
-                mapBoundarySegment(segment, projectLocal),
-            ),
-            curved: tile.shape.edgeCurve.kind !== 'straight',
+            boundary: localBoundary.map((segment) => mapBoundarySegment(segment, projectLocal)),
+            curved: localBoundary.some((segment) => segment.kind !== 'line'),
             showDec: overlays.polykite && polykiteValid(tile.shape.a, tile.shape.b),
             N: verts.length,
         };
-    });
+        geomCache.set(tile, geom);
+        return geom;
+    };
 
+    const geoms: TileGeom[] = world.tiles.map(resolveGeom);
     const layers: SceneLayer[] = [];
 
     // 1. reference grid (world lattice, shared by all tiles)
@@ -258,11 +269,21 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
         if (world.componentFills) {
             for (const group of world.componentFills) {
                 for (const tile of group.tiles) {
-                    items.push({
-                        kind: 'polygon',
-                        points: smithTileWorldVertices(tile).map(P),
-                        style: { fill: group.fill },
-                    });
+                    const geom = resolveGeom(tile);
+                    items.push(
+                        geom.curved
+                            ? {
+                                  kind: 'path',
+                                  segments: geom.boundary,
+                                  closed: true,
+                                  style: { fill: group.fill },
+                              }
+                            : {
+                                  kind: 'polygon',
+                                  points: geom.V,
+                                  style: { fill: group.fill },
+                              },
+                    );
                 }
             }
         } else {
@@ -479,13 +500,25 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
     if (world.componentBorders) {
         const items: Drawable[] = [];
         for (const group of world.componentBorders) {
-            for (const [a, b] of group.segments) {
-                items.push({
-                    kind: 'segment',
-                    a: P(a),
-                    b: P(b),
-                    style: { stroke: COLOR.componentBorder, width: 3.4, cap: 'round' },
-                });
+            for (const edge of group.edges) {
+                const geom = resolveGeom(edge.tile);
+                const segment = geom.boundary[edge.edgeIndex];
+                if (!segment) continue;
+                const style: Style = {
+                    stroke: COLOR.componentBorder,
+                    width: 3.4,
+                    cap: 'round',
+                };
+                items.push(
+                    geom.curved
+                        ? { kind: 'path', segments: [segment], closed: false, style }
+                        : {
+                              kind: 'segment',
+                              a: geom.V[edge.edgeIndex],
+                              b: geom.V[(edge.edgeIndex + 1) % geom.N],
+                              style,
+                          },
+                );
             }
         }
         if (items.length) layers.push({ id: 'component-borders', items });

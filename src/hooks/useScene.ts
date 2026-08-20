@@ -37,6 +37,7 @@ export function useScene(state: TileState): Scene {
             return buildScene(
                 {
                     tiles: p.tiles,
+                    edgeCurve: DEFAULT_SPECTRE_CURVE,
                     overlays,
                     ports: toggles.showPatchPorts
                         ? { plug: p.plug, sockets: p.sockets }
@@ -52,10 +53,17 @@ export function useScene(state: TileState): Scene {
 
         // Rotation is a camera (view) operation, so the tile keeps its natural
         // placement (identity transform).
-        const tile =
-            mode === 'spectre'
-                ? createSmithTile(1, 1, IDENTITY_TRANSFORM, DEFAULT_SPECTRE_CURVE)
-                : createSmithTile(a, b, IDENTITY_TRANSFORM);
-        return buildScene({ tiles: [tile], overlays }, createCamera(zoom, rotationDeg));
+        const isSpectre = mode === 'spectre';
+        const tile = isSpectre
+            ? createSmithTile(1, 1, IDENTITY_TRANSFORM)
+            : createSmithTile(a, b, IDENTITY_TRANSFORM);
+        return buildScene(
+            {
+                tiles: [tile],
+                edgeCurve: isSpectre ? DEFAULT_SPECTRE_CURVE : undefined,
+                overlays,
+            },
+            createCamera(zoom, rotationDeg),
+        );
     }, [a, b, mode, zoom, rotationDeg, patch, toggles]);
 }

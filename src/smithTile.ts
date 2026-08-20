@@ -274,7 +274,6 @@ type SmithTileShape = {
     vertices: readonly TileVertex[];
     /** Boundary edges in cyclic order; edge i connects vertices[i] → vertices[i+1]. */
     edges: readonly EdgeSpec[];
-    edgeCurve: CurveSpec;
 };
 
 export type SmithTile = {
@@ -287,27 +286,22 @@ export const DEFAULT_SPECTRE_CURVE: CurveSpec = {
     kind: 'cubicBezier',
 
     c1: {
-        x: 0.25,
+        x: 0.85,
         y: 0.2,
     },
 
     c2: {
         x: 0.75,
-        y: -0.2,
+        y: -0.4,
     },
 };
 
 //   const articulatedPorts: PortLayout = { plugVertexIndex: 4, socketVertices: [11, 1] }; // socket vertices are in CCW order
 //   const wrigglyPorts: PortLayout = { plugVertexIndex: 6, socketVertices: [1, 11] }; // socket vertices are in CW order
-export function createSmithTile(
-    a: number,
-    b: number,
-    transform: Transform,
-    edgeCurve: CurveSpec = STRAIGHT_CURVE,
-): SmithTile {
+export function createSmithTile(a: number, b: number, transform: Transform): SmithTile {
     validateParameters(a, b);
     const vertices = createTileVertices(a, b);
-    const shape: SmithTileShape = { a, b, vertices, edges: EDGE_TEMPLATE, edgeCurve };
+    const shape: SmithTileShape = { a, b, vertices, edges: EDGE_TEMPLATE };
     return { shape, transform };
 }
 
@@ -324,8 +318,11 @@ export function isAperiodic(smithTile: SmithTile): boolean {
     return true;
 }
 
-export function smithTileBoundary(shape: SmithTileShape): readonly BoundarySegment[] {
-    return createSmithTileBoundary(shape.vertices, shape.edgeCurve);
+export function smithTileBoundary(
+    shape: SmithTileShape,
+    edgeCurve: CurveSpec = STRAIGHT_CURVE,
+): readonly BoundarySegment[] {
+    return createSmithTileBoundary(shape.vertices, edgeCurve);
 }
 
 function createSmithTileBoundary(

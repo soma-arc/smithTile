@@ -62,8 +62,8 @@ describe('Tile(a, b) boundary', () => {
 
 describe('Spectre curved boundary', () => {
     it('creates one continuous cubic Bézier segment for each edge', () => {
-        const tile = createSmithTile(1, 1, IDENTITY_TRANSFORM, DEFAULT_SPECTRE_CURVE);
-        const boundary = smithTileBoundary(tile.shape);
+        const tile = createSmithTile(1, 1, IDENTITY_TRANSFORM);
+        const boundary = smithTileBoundary(tile.shape, DEFAULT_SPECTRE_CURVE);
 
         expect(boundary).toHaveLength(EDGE_COUNT);
         expect(boundary.every((segment) => segment.kind === 'cubicBezier')).toBe(true);
