@@ -5,9 +5,11 @@
 
 import type { Lang } from '../i18n';
 import type { SpectrePatchKey } from '../smithPatch';
-import { type Preset, SQRT3 } from '../smithTile';
+import { type CurveSpec, DEFAULT_SPECTRE_CURVE, type Preset, SQRT3 } from '../smithTile';
+import type { Vec2 } from '../Vec2';
 
 export type ParameterMode = 'ratio' | 'independent';
+export type SpectreCurveMode = 'straight' | 'cubicBezier';
 export type ShapeSelection = { kind: 'tile' } | { kind: 'spectre'; patch: SpectrePatchKey | null };
 
 /** Camera zoom bounds, shared by the slider and mouse-wheel zoom. */
@@ -38,6 +40,8 @@ export type TileState = {
     lang: Lang;
     parameterMode: ParameterMode;
     shape: ShapeSelection;
+    spectreCurve: CurveSpec;
+    spectreCurveMode: SpectreCurveMode;
     a: number;
     b: number;
     zoom: number;
@@ -51,6 +55,8 @@ export const initialTileState: TileState = {
     lang: 'ja',
     parameterMode: 'ratio', // implementation policy §6: prioritize ratio mode initially
     shape: { kind: 'tile' },
+    spectreCurve: DEFAULT_SPECTRE_CURVE,
+    spectreCurveMode: 'cubicBezier',
     a: 1,
     b: SQRT3, // Hat
     zoom: 1,
@@ -77,6 +83,9 @@ export type TileAction =
     | { type: 'setParameterMode'; mode: ParameterMode }
     | { type: 'setShape'; shape: ShapeSelection['kind'] }
     | { type: 'setSpectrePatch'; patch: SpectrePatchKey | null }
+    | { type: 'setSpectreControlPoint'; point: 'c1' | 'c2'; value: Vec2 }
+    | { type: 'setSpectreCurveMode'; mode: SpectreCurveMode }
+    | { type: 'resetSpectreCurve' }
     | { type: 'setA'; value: number }
     | { type: 'setB'; value: number }
     | { type: 'setRatio'; ratio: number }
@@ -118,6 +127,22 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
 
         case 'setSpectrePatch':
             return { ...state, shape: { kind: 'spectre', patch: action.patch } };
+
+        case 'setSpectreControlPoint':
+            if (state.spectreCurve.kind !== 'cubicBezier') return state;
+            return {
+                ...state,
+                spectreCurve: {
+                    ...state.spectreCurve,
+                    [action.point]: action.value,
+                },
+            };
+
+        case 'setSpectreCurveMode':
+            return { ...state, spectreCurveMode: action.mode };
+
+        case 'resetSpectreCurve':
+            return { ...state, spectreCurve: DEFAULT_SPECTRE_CURVE };
 
         case 'setA': {
             const v = nonNegative(action.value);

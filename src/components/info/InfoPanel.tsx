@@ -5,6 +5,7 @@ import { polykiteValid } from '../../kiteGrid';
 import { closureError, createSmithTile, isAperiodic, SQRT3 } from '../../smithTile';
 import { IDENTITY_TRANSFORM } from '../../Transform';
 import { Tag } from '../ui/Tag';
+import { SpectreCurveEditor } from './SpectreCurveEditor';
 
 const APERIODIC_TAG = { background: 'var(--color-accent-100)', color: 'var(--color-accent-800)' };
 const PERIODIC_TAG = { background: 'var(--color-neutral-200)', color: 'var(--color-neutral-800)' };
@@ -34,6 +35,8 @@ export function InfoPanel() {
     return (
         <aside className="info">
             <h6>{t.info}</h6>
+
+            {isSpectre && <SpectreCurveEditor />}
 
             <div>
                 <div className="info-stat-label">a : b</div>

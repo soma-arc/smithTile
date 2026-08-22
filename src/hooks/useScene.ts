@@ -5,13 +5,14 @@ import { createCamera, createFitCamera } from '../render/camera';
 import { componentBorders } from '../render/patchBorders';
 import { buildScene, type Overlays, type Scene } from '../render/scene';
 import { patchColorGroups, SPECTRE_PATCHES } from '../smithPatch';
-import { createSmithTile, DEFAULT_SPECTRE_CURVE, smithTileWorldVertices } from '../smithTile';
+import { createSmithTile, smithTileWorldVertices, STRAIGHT_CURVE } from '../smithTile';
 import type { TileState } from '../state/tileReducer';
 import { IDENTITY_TRANSFORM } from '../Transform';
 
 export function useScene(state: TileState): Scene {
-    const { a, b, shape, zoom, rotationDeg, toggles } = state;
+    const { a, b, shape, spectreCurve, spectreCurveMode, zoom, rotationDeg, toggles } = state;
     return useMemo(() => {
+        const activeSpectreCurve = spectreCurveMode === 'straight' ? STRAIGHT_CURVE : spectreCurve;
         const overlays: Overlays = {
             grid: toggles.showGrid,
             polykite: toggles.showPolykite,
@@ -36,7 +37,7 @@ export function useScene(state: TileState): Scene {
             return buildScene(
                 {
                     tiles: p.tiles,
-                    edgeCurve: DEFAULT_SPECTRE_CURVE,
+                    edgeCurve: activeSpectreCurve,
                     overlays,
                     ports: toggles.showPatchPorts
                         ? { plug: p.plug, sockets: p.sockets }
@@ -59,10 +60,10 @@ export function useScene(state: TileState): Scene {
         return buildScene(
             {
                 tiles: [tile],
-                edgeCurve: isSpectre ? DEFAULT_SPECTRE_CURVE : undefined,
+                edgeCurve: isSpectre ? activeSpectreCurve : undefined,
                 overlays,
             },
             createCamera(zoom, rotationDeg),
         );
-    }, [a, b, shape, zoom, rotationDeg, toggles]);
+    }, [a, b, shape, spectreCurve, spectreCurveMode, zoom, rotationDeg, toggles]);
 }

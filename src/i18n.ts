@@ -18,6 +18,12 @@ export interface Strings {
     shapeSpectre: string;
     spectrePatches: string;
     spectreSingle: string;
+    spectreCurve: string;
+    spectreCurvePreview: string;
+    curveStraight: string;
+    curveBezier: string;
+    dragControlPoints: string;
+    resetCurve: string;
     presets: string;
     display: string;
     grid: string;
@@ -68,6 +74,12 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shapeSpectre: 'Spectre',
         spectrePatches: 'Spectre パッチ',
         spectreSingle: 'Single',
+        spectreCurve: '辺の曲線',
+        spectreCurvePreview: 'Spectre の辺の曲線プレビュー',
+        curveStraight: '直線',
+        curveBezier: 'ベジェ',
+        dragControlPoints: 'C1 / C2 をドラッグして調整',
+        resetCurve: '初期値',
         presets: 'プリセット',
         display: '表示',
         grid: '参照グリッド (kite)',
@@ -117,6 +129,12 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shapeSpectre: 'Spectre',
         spectrePatches: 'Spectre patches',
         spectreSingle: 'Single',
+        spectreCurve: 'Edge curve',
+        spectreCurvePreview: 'Spectre edge curve preview',
+        curveStraight: 'Straight',
+        curveBezier: 'Bézier',
+        dragControlPoints: 'Drag C1 / C2 to adjust',
+        resetCurve: 'Reset',
         presets: 'Presets',
         display: 'Display',
         grid: 'Reference grid (kite)',
