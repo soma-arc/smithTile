@@ -1,37 +1,77 @@
 /**
- * Transform — a 2D placement (uniform scale, rotation, translation) that maps
- * a piece of local geometry into world space.
+ * Transform — a 2D affine transform represented by a 2×3 real matrix.
  *
- * Applied in the order scale → rotate → translate. Rotation is in radians,
- * counterclockwise positive, in the coordinate system +x → right, +y → up
- * (the same convention as EDGE_TEMPLATE / the Hat orientation in smithTile.ts).
+ * Points are treated as column vectors with an implicit homogeneous
+ * coordinate of 1:
+ *
+ *   [x']   [m00 m01 tx] [x]
+ *   [y'] = [m10 m11 ty] [y]
+ *                         [1]
+ *
+ * This is the upper two rows of the corresponding 3×3 homogeneous matrix.
  */
 
 import type { Vec2 } from './Vec2';
 
 export type Transform = {
-    position: Vec2;
-    rotation: number;
-    scale: number;
+    m00: number;
+    m01: number;
+    m10: number;
+    m11: number;
+    tx: number;
+    ty: number;
 };
 
-/** The no-op transform: origin, no rotation, unit scale. */
+/** The no-op transform. */
 export const IDENTITY_TRANSFORM: Transform = {
-    position: { x: 0, y: 0 },
-    rotation: 0,
-    scale: 1,
+    m00: 1,
+    m01: 0,
+    m10: 0,
+    m11: 1,
+    tx: 0,
+    ty: 0,
 };
 
-/** Map a local point into world space: scale, then rotate, then translate. */
-export function applyTransform(t: Transform, p: Vec2): Vec2 {
-    const cos = Math.cos(t.rotation);
-    const sin = Math.sin(t.rotation);
-    const x = p.x * t.scale;
-    const y = p.y * t.scale;
+/**
+ * Build the scale → rotate → translate placement used by the tile and patch
+ * constructors. More general affine transforms can be represented directly.
+ */
+export function createTransform(position: Vec2, rotation: number, scale = 1): Transform {
+    const cos = Math.cos(rotation) * scale;
+    const sin = Math.sin(rotation) * scale;
     return {
-        x: t.position.x + (x * cos - y * sin),
-        y: t.position.y + (x * sin + y * cos),
+        m00: cos,
+        m01: -sin,
+        m10: sin,
+        m11: cos,
+        tx: position.x,
+        ty: position.y,
     };
+}
+
+/** Map a local point into world space, including translation. */
+export function applyTransform(t: Transform, p: Vec2): Vec2 {
+    return {
+        x: t.m00 * p.x + t.m01 * p.y + t.tx,
+        y: t.m10 * p.x + t.m11 * p.y + t.ty,
+    };
+}
+
+/** Map a direction or displacement through only the linear part. */
+export function applyTransformVector(t: Transform, v: Vec2): Vec2 {
+    return {
+        x: t.m00 * v.x + t.m01 * v.y,
+        y: t.m10 * v.x + t.m11 * v.y,
+    };
+}
+
+/** Map a direction angle through the linear part of the transform. */
+export function applyTransformAngle(t: Transform, angleRad: number): number {
+    const direction = applyTransformVector(t, {
+        x: Math.cos(angleRad),
+        y: Math.sin(angleRad),
+    });
+    return Math.atan2(direction.y, direction.x);
 }
 
 /** Map a whole polygon/point list into world space. */
@@ -40,18 +80,18 @@ export function transformPoints(t: Transform, points: readonly Vec2[]): Vec2[] {
 }
 
 /**
- * Compose two transforms: `composeTransforms(outer, inner)` is the single
- * transform equivalent to applying `inner` first, then `outer`
- * (`compose(p) === applyTransform(outer, applyTransform(inner, p))`).
+ * Compose two transforms as `f ∘ g`: `g` is applied first, followed by `f`.
  *
- * Since each transform is scale → rotate → translate, the composite is again a
- * transform of that same form: scales multiply, rotations add, and the outer
- * transform maps the inner's translation.
+ * `applyTransform(composeTransforms(f, g), p)` is equivalent to
+ * `applyTransform(f, applyTransform(g, p))`.
  */
-export function composeTransforms(outer: Transform, inner: Transform): Transform {
+export function composeTransforms(f: Transform, g: Transform): Transform {
     return {
-        scale: outer.scale * inner.scale,
-        rotation: outer.rotation + inner.rotation,
-        position: applyTransform(outer, inner.position),
+        m00: f.m00 * g.m00 + f.m01 * g.m10,
+        m01: f.m00 * g.m01 + f.m01 * g.m11,
+        m10: f.m10 * g.m00 + f.m11 * g.m10,
+        m11: f.m10 * g.m01 + f.m11 * g.m11,
+        tx: f.m00 * g.tx + f.m01 * g.ty + f.tx,
+        ty: f.m10 * g.tx + f.m11 * g.ty + f.ty,
     };
 }

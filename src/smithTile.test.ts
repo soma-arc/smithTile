@@ -22,7 +22,7 @@ import {
     smithTileWorldVertices,
     validateParameters,
 } from './smithTile';
-import { applyTransform, IDENTITY_TRANSFORM, type Transform } from './Transform';
+import { applyTransform, createTransform, IDENTITY_TRANSFORM } from './Transform';
 import type { Vec2 } from './Vec2';
 
 const TOL = 1e-9;
@@ -183,14 +183,14 @@ describe('Transform', () => {
     });
 
     it('rotates +90° counterclockwise: (1, 0) → (0, 1)', () => {
-        const rot: Transform = { position: { x: 0, y: 0 }, rotation: Math.PI / 2, scale: 1 };
+        const rot = createTransform({ x: 0, y: 0 }, Math.PI / 2);
         const r = applyTransform(rot, { x: 1, y: 0 });
         expect(r.x).toBeCloseTo(0, 9);
         expect(r.y).toBeCloseTo(1, 9);
     });
 
     it('applies scale → rotate → translate in order', () => {
-        const t: Transform = { position: { x: 10, y: 5 }, rotation: Math.PI / 2, scale: 2 };
+        const t = createTransform({ x: 10, y: 5 }, Math.PI / 2, 2);
         // (1,0) → scale 2 → (2,0) → rot 90° → (0,2) → translate → (10,7)
         const r = applyTransform(t, { x: 1, y: 0 });
         expect(r.x).toBeCloseTo(10, 9);
@@ -199,7 +199,7 @@ describe('Transform', () => {
 
     it('places the tile in world space via smithTileWorldVertices (translation)', () => {
         const offset = { x: 12, y: -4 };
-        const t: Transform = { position: offset, rotation: 0, scale: 1 };
+        const t = createTransform(offset, 0);
         const local = positions(1, SQRT3);
         const world = smithTileWorldVertices(createSmithTile(1, SQRT3, t));
         for (let i = 0; i < EDGE_COUNT; i++) {
@@ -226,7 +226,7 @@ describe('polykite structure', () => {
 
     it('scales the drawn grid by the transform (scale 2 doubles every point)', () => {
         const base = gridKites();
-        const scaled = transformedGridKites({ position: { x: 0, y: 0 }, rotation: 0, scale: 2 });
+        const scaled = transformedGridKites(createTransform({ x: 0, y: 0 }, 0, 2));
         expect(scaled).toHaveLength(base.length);
         expect(dist(scaled[0][0], { x: base[0][0].x * 2, y: base[0][0].y * 2 })).toBeLessThan(TOL);
     });

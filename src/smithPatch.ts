@@ -2,19 +2,25 @@
  * SmithPatch — articulated patch composition and prebuilt patch definitions.
  */
 
-import { applyTransform, composeTransforms, IDENTITY_TRANSFORM, type Transform } from './Transform';
+import {
+    applyTransform,
+    applyTransformAngle,
+    composeTransforms,
+    createTransform,
+    IDENTITY_TRANSFORM,
+    type Transform,
+} from './Transform';
 import { createSmithTile, type SmithTile } from './smithTile';
 import { subVec2, type Vec2 } from './Vec2';
 
 /**
  * Map a `Port` through a transform: its position is transformed like any point,
- * and its inward heading is rotated by the transform's rotation. Scale and
- * translation leave an angle (a unit-less heading, in radians) unchanged.
+ * and its inward heading is mapped by the transform's linear part.
  */
 export function transformPort(t: Transform, port: Port): Port {
     return {
         position: applyTransform(t, port.position),
-        inwardAngleRad: port.inwardAngleRad + t.rotation,
+        inwardAngleRad: applyTransformAngle(t, port.inwardAngleRad),
     };
 }
 
@@ -69,16 +75,10 @@ export function attachPatch(
     const childPlug = child.plug;
 
     const childRotationRad = parentSocket.inwardAngleRad + Math.PI - childPlug.inwardAngleRad;
-    const rotatedChildPlugPosition = {
-        x:
-            childPlug.position.x * Math.cos(childRotationRad) -
-            childPlug.position.y * Math.sin(childRotationRad),
-        y:
-            childPlug.position.x * Math.sin(childRotationRad) +
-            childPlug.position.y * Math.cos(childRotationRad),
-    };
+    const rotationTransform = createTransform({ x: 0, y: 0 }, childRotationRad);
+    const rotatedChildPlugPosition = applyTransform(rotationTransform, childPlug.position);
     const translation = subVec2(parentSocket.position, rotatedChildPlugPosition);
-    const attachTransform = { position: translation, rotation: childRotationRad, scale: 1 };
+    const attachTransform = createTransform(translation, childRotationRad);
 
     const transformedChildTiles = child.tiles.map((tile) => ({
         ...tile,
@@ -186,7 +186,7 @@ const IDENTITY_PATCH: SmithPatch = {
 };
 
 export function createArticulatedSpectre(socketIndices: number[]): SmithPatch {
-    const tile = createSmithTile(1, 1, { position: { x: 0, y: 0 }, rotation: 0, scale: 1 });
+    const tile = createSmithTile(1, 1, IDENTITY_TRANSFORM);
     const patch = {
         tiles: [tile],
         plug: getPortFromVertex(tile, ARTICULATED_PLUG_VERTEX_INDEX),
