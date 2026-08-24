@@ -286,13 +286,13 @@ export const DEFAULT_SPECTRE_CURVE: CurveSpec = {
     kind: 'cubicBezier',
 
     c1: {
-        x: 0.85,
-        y: 0.2,
+        x: 0.05,
+        y: 0.0,
     },
 
     c2: {
-        x: 0.75,
-        y: -0.4,
+        x: 0.95,
+        y: 0.0,
     },
 };
 
