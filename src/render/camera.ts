@@ -87,10 +87,12 @@ function refFrame(): Frame {
 /**
  * Build a camera for the given zoom (1 = fit the Hat frame) and whole-scene
  * rotation in degrees (counterclockwise, about the frame center). The frame is
- * invariant to (a, b), so a single tile deforms in place.
+ * invariant to (a, b), so a single tile deforms in place. For a tile reflected
+ * across the world Y axis, the reference frame center is reflected as well.
  */
-export function createCamera(zoom: number, rotationDeg = 0): Camera {
-    return cameraFromFrame(refFrame(), zoom, rotationDeg);
+export function createCamera(zoom: number, rotationDeg = 0, mirrored = false): Camera {
+    const frame = refFrame();
+    return cameraFromFrame(mirrored ? { ...frame, cx: -frame.cx } : frame, zoom, rotationDeg);
 }
 
 /**

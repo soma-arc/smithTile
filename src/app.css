@@ -72,6 +72,13 @@ body {
     display: flex;
     justify-content: space-between;
 }
+.reflection-field {
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 var(--space-3);
+    padding: 0;
+    border: 0;
+}
 .readout {
     color: var(--color-accent-700);
     font-variant-numeric: tabular-nums;

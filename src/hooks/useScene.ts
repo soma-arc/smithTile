@@ -7,10 +7,11 @@ import { buildScene, type Overlays, type Scene } from '../render/scene';
 import { patchColorGroups, SPECTRE_PATCHES } from '../smithPatch';
 import { createSmithTile, smithTileWorldVertices, STRAIGHT_CURVE } from '../smithTile';
 import type { TileState } from '../state/tileReducer';
-import { IDENTITY_TRANSFORM } from '../Transform';
+import { createReflectionTransform, IDENTITY_TRANSFORM } from '../Transform';
 
 export function useScene(state: TileState): Scene {
-    const { a, b, shape, spectreCurve, spectreCurveMode, zoom, rotationDeg, toggles } = state;
+    const { a, b, mirrored, shape, spectreCurve, spectreCurveMode, zoom, rotationDeg, toggles } =
+        state;
     return useMemo(() => {
         const activeSpectreCurve = spectreCurveMode === 'straight' ? STRAIGHT_CURVE : spectreCurve;
         const overlays: Overlays = {
@@ -56,14 +57,18 @@ export function useScene(state: TileState): Scene {
         const isSpectre = shape.kind === 'spectre';
         const tile = isSpectre
             ? createSmithTile(1, 1, IDENTITY_TRANSFORM)
-            : createSmithTile(a, b, IDENTITY_TRANSFORM);
+            : createSmithTile(
+                  a,
+                  b,
+                  mirrored ? createReflectionTransform() : IDENTITY_TRANSFORM,
+              );
         return buildScene(
             {
                 tiles: [tile],
                 edgeCurve: isSpectre ? activeSpectreCurve : undefined,
                 overlays,
             },
-            createCamera(zoom, rotationDeg),
+            createCamera(zoom, rotationDeg, !isSpectre && mirrored),
         );
-    }, [a, b, shape, spectreCurve, spectreCurveMode, zoom, rotationDeg, toggles]);
+    }, [a, b, mirrored, shape, spectreCurve, spectreCurveMode, zoom, rotationDeg, toggles]);
 }

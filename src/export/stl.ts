@@ -12,7 +12,7 @@ import type { Geom3 } from '@jscad/modeling/src/geometries/types';
 import { serialize } from '@jscad/stl-serializer';
 import { fmtNum } from '../format';
 import { createSmithTile, smithTileWorldVertices } from '../smithTile';
-import { IDENTITY_TRANSFORM } from '../Transform';
+import { createReflectionTransform, IDENTITY_TRANSFORM } from '../Transform';
 import { cleanPolygon } from './polygon2d';
 
 export type StlOptions = {
@@ -20,18 +20,24 @@ export type StlOptions = {
     thickness: number;
     /** Millimetres per unit edge length, i.e. the printed length of `a = 1`. */
     unitMm: number;
+    /** Reflect the tile across its local Y axis before extrusion. */
+    mirrored?: boolean;
 };
 
 /** Prints the Hat at 60 × 43 × 4 mm — a comfortable size to hold and to print. */
 export const DEFAULT_STL_OPTIONS: StlOptions = {
     thickness: 4,
     unitMm: 10,
+    mirrored: false,
 };
 
 /** The tile as a flat slab, in millimetres, sitting on the z = 0 plane. */
 export function tileSolid(a: number, b: number, opts: StlOptions): Geom3 {
     // Clean before scaling: the tolerance in `cleanPolygon` is in tile units.
-    const outline = cleanPolygon(smithTileWorldVertices(createSmithTile(a, b, IDENTITY_TRANSFORM)));
+    const transform = opts.mirrored ? createReflectionTransform() : IDENTITY_TRANSFORM;
+    const outline = cleanPolygon(smithTileWorldVertices(createSmithTile(a, b, transform)));
+    // Reflection reverses the polygon winding; JSCAD expects a counterclockwise outline.
+    if (opts.mirrored) outline.reverse();
     const points = outline.map((p): [number, number] => [p.x * opts.unitMm, p.y * opts.unitMm]);
     return extrusions.extrudeLinear({ height: opts.thickness }, primitives.polygon({ points }));
 }
@@ -66,6 +72,7 @@ export function tileStl(
 export const STL_MIME_TYPE = 'application/sla';
 
 /** A self-describing filename for Tile(a, b), e.g. `tile-a1-b1.7321.stl`. */
-export function stlFilename(a: number, b: number): string {
-    return `tile-a${fmtNum(a)}-b${fmtNum(b)}.stl`;
+export function stlFilename(a: number, b: number, mirrored = false): string {
+    const suffix = mirrored ? '-mirrored' : '';
+    return `tile-a${fmtNum(a)}-b${fmtNum(b)}${suffix}.stl`;
 }

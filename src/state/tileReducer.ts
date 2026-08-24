@@ -44,6 +44,8 @@ export type TileState = {
     spectreCurveMode: SpectreCurveMode;
     a: number;
     b: number;
+    /** Reflect Tile(a,b) across its local Y axis. Spectre mode does not use this. */
+    mirrored: boolean;
     zoom: number;
     toggles: Toggles;
     presetName: string; // includes the sentinel 'custom'
@@ -59,6 +61,7 @@ export const initialTileState: TileState = {
     spectreCurveMode: 'cubicBezier',
     a: 1,
     b: SQRT3, // Hat
+    mirrored: false,
     zoom: 1,
     toggles: {
         showGrid: false,
@@ -89,6 +92,7 @@ export type TileAction =
     | { type: 'setA'; value: number }
     | { type: 'setB'; value: number }
     | { type: 'setRatio'; ratio: number }
+    | { type: 'setMirrored'; mirrored: boolean }
     | { type: 'setZoom'; zoom: number }
     | { type: 'setRotation'; deg: number }
     | { type: 'applyPreset'; preset: Preset }
@@ -158,6 +162,9 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
 
         case 'setRatio':
             return custom(state, { a: 1, b: nonNegative(action.ratio) });
+
+        case 'setMirrored':
+            return { ...state, mirrored: action.mirrored };
 
         case 'setZoom':
             return { ...state, zoom: clampZoom(action.zoom) };

@@ -6,6 +6,7 @@ import { ModeToggle } from './ModeToggle';
 import { ShapeToggle, SpectrePatchSelect } from './PatchSelect';
 import { PresetGrid } from './PresetGrid';
 import { RatioControl } from './RatioControl';
+import { ReflectionToggle } from './ReflectionToggle';
 import { RotationControl } from './RotationControl';
 import { StlExportPanel } from './StlExportPanel';
 import { ZoomControl } from './ZoomControl';
@@ -34,6 +35,7 @@ export function ControlsPanel() {
                 {isTile && <ModeToggle />}
                 {isTile && parameterMode === 'independent' && <IndependentControls />}
                 {isTile && parameterMode === 'ratio' && <RatioControl />}
+                {isTile && <ReflectionToggle />}
                 <ZoomControl />
                 <RotationControl />
             </section>

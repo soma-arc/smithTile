@@ -22,7 +22,12 @@ import {
     smithTileWorldVertices,
     validateParameters,
 } from './smithTile';
-import { applyTransform, createTransform, IDENTITY_TRANSFORM } from './Transform';
+import {
+    applyTransform,
+    createReflectionTransform,
+    createTransform,
+    IDENTITY_TRANSFORM,
+} from './Transform';
 import type { Vec2 } from './Vec2';
 
 const TOL = 1e-9;
@@ -195,6 +200,13 @@ describe('Transform', () => {
         const r = applyTransform(t, { x: 1, y: 0 });
         expect(r.x).toBeCloseTo(10, 9);
         expect(r.y).toBeCloseTo(7, 9);
+    });
+
+    it('reflects across the local Y axis', () => {
+        expect(applyTransform(createReflectionTransform(), { x: 2, y: 3 })).toEqual({
+            x: -2,
+            y: 3,
+        });
     });
 
     it('places the tile in world space via smithTileWorldVertices (translation)', () => {

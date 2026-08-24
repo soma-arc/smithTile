@@ -11,6 +11,9 @@ export interface Strings {
     aEdges: string;
     bEdges: string;
     ratioLabel: string;
+    orientation: string;
+    orientationNormal: string;
+    orientationMirrored: string;
     zoom: string;
     rotation: string;
     shape: string;
@@ -67,6 +70,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         aEdges: 'A辺 ×8',
         bEdges: 'B辺 ×6',
         ratioLabel: '比率 b / a',
+        orientation: '向き',
+        orientationNormal: '通常',
+        orientationMirrored: '鏡像',
         zoom: '表示スケール',
         rotation: '回転',
         shape: '図形',
@@ -122,6 +128,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         aEdges: 'A-edges ×8',
         bEdges: 'B-edges ×6',
         ratioLabel: 'Ratio b / a',
+        orientation: 'Orientation',
+        orientationNormal: 'Normal',
+        orientationMirrored: 'Mirrored',
         zoom: 'View scale',
         rotation: 'Rotation',
         shape: 'Shape',

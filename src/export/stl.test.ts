@@ -40,6 +40,14 @@ describe('tileSolid', () => {
         }
     });
 
+    it('keeps a mirrored tile watertight', () => {
+        const solid = tileSolid(1, Math.sqrt(3), {
+            ...DEFAULT_STL_OPTIONS,
+            mirrored: true,
+        });
+        expect(nonManifoldEdges(solid)).toEqual([]);
+    });
+
     it('has the volume of its outline times the thickness', () => {
         const opts = { thickness: 4, unitMm: 10 };
         for (const preset of PRESETS) {
@@ -96,5 +104,6 @@ describe('stlFilename', () => {
     it('names the file after the parameters it was built from', () => {
         expect(stlFilename(1, 1)).toBe('tile-a1-b1.stl');
         expect(stlFilename(1, Math.sqrt(3))).toBe('tile-a1-b1.7321.stl');
+        expect(stlFilename(1, 1, true)).toBe('tile-a1-b1-mirrored.stl');
     });
 });

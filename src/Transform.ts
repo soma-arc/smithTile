@@ -49,6 +49,18 @@ export function createTransform(position: Vec2, rotation: number, scale = 1): Tr
     };
 }
 
+/** Reflect local geometry across the Y axis: `(x, y) ↦ (-x, y)`. */
+export function createReflectionTransform(): Transform {
+    return {
+        m00: -1,
+        m01: 0,
+        m10: 0,
+        m11: 1,
+        tx: 0,
+        ty: 0,
+    };
+}
+
 /** Map a local point into world space, including translation. */
 export function applyTransform(t: Transform, p: Vec2): Vec2 {
     return {

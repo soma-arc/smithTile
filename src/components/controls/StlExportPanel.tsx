@@ -10,14 +10,20 @@ import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
 
 export function StlExportPanel() {
-    const { lang, a, b } = useTileState();
+    const { lang, a, b, mirrored } = useTileState();
     const t = TRANSLATIONS[lang];
 
     return (
         <button
             type="button"
             className="btn btn-primary"
-            onClick={() => downloadBytes(tileStl(a, b), stlFilename(a, b), STL_MIME_TYPE)}
+            onClick={() =>
+                downloadBytes(
+                    tileStl(a, b, { mirrored }),
+                    stlFilename(a, b, mirrored),
+                    STL_MIME_TYPE,
+                )
+            }
         >
             {t.saveStl}
         </button>
