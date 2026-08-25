@@ -2,6 +2,7 @@
  * SmithPatch — articulated patch composition and prebuilt patch definitions.
  */
 
+import { createSmithTile, type SmithTile } from './smithTile';
 import {
     applyTransform,
     applyTransformAngle,
@@ -10,7 +11,6 @@ import {
     IDENTITY_TRANSFORM,
     type Transform,
 } from './Transform';
-import { createSmithTile, type SmithTile } from './smithTile';
 import { subVec2, type Vec2 } from './Vec2';
 
 /**
@@ -148,13 +148,14 @@ export function getPortFromVertex(tile: SmithTile, vertexIndex: number): Port {
     if (vertex.portCandidate === null) {
         throw new Error(`Vertex ${vertexIndex} is not a port candidate`);
     }
-    return {
-        position: applyTransform(tile.transform, vertex.position),
+    const localPort: Port = {
+        position: vertex.position,
         inwardAngleRad:
             vertex.inwardDirection !== null
                 ? vertex.interiorAngle + (vertex.inwardDirection * Math.PI) / 6
                 : 0,
     };
+    return transformPort(tile.transform, localPort);
 }
 
 const ARTICULATED_PLUG_VERTEX_INDEX = 4;
