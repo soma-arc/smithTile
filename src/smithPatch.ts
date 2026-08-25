@@ -143,7 +143,7 @@ function applyPatch(fn: SmithPatch, args: readonly SmithPatch[]): SmithPatch {
     return result;
 }
 
-function getPortFromVertex(tile: SmithTile, vertexIndex: number): Port {
+export function getPortFromVertex(tile: SmithTile, vertexIndex: number): Port {
     const vertex = tile.shape.vertices[vertexIndex];
     if (vertex.portCandidate === null) {
         throw new Error(`Vertex ${vertexIndex} is not a port candidate`);
