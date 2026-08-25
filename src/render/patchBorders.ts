@@ -15,6 +15,7 @@ import type { Vec2 } from '../Vec2';
 
 export type ComponentBoundaryEdge = { tile: SmithTile; edgeIndex: number };
 export type ComponentBorder = { color: string; edges: ComponentBoundaryEdge[] };
+export type ComponentColorGroup = { fill: string; tiles: readonly SmithTile[] };
 
 /** Quantize a coordinate so endpoints computed via different transform paths
  *  (accumulated float error under 30°-multiple rotations) still match. */
@@ -38,8 +39,8 @@ function edgeKey(p: Vec2, q: Vec2): string {
  * resolved from the straight skeleton, while the eventual boundary appearance
  * remains a rendering concern.
  */
-export function componentBorders(patch: SmithPatch): ComponentBorder[] {
-    return patchColorGroups(patch).map(({ fill, tiles }) => {
+export function colorGroupBorders(groups: readonly ComponentColorGroup[]): ComponentBorder[] {
+    return groups.map(({ fill, tiles }) => {
         // Tally each undirected skeleton edge; remember its tile/edge reference
         // so rendering can apply any compatible canonical edge curve later.
         const count = new Map<string, number>();
@@ -60,4 +61,8 @@ export function componentBorders(patch: SmithPatch): ComponentBorder[] {
         }
         return { color: fill, edges };
     });
+}
+
+export function componentBorders(patch: SmithPatch): ComponentBorder[] {
+    return colorGroupBorders(patchColorGroups(patch));
 }

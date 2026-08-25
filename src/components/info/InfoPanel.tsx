@@ -3,6 +3,7 @@ import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
 import { polykiteValid } from '../../kiteGrid';
 import { closureError, createSmithTile, isAperiodic, SQRT3 } from '../../smithTile';
+import { ARTICULATED_WORMS } from '../../spectreWorm';
 import { IDENTITY_TRANSFORM } from '../../Transform';
 import { Tag } from '../ui/Tag';
 import { SpectreCurveEditor } from './SpectreCurveEditor';
@@ -21,6 +22,37 @@ const POLYKITE_NO_TAG = {
 export function InfoPanel() {
     const { a: tileA, b: tileB, lang, shape } = useTileState();
     const t = TRANSLATIONS[lang];
+    if (shape.kind === 'articulatedWorm') {
+        const worm = ARTICULATED_WORMS[shape.worm];
+        return (
+            <aside className="info">
+                <h6>{t.info}</h6>
+                <div>
+                    <div className="info-stat-label">Articulated Worm</div>
+                    <div className="info-stat-value">{shape.worm}</div>
+                </div>
+                <hr className="hr" style={{ margin: '2px 0' }} />
+                <div className="info-list">
+                    <div className="info-row">
+                        <span className="k">{t.family}</span>
+                        <span className="v">{t.articulated}</span>
+                    </div>
+                    <div className="info-row">
+                        <span className="k">{t.tileCount}</span>
+                        <span className="v">{worm.tiles.length}</span>
+                    </div>
+                    <div className="info-row">
+                        <span className="k">{t.frontEnd}</span>
+                        <span className="v">{worm.front.atomKind}</span>
+                    </div>
+                    <div className="info-row">
+                        <span className="k">{t.rearEnd}</span>
+                        <span className="v">{worm.rear.atomKind}</span>
+                    </div>
+                </div>
+            </aside>
+        );
+    }
     const isSpectre = shape.kind === 'spectre';
     const a = isSpectre ? 1 : tileA;
     const b = isSpectre ? 1 : tileB;

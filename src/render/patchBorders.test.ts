@@ -5,7 +5,8 @@
 import { describe, expect, it } from 'vitest';
 import { colorMap, N0, SPECTRE_PATCHES } from '../smithPatch';
 import { EDGE_COUNT, smithTileWorldVertices } from '../smithTile';
-import { componentBorders } from './patchBorders';
+import { ARTICULATED_WORMS, wormColorGroups } from '../spectreWorm';
+import { colorGroupBorders, componentBorders } from './patchBorders';
 
 const EPS = 1e-6;
 const ptKey = (p: { x: number; y: number }) => `${Math.round(p.x / EPS)},${Math.round(p.y / EPS)}`;
@@ -54,6 +55,15 @@ describe('componentBorders', () => {
             expect(tiles.has(tile)).toBe(true);
             expect(edgeIndex).toBeGreaterThanOrEqual(0);
             expect(edgeIndex).toBeLessThan(EDGE_COUNT);
+        }
+    });
+
+    it('extracts an outline for every worm atom component', () => {
+        const groups = wormColorGroups(ARTICULATED_WORMS.I1);
+        const borders = colorGroupBorders(groups);
+        expect(borders).toHaveLength(groups.length);
+        for (const border of borders) {
+            expect(border.edges.length).toBeGreaterThan(0);
         }
     });
 });

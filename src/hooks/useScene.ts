@@ -2,10 +2,11 @@
 
 import { useMemo } from 'react';
 import { createCamera, createFitCamera } from '../render/camera';
-import { componentBorders } from '../render/patchBorders';
+import { colorGroupBorders, componentBorders } from '../render/patchBorders';
 import { buildScene, type Overlays, type Scene } from '../render/scene';
 import { patchColorGroups, SPECTRE_PATCHES } from '../smithPatch';
-import { createSmithTile, smithTileWorldVertices, STRAIGHT_CURVE } from '../smithTile';
+import { createSmithTile, STRAIGHT_CURVE, smithTileWorldVertices } from '../smithTile';
+import { ARTICULATED_WORMS, wormColorGroups } from '../spectreWorm';
 import type { TileState } from '../state/tileReducer';
 import { createReflectionTransform, IDENTITY_TRANSFORM } from '../Transform';
 
@@ -25,6 +26,23 @@ export function useScene(state: TileState): Scene {
             angles: toggles.showAngles,
             ports: toggles.showPorts,
         };
+
+        if (shape.kind === 'articulatedWorm') {
+            const worm = ARTICULATED_WORMS[shape.worm];
+            const points = worm.tiles.flatMap((tile) => smithTileWorldVertices(tile));
+            const colorGroups = wormColorGroups(worm);
+            return buildScene(
+                {
+                    tiles: worm.tiles,
+                    overlays,
+                    componentFills: toggles.showComponentColors ? colorGroups : undefined,
+                    componentBorders: toggles.showComponentBorders
+                        ? colorGroupBorders(colorGroups)
+                        : undefined,
+                },
+                createFitCamera(points, zoom, rotationDeg),
+            );
+        }
 
         // A selected Spectre patch renders its full tile list (fit to its extent)
         // and connection ports. Tile(a,b) and a single Spectre use the fixed frame.
@@ -57,11 +75,7 @@ export function useScene(state: TileState): Scene {
         const isSpectre = shape.kind === 'spectre';
         const tile = isSpectre
             ? createSmithTile(1, 1, IDENTITY_TRANSFORM)
-            : createSmithTile(
-                  a,
-                  b,
-                  mirrored ? createReflectionTransform() : IDENTITY_TRANSFORM,
-              );
+            : createSmithTile(a, b, mirrored ? createReflectionTransform() : IDENTITY_TRANSFORM);
         return buildScene(
             {
                 tiles: [tile],

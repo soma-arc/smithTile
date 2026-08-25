@@ -6,11 +6,15 @@
 import type { Lang } from '../i18n';
 import type { SpectrePatchKey } from '../smithPatch';
 import { type CurveSpec, DEFAULT_SPECTRE_CURVE, type Preset, SQRT3 } from '../smithTile';
+import type { ArticulatedWormKey } from '../spectreWorm';
 import type { Vec2 } from '../Vec2';
 
 export type ParameterMode = 'ratio' | 'independent';
 export type SpectreCurveMode = 'straight' | 'cubicBezier';
-export type ShapeSelection = { kind: 'tile' } | { kind: 'spectre'; patch: SpectrePatchKey | null };
+export type ShapeSelection =
+    | { kind: 'tile' }
+    | { kind: 'spectre'; patch: SpectrePatchKey | null }
+    | { kind: 'articulatedWorm'; worm: ArticulatedWormKey };
 
 /** Camera zoom bounds, shared by the slider and mouse-wheel zoom. */
 export const ZOOM_MIN = 0.35;
@@ -86,6 +90,7 @@ export type TileAction =
     | { type: 'setParameterMode'; mode: ParameterMode }
     | { type: 'setShape'; shape: ShapeSelection['kind'] }
     | { type: 'setSpectrePatch'; patch: SpectrePatchKey | null }
+    | { type: 'setArticulatedWorm'; worm: ArticulatedWormKey }
     | { type: 'setSpectreControlPoint'; point: 'c1' | 'c2'; value: Vec2 }
     | { type: 'setSpectreCurveMode'; mode: SpectreCurveMode }
     | { type: 'resetSpectreCurve' }
@@ -126,11 +131,16 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 shape:
                     action.shape === 'spectre'
                         ? { kind: 'spectre', patch: null }
-                        : { kind: 'tile' },
+                        : action.shape === 'articulatedWorm'
+                          ? { kind: 'articulatedWorm', worm: 'E' }
+                          : { kind: 'tile' },
             };
 
         case 'setSpectrePatch':
             return { ...state, shape: { kind: 'spectre', patch: action.patch } };
+
+        case 'setArticulatedWorm':
+            return { ...state, shape: { kind: 'articulatedWorm', worm: action.worm } };
 
         case 'setSpectreControlPoint':
             if (state.spectreCurve.kind !== 'cubicBezier') return state;

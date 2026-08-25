@@ -19,6 +19,8 @@ export interface Strings {
     shape: string;
     shapeTile: string;
     shapeSpectre: string;
+    shapeArticulatedWorm: string;
+    articulatedWorms: string;
     spectrePatches: string;
     spectreSingle: string;
     spectreCurve: string;
@@ -47,6 +49,10 @@ export interface Strings {
     edgeCount: string;
     closure: string;
     family: string;
+    articulated: string;
+    tileCount: string;
+    frontEnd: string;
+    rearEnd: string;
     aperiodic: string;
     periodic: string;
     polykiteLabel: string;
@@ -78,6 +84,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shape: '図形',
         shapeTile: 'Tile(a, b)',
         shapeSpectre: 'Spectre',
+        shapeArticulatedWorm: 'Worm',
+        articulatedWorms: 'Articulated Worm',
         spectrePatches: 'Spectre パッチ',
         spectreSingle: 'Single',
         spectreCurve: '辺の曲線',
@@ -106,6 +114,10 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         edgeCount: '辺数',
         closure: '閉路誤差',
         family: '分類',
+        articulated: '関節型',
+        tileCount: 'タイル数',
+        frontEnd: '前端',
+        rearEnd: '後端',
         aperiodic: '強非周期 (einstein)',
         periodic: '周期的（例外点）',
         polykiteLabel: 'polykite 表示',
@@ -136,6 +148,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shape: 'Shape',
         shapeTile: 'Tile(a, b)',
         shapeSpectre: 'Spectre',
+        shapeArticulatedWorm: 'Worm',
+        articulatedWorms: 'Articulated worms',
         spectrePatches: 'Spectre patches',
         spectreSingle: 'Single',
         spectreCurve: 'Edge curve',
@@ -164,6 +178,10 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         edgeCount: 'Edges',
         closure: 'Closure error',
         family: 'Class',
+        articulated: 'Articulated',
+        tileCount: 'Tiles',
+        frontEnd: 'Front end',
+        rearEnd: 'Rear end',
         aperiodic: 'Strongly aperiodic (einstein)',
         periodic: 'Periodic (exception)',
         polykiteLabel: 'Polykite view',

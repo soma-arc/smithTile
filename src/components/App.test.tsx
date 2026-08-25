@@ -60,4 +60,22 @@ describe('<App> (state + components wiring)', () => {
         expect(container.querySelector('svg path[d*="C"]')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'STL を保存' })).not.toBeInTheDocument();
     });
+
+    it('selects and draws an articulated worm', async () => {
+        const user = userEvent.setup();
+        const { container } = renderApp();
+
+        await user.click(screen.getByRole('radio', { name: 'Worm' }));
+        await user.click(screen.getByRole('button', { name: 'E:I0' }));
+
+        expect(screen.getByText(/Articulated Worm\s+E:I0/)).toBeInTheDocument();
+        expect(screen.getByText('タイル数')).toBeInTheDocument();
+        expect(container.querySelectorAll('.svg-host svg polygon')).toHaveLength(6);
+        expect(container.querySelectorAll('.svg-host svg polygon[fill="orange"]')).toHaveLength(2);
+        expect(container.querySelectorAll('.svg-host svg polygon[fill="purple"]')).toHaveLength(1);
+        expect(screen.getByRole('checkbox', { name: 'コンポーネント色分け' })).toBeChecked();
+        expect(screen.getByRole('checkbox', { name: 'コンポーネント境界' })).toBeChecked();
+        expect(screen.queryByRole('button', { name: 'STL を保存' })).not.toBeInTheDocument();
+        expect(screen.queryByText('Spectre パッチ')).not.toBeInTheDocument();
+    });
 });

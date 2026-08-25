@@ -3,7 +3,7 @@ import { TRANSLATIONS } from '../../i18n';
 import type { Toggles } from '../../state/tileReducer';
 
 export function DisplayToggles() {
-    const { lang, toggles } = useTileState();
+    const { lang, shape, toggles } = useTileState();
     const dispatch = useTileDispatch();
     const t = TRANSLATIONS[lang];
     const defs: { key: keyof Toggles; label: string }[] = [
@@ -16,10 +16,16 @@ export function DisplayToggles() {
         { key: 'showLengths', label: t.lengths },
         { key: 'showAngles', label: t.angles },
         { key: 'showPorts', label: t.ports },
-        { key: 'showPatchPorts', label: t.patchPorts },
-        { key: 'showComponentColors', label: t.componentColors },
-        { key: 'showComponentBorders', label: t.componentBorders },
     ];
+    if (shape.kind === 'spectre') {
+        defs.push({ key: 'showPatchPorts', label: t.patchPorts });
+    }
+    if (shape.kind === 'spectre' || shape.kind === 'articulatedWorm') {
+        defs.push(
+            { key: 'showComponentColors', label: t.componentColors },
+            { key: 'showComponentBorders', label: t.componentBorders },
+        );
+    }
     return (
         <div>
             {defs.map((d) => (
