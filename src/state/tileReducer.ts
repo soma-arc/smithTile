@@ -18,7 +18,7 @@ export type ShapeSelection =
 
 /** Camera zoom bounds, shared by the slider and mouse-wheel zoom. */
 export const ZOOM_MIN = 0.35;
-export const ZOOM_MAX = 3;
+export const ZOOM_MAX = 10;
 
 /** Clamp a zoom factor into the allowed range. */
 export function clampZoom(z: number): number {
@@ -51,6 +51,8 @@ export type TileState = {
     /** Reflect Tile(a,b) across its local Y axis. Spectre mode does not use this. */
     mirrored: boolean;
     zoom: number;
+    /** Screen-space translation in logical canvas units. */
+    pan: Vec2;
     toggles: Toggles;
     presetName: string; // includes the sentinel 'custom'
     /** Whole-scene rotation in degrees (view control, like zoom). */
@@ -67,6 +69,7 @@ export const initialTileState: TileState = {
     b: SQRT3, // Hat
     mirrored: false,
     zoom: 1,
+    pan: { x: 0, y: 0 },
     toggles: {
         showGrid: false,
         showPolykite: false,
@@ -99,6 +102,7 @@ export type TileAction =
     | { type: 'setRatio'; ratio: number }
     | { type: 'setMirrored'; mirrored: boolean }
     | { type: 'setZoom'; zoom: number }
+    | { type: 'panBy'; delta: Vec2 }
     | { type: 'setRotation'; deg: number }
     | { type: 'applyPreset'; preset: Preset }
     | { type: 'toggle'; key: keyof Toggles };
@@ -128,6 +132,7 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
         case 'setShape':
             return {
                 ...state,
+                pan: { x: 0, y: 0 },
                 shape:
                     action.shape === 'spectre'
                         ? { kind: 'spectre', patch: null }
@@ -137,10 +142,18 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
             };
 
         case 'setSpectrePatch':
-            return { ...state, shape: { kind: 'spectre', patch: action.patch } };
+            return {
+                ...state,
+                pan: { x: 0, y: 0 },
+                shape: { kind: 'spectre', patch: action.patch },
+            };
 
         case 'setArticulatedWorm':
-            return { ...state, shape: { kind: 'articulatedWorm', worm: action.worm } };
+            return {
+                ...state,
+                pan: { x: 0, y: 0 },
+                shape: { kind: 'articulatedWorm', worm: action.worm },
+            };
 
         case 'setSpectreControlPoint':
             if (state.spectreCurve.kind !== 'cubicBezier') return state;
@@ -179,6 +192,15 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
         case 'setZoom':
             return { ...state, zoom: clampZoom(action.zoom) };
 
+        case 'panBy':
+            return {
+                ...state,
+                pan: {
+                    x: state.pan.x + (Number.isFinite(action.delta.x) ? action.delta.x : 0),
+                    y: state.pan.y + (Number.isFinite(action.delta.y) ? action.delta.y : 0),
+                },
+            };
+
         case 'setRotation':
             return { ...state, rotationDeg: action.deg };
 
@@ -189,6 +211,7 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 a: p.a,
                 b: p.b,
                 shape: { kind: 'tile' },
+                pan: { x: 0, y: 0 },
                 presetName: p.key,
                 // Chevron (a = 0) has no finite ratio; force independent mode.
                 parameterMode: p.a === 0 ? 'independent' : state.parameterMode,

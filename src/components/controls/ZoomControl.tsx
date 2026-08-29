@@ -1,6 +1,14 @@
 import { useTileDispatch, useTileState } from '../../hooks/useTileState';
-import { ZOOM_MAX, ZOOM_MIN } from '../../state/tileReducer';
 import { TRANSLATIONS } from '../../i18n';
+import { ZOOM_MAX, ZOOM_MIN } from '../../state/tileReducer';
+
+export function zoomToSlider(zoom: number): number {
+    return Math.log(zoom);
+}
+
+export function sliderToZoom(value: number): number {
+    return Math.exp(value);
+}
 
 export function ZoomControl() {
     const { lang, zoom } = useTileState();
@@ -14,12 +22,15 @@ export function ZoomControl() {
             <input
                 id="zoom-range"
                 type="range"
-                min={ZOOM_MIN}
-                max={ZOOM_MAX}
-                step={0.05}
-                value={zoom}
+                min={zoomToSlider(ZOOM_MIN)}
+                max={zoomToSlider(ZOOM_MAX)}
+                step={0.01}
+                value={zoomToSlider(zoom)}
                 onChange={(e) =>
-                    dispatch({ type: 'setZoom', zoom: Number.parseFloat(e.target.value) })
+                    dispatch({
+                        type: 'setZoom',
+                        zoom: sliderToZoom(Number.parseFloat(e.target.value)),
+                    })
                 }
             />
         </div>

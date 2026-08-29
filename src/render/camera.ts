@@ -21,7 +21,7 @@ export type Camera = {
     /** world point → screen point (within CANVAS_W × CANVAS_H). */
     project(p: Vec2): Vec2;
     viewBox: readonly [number, number, number, number];
-    /** World point shown at the canvas center (the natural rotation pivot). */
+    /** World-space center of the fitted frame and the natural rotation pivot. */
     center: Vec2;
 };
 
@@ -53,7 +53,7 @@ function frameOfPoints(points: readonly Vec2[]): Frame {
 }
 
 /** A camera that fits `frame` into the canvas at `zoom`, rotated about its center. */
-function cameraFromFrame(rf: Frame, zoom: number, rotationDeg: number): Camera {
+function cameraFromFrame(rf: Frame, zoom: number, rotationDeg: number, pan: Vec2): Camera {
     const sc = Math.min((CANVAS_W - 2 * PAD) / rf.w, (CANVAS_H - 2 * PAD) / rf.h) * zoom;
     const rad = (rotationDeg * Math.PI) / 180;
     const cos = Math.cos(rad);
@@ -65,7 +65,10 @@ function cameraFromFrame(rf: Frame, zoom: number, rotationDeg: number): Camera {
             const dy = p.y - rf.cy;
             const rx = dx * cos - dy * sin;
             const ry = dx * sin + dy * cos;
-            return { x: rx * sc + CANVAS_W / 2, y: -ry * sc + CANVAS_H / 2 };
+            return {
+                x: rx * sc + CANVAS_W / 2 + pan.x,
+                y: -ry * sc + CANVAS_H / 2 + pan.y,
+            };
         },
         viewBox: [0, 0, CANVAS_W, CANVAS_H],
         center: { x: rf.cx, y: rf.cy },
@@ -90,15 +93,25 @@ function refFrame(): Frame {
  * invariant to (a, b), so a single tile deforms in place. For a tile reflected
  * across the world Y axis, the reference frame center is reflected as well.
  */
-export function createCamera(zoom: number, rotationDeg = 0, mirrored = false): Camera {
+export function createCamera(
+    zoom: number,
+    rotationDeg = 0,
+    mirrored = false,
+    pan: Vec2 = { x: 0, y: 0 },
+): Camera {
     const frame = refFrame();
-    return cameraFromFrame(mirrored ? { ...frame, cx: -frame.cx } : frame, zoom, rotationDeg);
+    return cameraFromFrame(mirrored ? { ...frame, cx: -frame.cx } : frame, zoom, rotationDeg, pan);
 }
 
 /**
  * Build a camera that fits the given world points (e.g. a whole patch's
  * vertices), for scenes whose extent is not the fixed Hat frame.
  */
-export function createFitCamera(points: readonly Vec2[], zoom = 1, rotationDeg = 0): Camera {
-    return cameraFromFrame(frameOfPoints(points), zoom, rotationDeg);
+export function createFitCamera(
+    points: readonly Vec2[],
+    zoom = 1,
+    rotationDeg = 0,
+    pan: Vec2 = { x: 0, y: 0 },
+): Camera {
+    return cameraFromFrame(frameOfPoints(points), zoom, rotationDeg, pan);
 }

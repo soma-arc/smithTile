@@ -11,8 +11,18 @@ import type { TileState } from '../state/tileReducer';
 import { createReflectionTransform, IDENTITY_TRANSFORM } from '../Transform';
 
 export function useScene(state: TileState): Scene {
-    const { a, b, mirrored, shape, spectreCurve, spectreCurveMode, zoom, rotationDeg, toggles } =
-        state;
+    const {
+        a,
+        b,
+        mirrored,
+        shape,
+        spectreCurve,
+        spectreCurveMode,
+        zoom,
+        pan,
+        rotationDeg,
+        toggles,
+    } = state;
     return useMemo(() => {
         const activeSpectreCurve = spectreCurveMode === 'straight' ? STRAIGHT_CURVE : spectreCurve;
         const overlays: Overlays = {
@@ -40,7 +50,7 @@ export function useScene(state: TileState): Scene {
                         ? colorGroupBorders(colorGroups)
                         : undefined,
                 },
-                createFitCamera(points, zoom, rotationDeg),
+                createFitCamera(points, zoom, rotationDeg, pan),
             );
         }
 
@@ -66,7 +76,7 @@ export function useScene(state: TileState): Scene {
                         ? componentBorders(p)
                         : undefined,
                 },
-                createFitCamera(points, zoom, rotationDeg),
+                createFitCamera(points, zoom, rotationDeg, pan),
             );
         }
 
@@ -82,7 +92,7 @@ export function useScene(state: TileState): Scene {
                 edgeCurve: isSpectre ? activeSpectreCurve : undefined,
                 overlays,
             },
-            createCamera(zoom, rotationDeg, !isSpectre && mirrored),
+            createCamera(zoom, rotationDeg, !isSpectre && mirrored, pan),
         );
-    }, [a, b, mirrored, shape, spectreCurve, spectreCurveMode, zoom, rotationDeg, toggles]);
+    }, [a, b, mirrored, shape, spectreCurve, spectreCurveMode, zoom, pan, rotationDeg, toggles]);
 }

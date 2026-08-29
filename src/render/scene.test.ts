@@ -59,6 +59,13 @@ describe('camera', () => {
         expect(p.x).toBeCloseTo(CANVAS_W / 2, 6); // stays on the vertical center line
         expect(p.y).toBeLessThan(CANVAS_H / 2); // moved upward on screen
     });
+
+    it('applies pan after zoom and rotation in logical screen units', () => {
+        const cam = createCamera(7, 90, false, { x: 35, y: -18 });
+        const p = cam.project(cam.center);
+        expect(p.x).toBeCloseTo(CANVAS_W / 2 + 35, 6);
+        expect(p.y).toBeCloseTo(CANVAS_H / 2 - 18, 6);
+    });
 });
 
 describe('buildScene', () => {
