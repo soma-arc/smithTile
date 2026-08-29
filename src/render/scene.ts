@@ -67,7 +67,20 @@ export type Drawable =
     | { kind: 'text'; at: Vec2; text: string; style: TextStyle };
 
 export type SceneLayer = { id: string; items: Drawable[] };
-export type Scene = { layers: SceneLayer[]; viewBox: readonly [number, number, number, number] };
+export type RegionPlacementInteraction = {
+    kind: 'regionPlacement';
+    targets: readonly {
+        wormIndex: number;
+        movablePolygons: readonly (readonly Vec2[])[];
+        rotationCenter: Vec2;
+        rotationHandle: Vec2;
+    }[];
+};
+export type Scene = {
+    layers: SceneLayer[];
+    viewBox: readonly [number, number, number, number];
+    interaction?: RegionPlacementInteraction;
+};
 
 /** The contract every render backend consumes. */
 export type BackendProps = { scene: Scene };

@@ -3,7 +3,8 @@ import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
 import { polykiteValid } from '../../kiteGrid';
 import { closureError, createSmithTile, isAperiodic, SQRT3 } from '../../smithTile';
-import { ARTICULATED_WORMS } from '../../spectreWorm';
+import { MIRRORED_SPECTRE_REGIONS, regionTiles, SPECTRE_REGIONS } from '../../spectreRegion';
+import { ARTICULATED_WORMS, MIRRORED_ARTICULATED_WORMS } from '../../spectreWorm';
 import { IDENTITY_TRANSFORM } from '../../Transform';
 import { Tag } from '../ui/Tag';
 import { SpectreCurveEditor } from './SpectreCurveEditor';
@@ -20,10 +21,37 @@ const POLYKITE_NO_TAG = {
 };
 
 export function InfoPanel() {
-    const { a: tileA, b: tileB, lang, shape } = useTileState();
+    const { a: tileA, b: tileB, lang, mirrored, shape } = useTileState();
     const t = TRANSLATIONS[lang];
+    if (shape.kind === 'region') {
+        const region = (mirrored ? MIRRORED_SPECTRE_REGIONS : SPECTRE_REGIONS)[shape.region];
+        return (
+            <aside className="info">
+                <h6>{t.info}</h6>
+                <div>
+                    <div className="info-stat-label">Spectre Region</div>
+                    <div className="info-stat-value">{shape.region}</div>
+                </div>
+                <hr className="hr" style={{ margin: '2px 0' }} />
+                <div className="info-list">
+                    <div className="info-row">
+                        <span className="k">{t.regionLevel}</span>
+                        <span className="v">{region.level}</span>
+                    </div>
+                    <div className="info-row">
+                        <span className="k">{t.wormCount}</span>
+                        <span className="v">{region.worms.length}</span>
+                    </div>
+                    <div className="info-row">
+                        <span className="k">{t.tileCount}</span>
+                        <span className="v">{regionTiles(region).length}</span>
+                    </div>
+                </div>
+            </aside>
+        );
+    }
     if (shape.kind === 'articulatedWorm') {
-        const worm = ARTICULATED_WORMS[shape.worm];
+        const worm = (mirrored ? MIRRORED_ARTICULATED_WORMS : ARTICULATED_WORMS)[shape.worm];
         return (
             <aside className="info">
                 <h6>{t.info}</h6>

@@ -21,6 +21,11 @@ export interface Strings {
     shapeSpectre: string;
     shapeArticulatedWorm: string;
     articulatedWorms: string;
+    shapeRegion: string;
+    spectreRegions: string;
+    regionPlacementAuto: string;
+    regionPlacementManual: string;
+    regionPlacementReset: string;
     spectrePatches: string;
     spectreSingle: string;
     spectreCurve: string;
@@ -43,6 +48,7 @@ export interface Strings {
     patchPorts: string;
     componentColors: string;
     componentBorders: string;
+    wormEnds: string;
     legendSocket: string;
     legendPlug: string;
     info: string;
@@ -53,6 +59,8 @@ export interface Strings {
     tileCount: string;
     frontEnd: string;
     rearEnd: string;
+    regionLevel: string;
+    wormCount: string;
     aperiodic: string;
     periodic: string;
     polykiteLabel: string;
@@ -86,6 +94,11 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shapeSpectre: 'Spectre',
         shapeArticulatedWorm: 'Worm',
         articulatedWorms: 'Articulated Worm',
+        shapeRegion: 'Region',
+        spectreRegions: 'Spectre Region',
+        regionPlacementAuto: '自動配置',
+        regionPlacementManual: '手動調整',
+        regionPlacementReset: '配置をリセット',
         spectrePatches: 'Spectre パッチ',
         spectreSingle: 'Single',
         spectreCurve: '辺の曲線',
@@ -108,6 +121,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         patchPorts: 'プラグ/ソケット矢印',
         componentColors: 'コンポーネント色分け',
         componentBorders: 'コンポーネント境界',
+        wormEnds: 'Front / Rear',
         legendSocket: 'ソケット候補 (120°)',
         legendPlug: 'プラグ候補 (240°)',
         info: '情報',
@@ -118,6 +132,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         tileCount: 'タイル数',
         frontEnd: '前端',
         rearEnd: '後端',
+        regionLevel: 'レベル',
+        wormCount: 'Worm数',
         aperiodic: '強非周期 (einstein)',
         periodic: '周期的（例外点）',
         polykiteLabel: 'polykite 表示',
@@ -150,6 +166,11 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shapeSpectre: 'Spectre',
         shapeArticulatedWorm: 'Worm',
         articulatedWorms: 'Articulated worms',
+        shapeRegion: 'Region',
+        spectreRegions: 'Spectre regions',
+        regionPlacementAuto: 'Automatic',
+        regionPlacementManual: 'Manual',
+        regionPlacementReset: 'Reset placement',
         spectrePatches: 'Spectre patches',
         spectreSingle: 'Single',
         spectreCurve: 'Edge curve',
@@ -172,6 +193,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         patchPorts: 'Plug / socket arrows',
         componentColors: 'Component colors',
         componentBorders: 'Component borders',
+        wormEnds: 'Front / Rear',
         legendSocket: 'Socket candidate (120°)',
         legendPlug: 'Plug candidate (240°)',
         info: 'Info',
@@ -182,6 +204,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         tileCount: 'Tiles',
         frontEnd: 'Front end',
         rearEnd: 'Rear end',
+        regionLevel: 'Level',
+        wormCount: 'Worms',
         aperiodic: 'Strongly aperiodic (einstein)',
         periodic: 'Periodic (exception)',
         polykiteLabel: 'Polykite view',

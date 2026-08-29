@@ -128,3 +128,16 @@ export function createCenteredCamera(
     const frame = frameOfPoints(points);
     return cameraFromCenter({ x: frame.cx, y: frame.cy }, zoom, rotationDeg, pan);
 }
+
+/** Invert the camera's rotation, Y flip, and scale for a screen-space drag vector. */
+export function screenDeltaToWorldDelta(delta: Vec2, zoom: number, rotationDeg: number): Vec2 {
+    const scale = referenceScale() * zoom;
+    if (!(scale > 0) || !Number.isFinite(scale)) return { x: 0, y: 0 };
+    const rad = (rotationDeg * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    return {
+        x: (cos * delta.x - sin * delta.y) / scale,
+        y: (-sin * delta.x - cos * delta.y) / scale,
+    };
+}

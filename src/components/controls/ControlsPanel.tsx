@@ -3,7 +3,12 @@ import { TRANSLATIONS } from '../../i18n';
 import { DisplayToggles } from './DisplayToggles';
 import { IndependentControls } from './IndependentControls';
 import { ModeToggle } from './ModeToggle';
-import { ArticulatedWormSelect, ShapeToggle, SpectrePatchSelect } from './PatchSelect';
+import {
+    ArticulatedWormSelect,
+    ShapeToggle,
+    SpectrePatchSelect,
+    SpectreRegionSelect,
+} from './PatchSelect';
 import { PresetGrid } from './PresetGrid';
 import { RatioControl } from './RatioControl';
 import { ReflectionToggle } from './ReflectionToggle';
@@ -17,6 +22,7 @@ export function ControlsPanel() {
     const isTile = shape.kind === 'tile';
     const isSpectre = shape.kind === 'spectre';
     const isArticulatedWorm = shape.kind === 'articulatedWorm';
+    const isRegion = shape.kind === 'region';
     return (
         <aside className="controls">
             <section>
@@ -38,12 +44,19 @@ export function ControlsPanel() {
                 </section>
             )}
 
+            {isRegion && (
+                <section>
+                    <h6>{t.spectreRegions}</h6>
+                    <SpectreRegionSelect />
+                </section>
+            )}
+
             <section>
                 <h6>{t.params}</h6>
                 {isTile && <ModeToggle />}
                 {isTile && parameterMode === 'independent' && <IndependentControls />}
                 {isTile && parameterMode === 'ratio' && <RatioControl />}
-                {isTile && <ReflectionToggle />}
+                {(isTile || isArticulatedWorm || isRegion) && <ReflectionToggle />}
                 <ZoomControl />
                 <RotationControl />
             </section>

@@ -6,15 +6,19 @@
 import type { Lang } from '../i18n';
 import type { SpectrePatchKey } from '../smithPatch';
 import { type CurveSpec, DEFAULT_SPECTRE_CURVE, type Preset, SQRT3 } from '../smithTile';
+import type { SpectreRegionKey } from '../spectreRegion';
 import type { ArticulatedWormKey } from '../spectreWorm';
 import type { Vec2 } from '../Vec2';
 
 export type ParameterMode = 'ratio' | 'independent';
 export type SpectreCurveMode = 'straight' | 'cubicBezier';
+export type RegionPlacementMode = 'auto' | 'manual';
+export type RegionAdjustment = { translation: Vec2; rotationRad: number };
 export type ShapeSelection =
     | { kind: 'tile' }
     | { kind: 'spectre'; patch: SpectrePatchKey | null }
-    | { kind: 'articulatedWorm'; worm: ArticulatedWormKey };
+    | { kind: 'articulatedWorm'; worm: ArticulatedWormKey }
+    | { kind: 'region'; region: SpectreRegionKey };
 
 /** Camera zoom bounds, shared by the slider and mouse-wheel zoom. */
 export const ZOOM_MIN = 0.05;
@@ -38,6 +42,7 @@ export type Toggles = {
     showPatchPorts: boolean;
     showComponentColors: boolean;
     showComponentBorders: boolean;
+    showWormEnds: boolean;
 };
 
 export type TileState = {
@@ -48,11 +53,13 @@ export type TileState = {
     spectreCurveMode: SpectreCurveMode;
     a: number;
     b: number;
-    /** Reflect Tile(a,b) across its local Y axis. Spectre mode does not use this. */
+    /** Reflect source tiles before constructing Tile(a,b), worms, or regions. */
     mirrored: boolean;
     zoom: number;
     /** Screen-space translation in logical canvas units. */
     pan: Vec2;
+    regionPlacementMode: RegionPlacementMode;
+    regionAdjustments: Readonly<Record<number, RegionAdjustment>>;
     toggles: Toggles;
     presetName: string; // includes the sentinel 'custom'
     /** Whole-scene rotation in degrees (view control, like zoom). */
@@ -70,6 +77,8 @@ export const initialTileState: TileState = {
     mirrored: false,
     zoom: 1,
     pan: { x: 0, y: 0 },
+    regionPlacementMode: 'auto',
+    regionAdjustments: {},
     toggles: {
         showGrid: false,
         showPolykite: false,
@@ -83,6 +92,7 @@ export const initialTileState: TileState = {
         showPatchPorts: true,
         showComponentColors: true,
         showComponentBorders: true,
+        showWormEnds: true,
     },
     presetName: 'hat',
     rotationDeg: 0,
@@ -94,6 +104,11 @@ export type TileAction =
     | { type: 'setShape'; shape: ShapeSelection['kind'] }
     | { type: 'setSpectrePatch'; patch: SpectrePatchKey | null }
     | { type: 'setArticulatedWorm'; worm: ArticulatedWormKey }
+    | { type: 'setSpectreRegion'; region: SpectreRegionKey }
+    | { type: 'setRegionPlacementMode'; mode: RegionPlacementMode }
+    | { type: 'moveRegionWorm'; wormIndex: number; delta: Vec2 }
+    | { type: 'rotateRegionWorm'; wormIndex: number; deltaRad: number }
+    | { type: 'resetRegionPlacement' }
     | { type: 'setSpectreControlPoint'; point: 'c1' | 'c2'; value: Vec2 }
     | { type: 'setSpectreCurveMode'; mode: SpectreCurveMode }
     | { type: 'resetSpectreCurve' }
@@ -138,7 +153,9 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                         ? { kind: 'spectre', patch: null }
                         : action.shape === 'articulatedWorm'
                           ? { kind: 'articulatedWorm', worm: 'E' }
-                          : { kind: 'tile' },
+                          : action.shape === 'region'
+                            ? { kind: 'region', region: 'PA1' }
+                            : { kind: 'tile' },
             };
 
         case 'setSpectrePatch':
@@ -153,6 +170,63 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 ...state,
                 pan: { x: 0, y: 0 },
                 shape: { kind: 'articulatedWorm', worm: action.worm },
+            };
+
+        case 'setSpectreRegion':
+            return {
+                ...state,
+                pan: { x: 0, y: 0 },
+                shape: { kind: 'region', region: action.region },
+                regionPlacementMode: action.region.startsWith('TA')
+                    ? 'manual'
+                    : state.regionPlacementMode,
+                regionAdjustments: {},
+            };
+
+        case 'setRegionPlacementMode':
+            return { ...state, regionPlacementMode: action.mode };
+
+        case 'moveRegionWorm': {
+            const current = state.regionAdjustments[action.wormIndex] ?? {
+                translation: { x: 0, y: 0 },
+                rotationRad: 0,
+            };
+            return {
+                ...state,
+                regionAdjustments: {
+                    ...state.regionAdjustments,
+                    [action.wormIndex]: {
+                        ...current,
+                        translation: {
+                            x: current.translation.x + action.delta.x,
+                            y: current.translation.y + action.delta.y,
+                        },
+                    },
+                },
+            };
+        }
+
+        case 'rotateRegionWorm': {
+            const current = state.regionAdjustments[action.wormIndex] ?? {
+                translation: { x: 0, y: 0 },
+                rotationRad: 0,
+            };
+            return {
+                ...state,
+                regionAdjustments: {
+                    ...state.regionAdjustments,
+                    [action.wormIndex]: {
+                        ...current,
+                        rotationRad: current.rotationRad + action.deltaRad,
+                    },
+                },
+            };
+        }
+
+        case 'resetRegionPlacement':
+            return {
+                ...state,
+                regionAdjustments: {},
             };
 
         case 'setSpectreControlPoint':

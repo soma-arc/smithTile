@@ -20,11 +20,14 @@ export function DisplayToggles() {
     if (shape.kind === 'spectre') {
         defs.push({ key: 'showPatchPorts', label: t.patchPorts });
     }
-    if (shape.kind === 'spectre' || shape.kind === 'articulatedWorm') {
+    if (shape.kind === 'spectre' || shape.kind === 'articulatedWorm' || shape.kind === 'region') {
         defs.push(
             { key: 'showComponentColors', label: t.componentColors },
             { key: 'showComponentBorders', label: t.componentBorders },
         );
+    }
+    if (shape.kind === 'region') {
+        defs.push({ key: 'showWormEnds', label: t.wormEnds });
     }
     return (
         <div>
