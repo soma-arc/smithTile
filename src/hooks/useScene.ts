@@ -1,7 +1,7 @@
 /** Derives the (memoized) render Scene from UI state. Replaces the old dirty-guard. */
 
 import { useMemo } from 'react';
-import { createCamera, createFitCamera } from '../render/camera';
+import { createCamera, createCenteredCamera } from '../render/camera';
 import { colorGroupBorders, componentBorders } from '../render/patchBorders';
 import { buildScene, type Overlays, type Scene } from '../render/scene';
 import { patchColorGroups, SPECTRE_PATCHES } from '../smithPatch';
@@ -50,12 +50,12 @@ export function useScene(state: TileState): Scene {
                         ? colorGroupBorders(colorGroups)
                         : undefined,
                 },
-                createFitCamera(points, zoom, rotationDeg, pan),
+                createCenteredCamera(points, zoom, rotationDeg, pan),
             );
         }
 
-        // A selected Spectre patch renders its full tile list (fit to its extent)
-        // and connection ports. Tile(a,b) and a single Spectre use the fixed frame.
+        // A selected Spectre patch renders its full tile list centered on its
+        // extent, at the same Hat-relative scale as every other mode.
         if (shape.kind === 'spectre' && shape.patch) {
             const p = SPECTRE_PATCHES[shape.patch];
             const points = [
@@ -76,7 +76,7 @@ export function useScene(state: TileState): Scene {
                         ? componentBorders(p)
                         : undefined,
                 },
-                createFitCamera(points, zoom, rotationDeg, pan),
+                createCenteredCamera(points, zoom, rotationDeg, pan),
             );
         }
 

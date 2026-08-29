@@ -16,12 +16,14 @@ import type { Vec2 } from '../Vec2';
 export const CANVAS_W = 940;
 export const CANVAS_H = 640;
 const PAD = 54;
+/** Keep zoom=1 comfortably smaller than the original Hat-fitted view. */
+const REFERENCE_SCALE_FACTOR = 0.7;
 
 export type Camera = {
     /** world point → screen point (within CANVAS_W × CANVAS_H). */
     project(p: Vec2): Vec2;
     viewBox: readonly [number, number, number, number];
-    /** World-space center of the fitted frame and the natural rotation pivot. */
+    /** World-space content center and the natural rotation pivot. */
     center: Vec2;
 };
 
@@ -52,17 +54,26 @@ function frameOfPoints(points: readonly Vec2[]): Frame {
     return { cx: (mnx + mxx) / 2, cy: (mny + mxy) / 2, w, h };
 }
 
-/** A camera that fits `frame` into the canvas at `zoom`, rotated about its center. */
-function cameraFromFrame(rf: Frame, zoom: number, rotationDeg: number, pan: Vec2): Camera {
-    const sc = Math.min((CANVAS_W - 2 * PAD) / rf.w, (CANVAS_H - 2 * PAD) / rf.h) * zoom;
+/** Hat-relative scale shared by every tile, patch, and worm camera. */
+function referenceScale(): number {
+    const frame = refFrame();
+    return (
+        Math.min((CANVAS_W - 2 * PAD) / frame.w, (CANVAS_H - 2 * PAD) / frame.h) *
+        REFERENCE_SCALE_FACTOR
+    );
+}
+
+/** A fixed-scale camera rotated about the supplied world-space center. */
+function cameraFromCenter(center: Vec2, zoom: number, rotationDeg: number, pan: Vec2): Camera {
+    const sc = referenceScale() * zoom;
     const rad = (rotationDeg * Math.PI) / 180;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
     return {
-        // Rotate about the frame center, then orthographic-project with the Y flip.
+        // Rotate about the content center, then orthographic-project with the Y flip.
         project: (p) => {
-            const dx = p.x - rf.cx;
-            const dy = p.y - rf.cy;
+            const dx = p.x - center.x;
+            const dy = p.y - center.y;
             const rx = dx * cos - dy * sin;
             const ry = dx * sin + dy * cos;
             return {
@@ -71,7 +82,7 @@ function cameraFromFrame(rf: Frame, zoom: number, rotationDeg: number, pan: Vec2
             };
         },
         viewBox: [0, 0, CANVAS_W, CANVAS_H],
-        center: { x: rf.cx, y: rf.cy },
+        center,
     };
 }
 
@@ -89,7 +100,7 @@ function refFrame(): Frame {
 
 /**
  * Build a camera for the given zoom (1 = fit the Hat frame) and whole-scene
- * rotation in degrees (counterclockwise, about the frame center). The frame is
+ * rotation in degrees (counterclockwise, about the reference center). The frame is
  * invariant to (a, b), so a single tile deforms in place. For a tile reflected
  * across the world Y axis, the reference frame center is reflected as well.
  */
@@ -100,18 +111,20 @@ export function createCamera(
     pan: Vec2 = { x: 0, y: 0 },
 ): Camera {
     const frame = refFrame();
-    return cameraFromFrame(mirrored ? { ...frame, cx: -frame.cx } : frame, zoom, rotationDeg, pan);
+    const center = { x: mirrored ? -frame.cx : frame.cx, y: frame.cy };
+    return cameraFromCenter(center, zoom, rotationDeg, pan);
 }
 
 /**
- * Build a camera that fits the given world points (e.g. a whole patch's
- * vertices), for scenes whose extent is not the fixed Hat frame.
+ * Build a fixed-scale camera centered on the given world points. Point extent
+ * affects only the initial center; it never changes the meaning of `zoom`.
  */
-export function createFitCamera(
+export function createCenteredCamera(
     points: readonly Vec2[],
     zoom = 1,
     rotationDeg = 0,
     pan: Vec2 = { x: 0, y: 0 },
 ): Camera {
-    return cameraFromFrame(frameOfPoints(points), zoom, rotationDeg, pan);
+    const frame = frameOfPoints(points);
+    return cameraFromCenter({ x: frame.cx, y: frame.cy }, zoom, rotationDeg, pan);
 }

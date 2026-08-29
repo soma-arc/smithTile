@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { Ma0 } from '../smithPatch';
 import { createSmithTile, DEFAULT_SPECTRE_CURVE, smithTileWorldVertices } from '../smithTile';
 import { IDENTITY_TRANSFORM } from '../Transform';
-import { CANVAS_H, CANVAS_W, createCamera, createFitCamera } from './camera';
+import { CANVAS_H, CANVAS_W, createCamera, createCenteredCamera } from './camera';
 import { buildScene, type Overlays, type SceneWorld } from './scene';
 
 const NO_OVERLAYS: Overlays = {
@@ -65,6 +65,36 @@ describe('camera', () => {
         const p = cam.project(cam.center);
         expect(p.x).toBeCloseTo(CANVAS_W / 2 + 35, 6);
         expect(p.y).toBeCloseTo(CANVAS_H / 2 - 18, 6);
+    });
+
+    it('uses the same world scale for differently sized contents', () => {
+        const small = createCenteredCamera([
+            { x: 0, y: 0 },
+            { x: 1, y: 1 },
+        ]);
+        const large = createCenteredCamera([
+            { x: -100, y: -20 },
+            { x: 100, y: 20 },
+        ]);
+        const projectedUnit = (cam: ReturnType<typeof createCenteredCamera>) => {
+            const a = cam.project(cam.center);
+            const b = cam.project({ x: cam.center.x + 1, y: cam.center.y });
+            return Math.hypot(b.x - a.x, b.y - a.y);
+        };
+        expect(projectedUnit(small)).toBeCloseTo(projectedUnit(large), 10);
+        expect(projectedUnit(createCenteredCamera([{ x: 0, y: 0 }], 2))).toBeCloseTo(
+            projectedUnit(small) * 2,
+            10,
+        );
+    });
+
+    it('centers content without changing its scale', () => {
+        const cam = createCenteredCamera([
+            { x: 20, y: -8 },
+            { x: 30, y: 12 },
+        ]);
+        expect(cam.center).toEqual({ x: 25, y: 2 });
+        expect(cam.project(cam.center)).toEqual({ x: CANVAS_W / 2, y: CANVAS_H / 2 });
     });
 });
 
@@ -185,7 +215,7 @@ describe('buildScene — Spectre boundary', () => {
 
 describe('buildScene — patches (multiple tiles)', () => {
     const patchPoints = Ma0.tiles.flatMap((t) => smithTileWorldVertices(t));
-    const patchCam = createFitCamera(patchPoints);
+    const patchCam = createCenteredCamera(patchPoints);
     const patchWorld: SceneWorld = {
         tiles: Ma0.tiles,
         overlays: NO_OVERLAYS,

@@ -17,7 +17,7 @@ export type ShapeSelection =
     | { kind: 'articulatedWorm'; worm: ArticulatedWormKey };
 
 /** Camera zoom bounds, shared by the slider and mouse-wheel zoom. */
-export const ZOOM_MIN = 0.35;
+export const ZOOM_MIN = 0.05;
 export const ZOOM_MAX = 10;
 
 /** Clamp a zoom factor into the allowed range. */

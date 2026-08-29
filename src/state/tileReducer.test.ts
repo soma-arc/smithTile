@@ -20,9 +20,9 @@ describe('tileReducer — articulated worm mode', () => {
 });
 
 describe('tileReducer — zoom and pan', () => {
-    it('clamps zoom to the 0.35–10 range', () => {
+    it('clamps zoom to the 0.05–10 range', () => {
         expect(clampZoom(100)).toBe(10);
-        expect(clampZoom(0.1)).toBe(0.35);
+        expect(clampZoom(0.01)).toBe(0.05);
         expect(clampZoom(4.5)).toBe(4.5);
     });
 
