@@ -3,6 +3,7 @@ import { smithTileWorldVertices } from './smithTile';
 import {
     ARTICULATED_WORM_KEYS,
     ARTICULATED_WORMS,
+    concatWorms,
     WORM_COLOR_MAP,
     wormColorGroups,
 } from './spectreWorm';
@@ -36,12 +37,16 @@ describe('ARTICULATED_WORMS', () => {
             'S1',
             'I2',
             'S2',
+            'M1',
+            'N1',
+            'M2',
+            'N2',
         ]);
         expect(ARTICULATED_WORMS.E.tiles).toHaveLength(2);
         expect(ARTICULATED_WORMS.O.tiles).toHaveLength(2);
         expect(ARTICULATED_WORMS.I0.tiles).toHaveLength(1);
         for (const key of ARTICULATED_WORM_KEYS.slice(3)) {
-            expect(ARTICULATED_WORMS[key].components).toHaveLength(2);
+            expect(ARTICULATED_WORMS[key].components?.length).toBeGreaterThan(0);
         }
     });
 
@@ -69,7 +74,7 @@ describe('ARTICULATED_WORMS', () => {
         expectJoined('I0:I0', 0, 4, 1, 10);
     });
 
-    it('flattens every worm into placed, colored atom components', () => {
+    it('partitions every worm into placed color components', () => {
         const tileKey = (tile: (typeof ARTICULATED_WORMS.E.tiles)[number]) =>
             smithTileWorldVertices(tile)
                 .map((point) => `${point.x.toFixed(6)},${point.y.toFixed(6)}`)
@@ -90,6 +95,46 @@ describe('ARTICULATED_WORMS', () => {
         expect(groups.map(({ fill, tiles }) => [fill, tiles.length])).toEqual([
             [WORM_COLOR_MAP.E, 2],
             [WORM_COLOR_MAP.I0, 1],
+        ]);
+    });
+
+    it('colors the first named worms one semantic level below the root', () => {
+        expect(wormColorGroups(ARTICULATED_WORMS.I2).map((group) => group.fill)).toEqual([
+            WORM_COLOR_MAP.O,
+            WORM_COLOR_MAP.S,
+            WORM_COLOR_MAP.I,
+            WORM_COLOR_MAP.S,
+            WORM_COLOR_MAP.I,
+            WORM_COLOR_MAP.S,
+            WORM_COLOR_MAP.E,
+        ]);
+        expect(wormColorGroups(ARTICULATED_WORMS.M2).map((group) => group.fill)).toEqual([
+            WORM_COLOR_MAP.S,
+            WORM_COLOR_MAP.I,
+            WORM_COLOR_MAP.S,
+            WORM_COLOR_MAP.I,
+            WORM_COLOR_MAP.M,
+        ]);
+        expect(wormColorGroups(ARTICULATED_WORMS.N2).map((group) => group.fill)).toEqual([
+            WORM_COLOR_MAP.S,
+            WORM_COLOR_MAP.I,
+            WORM_COLOR_MAP.S,
+        ]);
+        expect(wormColorGroups(ARTICULATED_WORMS.M1).map((group) => group.fill)).toEqual([
+            WORM_COLOR_MAP.I0,
+            WORM_COLOR_MAP.I0,
+        ]);
+    });
+
+    it('concatenates named worms as a flat list of direct components', () => {
+        const combined = concatWorms([ARTICULATED_WORMS.I1, ARTICULATED_WORMS.S1]);
+        expect(combined.components?.map((component) => component.kind)).toEqual(['I', 'S']);
+        expect(combined.tiles).toHaveLength(
+            ARTICULATED_WORMS.I1.tiles.length + ARTICULATED_WORMS.S1.tiles.length,
+        );
+        expect(wormColorGroups(combined).map((group) => group.fill)).toEqual([
+            WORM_COLOR_MAP.I,
+            WORM_COLOR_MAP.S,
         ]);
     });
 });

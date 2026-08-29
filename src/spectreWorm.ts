@@ -11,6 +11,7 @@ import { subVec2 } from './Vec2';
 
 export type WormFamily = 'articulated' | 'wriggly';
 export type WormAtomKind = 'E' | 'O' | 'I0';
+export type WormKind = 'I' | 'S' | 'N' | 'M';
 
 const OddSpectreHat = createSmithTile(1, Math.sqrt(3), IDENTITY_TRANSFORM);
 
@@ -23,28 +24,26 @@ export type WormEnd = {
 
 export type Worm = {
     family: WormFamily;
-    kind?: WormAtomKind;
+    kind?: WormAtomKind | WormKind;
 
     tiles: readonly SmithTile[];
 
     front: WormEnd;
     rear: WormEnd;
 
-    components?: readonly Worm[];
+    /** Placed, named worms directly below this worm's semantic level. */
+    components?: readonly NamedWorm[];
     transform: Transform;
 };
+
+export type NamedWorm = Worm & { kind: WormAtomKind | WormKind };
 
 type EmptyWorm = {
     type: 'empty';
     kind: 'S0';
 };
 
-type WormValue = Worm | EmptyWorm;
-
-const S0: EmptyWorm = {
-    type: 'empty',
-    kind: 'S0',
-};
+type WormValue = NamedWorm | EmptyWorm;
 
 type JoinRule = {
     parentVertexIndex: number;
@@ -102,7 +101,7 @@ function tileGroupAttachmentTransform(
     return createTransform(translation, childRotationRad);
 }
 
-function transformWorm(worm: Worm, transform: Transform): Worm {
+function transformWorm(worm: NamedWorm, transform: Transform): NamedWorm {
     return {
         ...worm,
         tiles: worm.tiles.map((tile) => ({
@@ -114,48 +113,12 @@ function transformWorm(worm: Worm, transform: Transform): Worm {
     };
 }
 
-function concat(a: Worm, b: Worm): Worm {
-    const rule = JOIN_RULES[`${a.rear.atomKind}:${b.front.atomKind}`];
-
-    if (!rule) {
-        throw new Error(`Unsupported worm concatenation: ${a.rear.atomKind} + ${b.front.atomKind}`);
-    }
-
-    const childTransform = tileGroupAttachmentTransform(
-        a.tiles,
-        {
-            tileIndex: a.rear.tileIndex,
-            vertexIndex: rule.parentVertexIndex,
-        },
-        b.tiles,
-        {
-            tileIndex: b.front.tileIndex,
-            vertexIndex: rule.childVertexIndex,
-        },
-    );
-    const placedChild = transformWorm(b, childTransform);
-    const tiles = [...a.tiles, ...placedChild.tiles];
-
-    return {
-        family: a.family,
-        kind: undefined,
-        tiles,
-        transform: a.transform,
-        front: a.front,
-        rear: {
-            atomKind: b.rear.atomKind,
-            tileIndex: a.tiles.length + b.rear.tileIndex,
-        },
-        components: [a, placedChild],
-    };
-}
-
 function createAtom(
     kind: WormAtomKind,
     tiles: readonly SmithTile[],
     frontTileIndex: number,
     rearTileIndex: number,
-): Worm {
+): NamedWorm {
     return {
         family: 'articulated',
         kind,
@@ -178,34 +141,79 @@ const OTiles = attachTileGroup(
     { tileIndex: 0, vertexIndex: 12 },
 );
 
-const E: Worm = createAtom('E', ETiles, 0, 1);
-const O: Worm = createAtom('O', OTiles, 0, 1);
+const E = createAtom('E', ETiles, 0, 1);
+const O = createAtom('O', OTiles, 0, 1);
+const S0: EmptyWorm = {
+    type: 'empty',
+    kind: 'S0',
+};
 
-const I0: Worm = createAtom('I0', [EvenSpectreTurtle], 0, 0);
+const I0 = createAtom('I0', [EvenSpectreTurtle], 0, 0);
 
-function concatWorms(parts: readonly WormValue[]): WormValue {
-    const worms = parts.filter((x): x is Worm => !('type' in x && x.type === 'empty'));
+/** Concatenate named worms while retaining them as the direct semantic children. */
+export function concatWorms(worms: readonly NamedWorm[]): Worm {
+    const first = worms[0];
+    if (!first) throw new Error('concatWorms: expected at least one worm');
 
-    if (worms.length === 0) {
-        return S0;
+    const tiles: SmithTile[] = [...first.tiles];
+    const components: NamedWorm[] = [first];
+    let rear = first.rear;
+
+    for (const child of worms.slice(1)) {
+        const rule = JOIN_RULES[`${rear.atomKind}:${child.front.atomKind}`];
+        if (!rule) {
+            throw new Error(
+                `Unsupported worm concatenation: ${rear.atomKind} + ${child.front.atomKind}`,
+            );
+        }
+
+        const childTransform = tileGroupAttachmentTransform(
+            tiles,
+            { tileIndex: rear.tileIndex, vertexIndex: rule.parentVertexIndex },
+            child.tiles,
+            { tileIndex: child.front.tileIndex, vertexIndex: rule.childVertexIndex },
+        );
+        const placedChild = transformWorm(child, childTransform);
+        const tileOffset = tiles.length;
+        tiles.push(...placedChild.tiles);
+        components.push(placedChild);
+        rear = {
+            atomKind: placedChild.rear.atomKind,
+            tileIndex: tileOffset + placedChild.rear.tileIndex,
+        };
     }
 
-    return worms.slice(1).reduce((a, b) => concat(a, b), worms[0]);
+    return {
+        family: first.family,
+        tiles,
+        front: first.front,
+        rear,
+        components,
+        transform: first.transform,
+    };
 }
 
-function nonEmptyWorm(value: WormValue): Worm {
-    if ('type' in value) throw new Error('Expected a non-empty worm');
-    return value;
+function composeWorm(kind: WormKind, parts: readonly WormValue[]): NamedWorm {
+    const worms = parts.filter((part): part is NamedWorm => !('type' in part));
+    return { ...concatWorms(worms), kind };
 }
 
 // OSISISE
-function composeI(S: WormValue, I: WormValue): Worm {
-    return nonEmptyWorm(concatWorms([O, S, I, S, I, S, E]));
+function composeI(S: WormValue, I: WormValue): NamedWorm {
+    return composeWorm('I', [O, S, I, S, I, S, E]);
 }
 
-function composeS(S: WormValue, I: WormValue): Worm {
-    const side = concatWorms([S, I, S, I, S]);
-    return nonEmptyWorm(concatWorms([side, E, S, I, S, O, side]));
+function composeS(S: WormValue, I: WormValue): NamedWorm {
+    const side = [S, I, S, I, S] as const;
+    return composeWorm('S', [...side, E, S, I, S, O, ...side]);
+}
+
+function composeM(S: WormValue, I: WormValue, M: WormValue): NamedWorm {
+    return composeWorm('M', [S, I, S, I, M]);
+}
+
+function composeN(S: WormValue, I: WormValue): NamedWorm {
+    return composeWorm('N', [S, I, S]);
 }
 
 const I1 = composeI(S0, I0);
@@ -213,36 +221,64 @@ const S1 = composeS(S0, I0);
 const I2 = composeI(S1, I1);
 const S2 = composeS(S1, I1);
 
-export const WORM_COLOR_MAP: Record<WormAtomKind, string> = {
+const M0: EmptyWorm = {
+    type: 'empty',
+    kind: 'S0',
+};
+
+const N0: EmptyWorm = {
+    type: 'empty',
+    kind: 'S0',
+};
+
+const M1 = composeM(S0, I0, M0);
+const N1 = composeN(N0, I0);
+
+const M2 = composeM(S1, I1, M1);
+const N2 = composeN(S1, I1);
+
+export const WORM_COLOR_MAP: Record<WormAtomKind | WormKind, string> = {
     E: 'orange',
     O: 'cyan',
     I0: 'purple',
+    I: 'blue',
+    S: 'red',
+    N: 'pink',
+    M: 'green',
 };
 
 export type WormColorGroup = { fill: string; tiles: readonly SmithTile[] };
 
-/** Flatten a composed worm into its placed atom components for rendering. */
+/** Color the semantic components one named worm level below the selected root. */
 export function wormColorGroups(worm: Worm): WormColorGroup[] {
-    if (worm.components && worm.components.length > 0) {
-        return worm.components.flatMap(wormColorGroups);
-    }
-    if (!worm.kind) return [];
-    return [{ fill: WORM_COLOR_MAP[worm.kind], tiles: worm.tiles }];
+    const components = worm.components?.length
+        ? worm.components
+        : worm.kind
+          ? [worm as NamedWorm]
+          : [];
+    return components.map((component) => ({
+        fill: WORM_COLOR_MAP[component.kind],
+        tiles: component.tiles,
+    }));
 }
 
 export const ARTICULATED_WORMS = {
     E,
     O,
     I0,
-    'E:I0': concat(E, I0),
-    'O:I0': concat(O, I0),
-    'I0:E': concat(I0, E),
-    'I0:O': concat(I0, O),
-    'I0:I0': concat(I0, I0),
+    'E:I0': concatWorms([E, I0]),
+    'O:I0': concatWorms([O, I0]),
+    'I0:E': concatWorms([I0, E]),
+    'I0:O': concatWorms([I0, O]),
+    'I0:I0': concatWorms([I0, I0]),
     I1,
     S1,
     I2,
     S2,
+    M1,
+    N1,
+    M2,
+    N2,
 } satisfies Record<string, Worm>;
 
 export type ArticulatedWormKey = keyof typeof ARTICULATED_WORMS;
