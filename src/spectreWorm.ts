@@ -3,6 +3,7 @@ import { createSmithTile, type SmithTile } from './smithTile';
 import {
     applyTransform,
     composeTransforms,
+    createReflectionTransform,
     createTransform,
     IDENTITY_TRANSFORM,
     type Transform,
@@ -12,10 +13,6 @@ import { subVec2 } from './Vec2';
 export type WormFamily = 'articulated' | 'wriggly';
 export type WormAtomKind = 'E' | 'O' | 'I0';
 export type WormKind = 'I' | 'S' | 'N' | 'M';
-
-const OddSpectreHat = createSmithTile(1, Math.sqrt(3), IDENTITY_TRANSFORM);
-
-const EvenSpectreTurtle = createSmithTile(Math.sqrt(3), 1, IDENTITY_TRANSFORM);
 
 export type WormEnd = {
     atomKind: WormAtomKind;
@@ -128,27 +125,29 @@ function createAtom(
         rear: { atomKind: kind, tileIndex: rearTileIndex },
     };
 }
-const ETiles = attachTileGroup(
-    [OddSpectreHat],
-    { tileIndex: 0, vertexIndex: 4 },
-    [EvenSpectreTurtle],
-    { tileIndex: 0, vertexIndex: 12 },
-);
-const OTiles = attachTileGroup(
-    [EvenSpectreTurtle],
-    { tileIndex: 0, vertexIndex: 4 },
-    [OddSpectreHat],
-    { tileIndex: 0, vertexIndex: 12 },
-);
+function createBaseAtoms(partTransform: Transform): { E: NamedWorm; O: NamedWorm; I0: NamedWorm } {
+    const hat = createSmithTile(1, Math.sqrt(3), partTransform);
+    const turtle = createSmithTile(Math.sqrt(3), 1, partTransform);
+    const ETiles = attachTileGroup([hat], { tileIndex: 0, vertexIndex: 4 }, [turtle], {
+        tileIndex: 0,
+        vertexIndex: 12,
+    });
+    const OTiles = attachTileGroup([turtle], { tileIndex: 0, vertexIndex: 4 }, [hat], {
+        tileIndex: 0,
+        vertexIndex: 12,
+    });
 
-const E = createAtom('E', ETiles, 0, 1);
-const O = createAtom('O', OTiles, 0, 1);
+    return {
+        E: createAtom('E', ETiles, 0, 1),
+        O: createAtom('O', OTiles, 0, 1),
+        I0: createAtom('I0', [turtle], 0, 0),
+    };
+}
+
 const S0: EmptyWorm = {
     type: 'empty',
     kind: 'S0',
 };
-
-const I0 = createAtom('I0', [EvenSpectreTurtle], 0, 0);
 
 /** Concatenate named worms while retaining them as the direct semantic children. */
 export function concatWorms(worms: readonly NamedWorm[]): Worm {
@@ -199,11 +198,11 @@ function composeWorm(kind: WormKind, parts: readonly WormValue[]): NamedWorm {
 }
 
 // OSISISE
-function composeI(S: WormValue, I: WormValue): NamedWorm {
+function composeI(E: NamedWorm, O: NamedWorm, S: WormValue, I: WormValue): NamedWorm {
     return composeWorm('I', [O, S, I, S, I, S, E]);
 }
 
-function composeS(S: WormValue, I: WormValue): NamedWorm {
+function composeS(E: NamedWorm, O: NamedWorm, S: WormValue, I: WormValue): NamedWorm {
     const side = [S, I, S, I, S] as const;
     return composeWorm('S', [...side, E, S, I, S, O, ...side]);
 }
@@ -216,11 +215,6 @@ function composeN(S: WormValue, I: WormValue): NamedWorm {
     return composeWorm('N', [S, I, S]);
 }
 
-const I1 = composeI(S0, I0);
-const S1 = composeS(S0, I0);
-const I2 = composeI(S1, I1);
-const S2 = composeS(S1, I1);
-
 const M0: EmptyWorm = {
     type: 'empty',
     kind: 'S0',
@@ -231,11 +225,36 @@ const N0: EmptyWorm = {
     kind: 'S0',
 };
 
-const M1 = composeM(S0, I0, M0);
-const N1 = composeN(N0, I0);
+function createArticulatedWorms(partTransform: Transform) {
+    const { E, O, I0 } = createBaseAtoms(partTransform);
+    const I1 = composeI(E, O, S0, I0);
+    const S1 = composeS(E, O, S0, I0);
+    const I2 = composeI(E, O, S1, I1);
+    const S2 = composeS(E, O, S1, I1);
+    const M1 = composeM(S0, I0, M0);
+    const N1 = composeN(N0, I0);
+    const M2 = composeM(S1, I1, M1);
+    const N2 = composeN(S1, I1);
 
-const M2 = composeM(S1, I1, M1);
-const N2 = composeN(S1, I1);
+    return {
+        E,
+        O,
+        I0,
+        'E:I0': concatWorms([E, I0]),
+        'O:I0': concatWorms([O, I0]),
+        'I0:E': concatWorms([I0, E]),
+        'I0:O': concatWorms([I0, O]),
+        'I0:I0': concatWorms([I0, I0]),
+        I1,
+        S1,
+        I2,
+        S2,
+        M1,
+        N1,
+        M2,
+        N2,
+    } satisfies Record<string, Worm>;
+}
 
 export const WORM_COLOR_MAP: Record<WormAtomKind | WormKind, string> = {
     E: 'orange',
@@ -262,24 +281,8 @@ export function wormColorGroups(worm: Worm): WormColorGroup[] {
     }));
 }
 
-export const ARTICULATED_WORMS = {
-    E,
-    O,
-    I0,
-    'E:I0': concatWorms([E, I0]),
-    'O:I0': concatWorms([O, I0]),
-    'I0:E': concatWorms([I0, E]),
-    'I0:O': concatWorms([I0, O]),
-    'I0:I0': concatWorms([I0, I0]),
-    I1,
-    S1,
-    I2,
-    S2,
-    M1,
-    N1,
-    M2,
-    N2,
-} satisfies Record<string, Worm>;
+export const ARTICULATED_WORMS = createArticulatedWorms(IDENTITY_TRANSFORM);
+export const MIRRORED_ARTICULATED_WORMS = createArticulatedWorms(createReflectionTransform());
 
 export type ArticulatedWormKey = keyof typeof ARTICULATED_WORMS;
 export const ARTICULATED_WORM_KEYS = Object.keys(ARTICULATED_WORMS) as ArticulatedWormKey[];
