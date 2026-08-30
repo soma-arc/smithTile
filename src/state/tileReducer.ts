@@ -177,9 +177,10 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 ...state,
                 pan: { x: 0, y: 0 },
                 shape: { kind: 'region', region: action.region },
-                regionPlacementMode: action.region.startsWith('TA')
-                    ? 'manual'
-                    : state.regionPlacementMode,
+                regionPlacementMode:
+                    action.region.startsWith('TA') || action.region.startsWith('TC')
+                        ? 'manual'
+                        : state.regionPlacementMode,
                 regionAdjustments: {},
             };
 

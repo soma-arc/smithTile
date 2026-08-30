@@ -25,7 +25,7 @@ export type PlacedWorm = {
 };
 
 export type SpectreRegion = {
-    kind: 'PA' | 'TA';
+    kind: 'PA' | 'TA' | 'TC';
     level: number;
     worms: readonly PlacedWorm[];
     transform: Transform;
@@ -129,6 +129,32 @@ function tripleSocketTransform(existing: readonly Port[], childSocket: Port): Tr
     return socketPlacementTransform(first.position, targetAngle, childSocket);
 }
 
+function assertTripleSocketJunction(existing: readonly Port[], third: Port): void {
+    if (existing.length !== 2) {
+        throw new Error(`Expected two sockets before region closure, got ${existing.length}`);
+    }
+    const sockets = [...existing, third];
+    const origin = sockets[0].position;
+    if (
+        sockets.some(
+            (socket) =>
+                Math.hypot(socket.position.x - origin.x, socket.position.y - origin.y) > 1e-6,
+        )
+    ) {
+        throw new Error('Region closure sockets do not share a position');
+    }
+    const directionSum = sockets.reduce(
+        (sum, socket) => ({
+            x: sum.x + Math.cos(socket.inwardAngleRad),
+            y: sum.y + Math.sin(socket.inwardAngleRad),
+        }),
+        { x: 0, y: 0 },
+    );
+    if (Math.hypot(directionSum.x, directionSum.y) > 1e-6) {
+        throw new Error('Region closure sockets are not spaced by 120 degrees');
+    }
+}
+
 function paAttachmentTransform(parent: NamedWorm, child: NamedWorm): Transform {
     const parentSocket = paOTurtleSocket(parent);
     return tripleSocketTransform(
@@ -167,27 +193,19 @@ function taRearSideJunction(m: NamedWorm): readonly [Port, Port] {
     }
     const rearTile = rearSideS.tiles[rearSideS.rear.tileIndex];
     const frontTile = followingI.tiles[followingI.front.tileIndex];
-    assertPortCandidate(rearTile, 12, 'socket');
+    assertPortCandidate(rearTile, 2, 'socket');
     assertPortCandidate(frontTile, 12, 'socket');
-    const rearSocket = getPortFromVertex(rearTile, 12);
+    const rearSocket = getPortFromVertex(rearTile, 2);
     const frontSocket = getPortFromVertex(frontTile, 12);
     if (
         Math.hypot(
             rearSocket.position.x - frontSocket.position.x,
             rearSocket.position.y - frontSocket.position.y,
-        ) < 1e-6
+        ) > 1e-6
     ) {
-        return [rearSocket, frontSocket];
+        throw new Error('Expected S.rear(2) and I.front(12) to share the TA2 junction');
     }
-
-    // Current worm geometry does not yet make the requested 12/12 anchors
-    // coincide. Keep TA2 drawable by using the two sockets that actually meet
-    // at I.front(12); the vertex overlay exposes the upstream mismatch.
-    const actual = coincidentSockets(m, frontSocket.position);
-    if (actual.length !== 2) {
-        throw new Error(`Expected two actual sockets at TA2 junction, got ${actual.length}`);
-    }
-    return [actual[0], actual[1]];
+    return [rearSocket, frontSocket];
 }
 
 function createTA1(m: NamedWorm): SpectreRegion {
@@ -228,6 +246,76 @@ function createTA2(m: NamedWorm): SpectreRegion {
         kind: 'TA',
         level: 2,
         worms: [first, second, { worm: m, transform: thirdTransform }],
+        transform: IDENTITY_TRANSFORM,
+    };
+}
+
+function tcFrontSideJunction(n: NamedWorm): readonly [Port, Port] {
+    assertKind(n, 'N');
+    const components = n.components ?? [];
+    const frontSideSIndex = components.findIndex((component) => component.kind === 'S');
+    const frontSideS = components[frontSideSIndex];
+    const followingI = components[frontSideSIndex + 1];
+    if (!frontSideS || followingI?.kind !== 'I') {
+        throw new Error('Expected front-side S followed by I in N worm');
+    }
+    const rearTile = frontSideS.tiles[frontSideS.rear.tileIndex];
+    const frontTile = followingI.tiles[followingI.front.tileIndex];
+    assertPortCandidate(rearTile, 2, 'socket');
+    assertPortCandidate(frontTile, 12, 'socket');
+    const sSocket = getPortFromVertex(rearTile, 2);
+    const iSocket = getPortFromVertex(frontTile, 12);
+    if (
+        Math.hypot(
+            sSocket.position.x - iSocket.position.x,
+            sSocket.position.y - iSocket.position.y,
+        ) > 1e-6
+    ) {
+        throw new Error('Expected front S.rear(2) and I.front(12) to share the TC2 junction');
+    }
+    return [sSocket, iSocket];
+}
+
+function createTC1(n: NamedWorm): SpectreRegion {
+    assertKind(n, 'N');
+    const anchor = wormFrontSocket(n);
+    const secondTransform = socketPlacementTransform(
+        anchor.position,
+        anchor.inwardAngleRad + (Math.PI * 2) / 3,
+        wormFrontSocket(n),
+    );
+    const thirdTransform = socketPlacementTransform(
+        anchor.position,
+        anchor.inwardAngleRad - (Math.PI * 2) / 3,
+        wormFrontSocket(n),
+    );
+    return {
+        kind: 'TC',
+        level: 1,
+        worms: [
+            { worm: n, transform: IDENTITY_TRANSFORM },
+            { worm: n, transform: secondTransform },
+            { worm: n, transform: thirdTransform },
+        ],
+        transform: IDENTITY_TRANSFORM,
+    };
+}
+
+function createTC2(n: NamedWorm): SpectreRegion {
+    assertKind(n, 'N');
+    const first: PlacedWorm = { worm: n, transform: IDENTITY_TRANSFORM };
+    const secondTransform = tripleSocketTransform(tcFrontSideJunction(n), wormFrontSocket(n));
+    const second: PlacedWorm = { worm: n, transform: secondTransform };
+    const secondJunction = tcFrontSideJunction(n).map((port) =>
+        transformPort(secondTransform, port),
+    );
+    const thirdTransform = tripleSocketTransform(secondJunction, wormFrontSocket(n));
+    const thirdJunction = tcFrontSideJunction(n).map((port) => transformPort(thirdTransform, port));
+    assertTripleSocketJunction(thirdJunction, wormFrontSocket(n));
+    return {
+        kind: 'TC',
+        level: 2,
+        worms: [first, second, { worm: n, transform: thirdTransform }],
         transform: IDENTITY_TRANSFORM,
     };
 }
@@ -375,6 +463,8 @@ export const SPECTRE_REGIONS = {
     PA2: createPA(2, ARTICULATED_WORMS.S2),
     TA1: createTA1(ARTICULATED_WORMS.M1),
     TA2: createTA2(ARTICULATED_WORMS.M2),
+    TC1: createTC1(ARTICULATED_WORMS.N1),
+    TC2: createTC2(ARTICULATED_WORMS.N2),
 } satisfies Record<string, SpectreRegion>;
 
 export const MIRRORED_SPECTRE_REGIONS = {
@@ -382,6 +472,8 @@ export const MIRRORED_SPECTRE_REGIONS = {
     PA2: createPA(2, MIRRORED_ARTICULATED_WORMS.S2),
     TA1: createTA1(MIRRORED_ARTICULATED_WORMS.M1),
     TA2: createTA2(MIRRORED_ARTICULATED_WORMS.M2),
+    TC1: createTC1(MIRRORED_ARTICULATED_WORMS.N1),
+    TC2: createTC2(MIRRORED_ARTICULATED_WORMS.N2),
 } satisfies Record<keyof typeof SPECTRE_REGIONS, SpectreRegion>;
 
 export type SpectreRegionKey = keyof typeof SPECTRE_REGIONS;
