@@ -1,11 +1,11 @@
 import { fmtMath } from '../../format';
 import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
-import { polykiteValid } from '../../kiteGrid';
-import { closureError, createSmithTile, isAperiodic, SQRT3 } from '../../smithTile';
-import { MIRRORED_SPECTRE_REGIONS, regionTiles, SPECTRE_REGIONS } from '../../spectreRegion';
-import { ARTICULATED_WORMS, MIRRORED_ARTICULATED_WORMS } from '../../spectreWorm';
-import { IDENTITY_TRANSFORM } from '../../Transform';
+import { polykiteValid } from '../../geometry/kiteGrid';
+import { closureError, createSmithTile, isAperiodic, SQRT3 } from '../../geometry/smithTile';
+import { MIRRORED_SPECTRE_REGIONS, regionTiles, SPECTRE_REGIONS } from '../../geometry/spectreRegion';
+import { ARTICULATED_WORMS, MIRRORED_ARTICULATED_WORMS } from '../../geometry/spectreWorm';
+import { IDENTITY_TRANSFORM } from '../../geometry/Transform';
 import { Tag } from '../ui/Tag';
 import { SpectreCurveEditor } from './SpectreCurveEditor';
 

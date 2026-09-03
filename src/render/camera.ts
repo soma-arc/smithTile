@@ -8,9 +8,9 @@
  * camera turns. Backend-agnostic (no DOM); consumed by `buildScene`.
  */
 
-import { createSmithTile, SQRT3 } from '../smithTile';
-import { IDENTITY_TRANSFORM } from '../Transform';
-import type { Vec2 } from '../Vec2';
+import { createSmithTile, SQRT3 } from '../geometry/smithTile';
+import { IDENTITY_TRANSFORM } from '../geometry/Transform';
+import type { Vec2 } from '../geometry/Vec2';
 
 /** Logical drawing surface (the SVG/Canvas viewBox). */
 export const CANVAS_W = 940;

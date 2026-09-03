@@ -1,6 +1,6 @@
 import { fmtNum } from '../../format';
 import { useTileDispatch, useTileState } from '../../hooks/useTileState';
-import { PRESETS } from '../../smithTile';
+import { PRESETS } from '../../geometry/smithTile';
 
 export function PresetGrid() {
     const { lang, presetName } = useTileState();

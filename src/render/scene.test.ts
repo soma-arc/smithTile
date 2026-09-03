@@ -4,9 +4,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { Ma0 } from '../smithPatch';
-import { createSmithTile, DEFAULT_SPECTRE_CURVE, smithTileWorldVertices } from '../smithTile';
-import { IDENTITY_TRANSFORM } from '../Transform';
+import { Ma0 } from '../geometry/smithPatch';
+import { createSmithTile, DEFAULT_SPECTRE_CURVE, smithTileWorldVertices } from '../geometry/smithTile';
+import { IDENTITY_TRANSFORM } from '../geometry/Transform';
 import { CANVAS_H, CANVAS_W, createCamera, createCenteredCamera } from './camera';
 import { buildScene, type Overlays, type SceneWorld } from './scene';
 

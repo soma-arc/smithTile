@@ -4,11 +4,11 @@
  */
 
 import type { Lang } from '../i18n';
-import type { SpectrePatchKey } from '../smithPatch';
-import { type CurveSpec, DEFAULT_SPECTRE_CURVE, type Preset, SQRT3 } from '../smithTile';
-import type { SpectreRegionKey } from '../spectreRegion';
-import type { ArticulatedWormKey } from '../spectreWorm';
-import type { Vec2 } from '../Vec2';
+import type { SpectrePatchKey } from '../geometry/smithPatch';
+import { type CurveSpec, DEFAULT_SPECTRE_CURVE, type Preset, SQRT3 } from '../geometry/smithTile';
+import type { SpectreRegionKey } from '../geometry/spectreRegion';
+import type { ArticulatedWormKey } from '../geometry/spectreWorm';
+import type { Vec2 } from '../geometry/Vec2';
 
 export type ParameterMode = 'ratio' | 'independent';
 export type SpectreCurveMode = 'straight' | 'cubicBezier';

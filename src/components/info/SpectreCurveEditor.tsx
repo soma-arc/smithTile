@@ -2,7 +2,7 @@ import { type PointerEvent as ReactPointerEvent, useRef, useState } from 'react'
 import { useTileDispatch, useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
 import type { SpectreCurveMode } from '../../state/tileReducer';
-import type { Vec2 } from '../../Vec2';
+import type { Vec2 } from '../../geometry/Vec2';
 import { Segmented } from '../ui/Segmented';
 
 type ControlPoint = 'c1' | 'c2';

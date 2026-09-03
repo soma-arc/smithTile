@@ -11,7 +11,7 @@
  * Pure and DOM-free.
  */
 
-import type { Vec2 } from '../Vec2';
+import type { Vec2 } from '../geometry/Vec2';
 
 /** Default tolerance, in tile units (the polygon is cleaned before scaling). */
 const DEFAULT_EPS = 1e-9;

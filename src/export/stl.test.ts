@@ -1,8 +1,8 @@
 import { geometries, measurements } from '@jscad/modeling';
 import type { Geom3 } from '@jscad/modeling/src/geometries/types';
 import { describe, expect, it } from 'vitest';
-import { createSmithTile, PRESETS, polygonArea, smithTileWorldVertices } from '../smithTile';
-import { IDENTITY_TRANSFORM } from '../Transform';
+import { createSmithTile, PRESETS, polygonArea, smithTileWorldVertices } from '../geometry/smithTile';
+import { IDENTITY_TRANSFORM } from '../geometry/Transform';
 import { cleanPolygon } from './polygon2d';
 import { DEFAULT_STL_OPTIONS, stlFilename, tileSolid, tileStl } from './stl';
 

@@ -4,7 +4,7 @@ import { useTileDispatch, useTileState } from '../../hooks/useTileState';
 import { CanvasBackend } from '../../render/backends/CanvasBackend';
 import { SvgBackend } from '../../render/backends/SvgBackend';
 import { screenDeltaToWorldDelta } from '../../render/camera';
-import type { Vec2 } from '../../Vec2';
+import type { Vec2 } from '../../geometry/Vec2';
 
 export type Backend = 'svg' | 'canvas';
 

@@ -1,6 +1,6 @@
 /** Number formatting helpers for the UI. */
 
-import { SQRT3 } from './smithTile';
+import { SQRT3 } from './geometry/smithTile';
 
 /** Compact numeric formatting: integers stay whole, otherwise up to 4 dp. */
 export function fmtNum(x: number): string {

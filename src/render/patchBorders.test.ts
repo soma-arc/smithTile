@@ -3,9 +3,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { colorMap, N0, SPECTRE_PATCHES } from '../smithPatch';
-import { EDGE_COUNT, smithTileWorldVertices } from '../smithTile';
-import { ARTICULATED_WORMS, wormColorGroups } from '../spectreWorm';
+import { colorMap, N0, SPECTRE_PATCHES } from '../geometry/smithPatch';
+import { EDGE_COUNT, smithTileWorldVertices } from '../geometry/smithTile';
+import { ARTICULATED_WORMS, wormColorGroups } from '../geometry/spectreWorm';
 import { colorGroupBorders, componentBorders } from './patchBorders';
 
 const EPS = 1e-6;

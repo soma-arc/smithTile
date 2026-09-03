@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { createSmithTile, PRESETS, polygonArea, smithTileWorldVertices } from '../smithTile';
-import { IDENTITY_TRANSFORM } from '../Transform';
-import type { Vec2 } from '../Vec2';
+import { createSmithTile, PRESETS, polygonArea, smithTileWorldVertices } from '../geometry/smithTile';
+import { IDENTITY_TRANSFORM } from '../geometry/Transform';
+import type { Vec2 } from '../geometry/Vec2';
 import { cleanPolygon } from './polygon2d';
 
 /** The boundary of a preset tile at its natural placement. */

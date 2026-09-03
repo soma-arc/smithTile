@@ -1,6 +1,6 @@
 import { fmtNum } from '../../format';
 import { useTileState } from '../../hooks/useTileState';
-import { findPreset } from '../../smithTile';
+import { findPreset } from '../../geometry/smithTile';
 
 export function PresetTitle() {
     const { a, b, shape, presetName, lang } = useTileState();

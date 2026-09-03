@@ -2,9 +2,9 @@
 
 import { useTileDispatch, useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
-import { SPECTRE_PATCHES, type SpectrePatchKey } from '../../smithPatch';
-import { SPECTRE_REGION_KEYS } from '../../spectreRegion';
-import { ARTICULATED_WORM_KEYS } from '../../spectreWorm';
+import { SPECTRE_PATCHES, type SpectrePatchKey } from '../../geometry/smithPatch';
+import { SPECTRE_REGION_KEYS } from '../../geometry/spectreRegion';
+import { ARTICULATED_WORM_KEYS } from '../../geometry/spectreWorm';
 import type { RegionPlacementMode, ShapeSelection } from '../../state/tileReducer';
 import { Segmented } from '../ui/Segmented';
 

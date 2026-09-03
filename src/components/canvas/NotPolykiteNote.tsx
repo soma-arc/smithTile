@@ -1,6 +1,6 @@
 import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
-import { polykiteValid } from '../../kiteGrid';
+import { polykiteValid } from '../../geometry/kiteGrid';
 
 export function NotPolykiteNote() {
     const { a: tileA, b: tileB, lang, shape, toggles } = useTileState();

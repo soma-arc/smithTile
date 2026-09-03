@@ -11,8 +11,8 @@ import { extrusions, primitives } from '@jscad/modeling';
 import type { Geom3 } from '@jscad/modeling/src/geometries/types';
 import { serialize } from '@jscad/stl-serializer';
 import { fmtNum } from '../format';
-import { createSmithTile, smithTileWorldVertices } from '../smithTile';
-import { createReflectionTransform, IDENTITY_TRANSFORM } from '../Transform';
+import { createSmithTile, smithTileWorldVertices } from '../geometry/smithTile';
+import { createReflectionTransform, IDENTITY_TRANSFORM } from '../geometry/Transform';
 import { cleanPolygon } from './polygon2d';
 
 export type StlOptions = {

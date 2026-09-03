@@ -19,17 +19,17 @@ import {
     polykiteValid,
     transformedGridKites,
     transformKite,
-} from '../kiteGrid';
-import type { PatchColorGroup, Port } from '../smithPatch';
+} from '../geometry/kiteGrid';
+import type { PatchColorGroup, Port } from '../geometry/smithPatch';
 import {
     type BoundarySegment,
     type CurveSpec,
     type SmithTile,
     smithTileBoundary,
     smithTileWorldVertices,
-} from '../smithTile';
-import { applyTransform, IDENTITY_TRANSFORM } from '../Transform';
-import type { Vec2 } from '../Vec2';
+} from '../geometry/smithTile';
+import { applyTransform, IDENTITY_TRANSFORM } from '../geometry/Transform';
+import type { Vec2 } from '../geometry/Vec2';
 import type { Camera } from './camera';
 import { COLOR } from './colors';
 

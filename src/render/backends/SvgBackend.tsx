@@ -1,7 +1,7 @@
 /** SVG backend — renders a Scene as declarative JSX. */
 
-import type { BoundarySegment } from '../../smithTile';
-import type { Vec2 } from '../../Vec2';
+import type { BoundarySegment } from '../../geometry/smithTile';
+import type { Vec2 } from '../../geometry/Vec2';
 import { assertNever } from '../exhaustive';
 import type { BackendProps, Drawable } from '../scene';
 
