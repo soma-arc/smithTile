@@ -22,6 +22,8 @@ export type WormEnd = {
 export type Worm = {
     family: WormFamily;
     kind?: WormAtomKind | WormKind;
+    /** Recursive generation level; absent only on unnamed concatenation diagnostics. */
+    level?: number;
 
     tiles: readonly SmithTile[];
 
@@ -33,7 +35,15 @@ export type Worm = {
     transform: Transform;
 };
 
-export type NamedWorm = Worm & { kind: WormAtomKind | WormKind };
+export type NamedWorm = Worm & { kind: WormAtomKind | WormKind; level: number };
+
+export type ArticulatedWormLevel = {
+    level: number;
+    I: NamedWorm;
+    S: NamedWorm;
+    M: NamedWorm;
+    N: NamedWorm;
+};
 
 type EmptyWorm = {
     type: 'empty';
@@ -119,6 +129,7 @@ function createAtom(
     return {
         family: 'articulated',
         kind,
+        level: 0,
         tiles,
         transform: IDENTITY_TRANSFORM,
         front: { atomKind: kind, tileIndex: frontTileIndex },
@@ -144,7 +155,7 @@ function createBaseAtoms(partTransform: Transform): { E: NamedWorm; O: NamedWorm
     };
 }
 
-const S0: EmptyWorm = {
+const EMPTY_WORM: EmptyWorm = {
     type: 'empty',
     kind: 'S0',
 };
@@ -192,49 +203,106 @@ export function concatWorms(worms: readonly NamedWorm[]): Worm {
     };
 }
 
-function composeWorm(kind: WormKind, parts: readonly WormValue[]): NamedWorm {
+function composeWorm(kind: WormKind, level: number, parts: readonly WormValue[]): NamedWorm {
     const worms = parts.filter((part): part is NamedWorm => !('type' in part));
-    return { ...concatWorms(worms), kind };
+    return { ...concatWorms(worms), kind, level };
 }
 
 // OSISISE
-function composeI(E: NamedWorm, O: NamedWorm, S: WormValue, I: WormValue): NamedWorm {
-    return composeWorm('I', [O, S, I, S, I, S, E]);
+function composeI(
+    level: number,
+    E: NamedWorm,
+    O: NamedWorm,
+    S: WormValue,
+    I: WormValue,
+): NamedWorm {
+    return composeWorm('I', level, [O, S, I, S, I, S, E]);
 }
 
-function composeS(E: NamedWorm, O: NamedWorm, S: WormValue, I: WormValue): NamedWorm {
+function composeS(
+    level: number,
+    E: NamedWorm,
+    O: NamedWorm,
+    S: WormValue,
+    I: WormValue,
+): NamedWorm {
     const side = [S, I, S, I, S] as const;
-    return composeWorm('S', [...side, E, S, I, S, O, ...side]);
+    return composeWorm('S', level, [...side, E, S, I, S, O, ...side]);
 }
 
-function composeM(S: WormValue, I: WormValue, M: WormValue): NamedWorm {
-    return composeWorm('M', [S, I, S, I, M]);
+function composeM(level: number, S: WormValue, I: WormValue, M: WormValue): NamedWorm {
+    return composeWorm('M', level, [S, I, S, I, M]);
 }
 
-function composeN(S: WormValue, I: WormValue): NamedWorm {
-    return composeWorm('N', [S, I, S]);
+function composeN(level: number, S: WormValue, I: WormValue): NamedWorm {
+    return composeWorm('N', level, [S, I, S]);
 }
 
-const M0: EmptyWorm = {
-    type: 'empty',
-    kind: 'S0',
+type ArticulatedWormState = {
+    I: NamedWorm;
+    S: WormValue;
+    M: WormValue;
 };
 
-const N0: EmptyWorm = {
-    type: 'empty',
-    kind: 'S0',
+type ArticulatedWormSystem = {
+    E: NamedWorm;
+    O: NamedWorm;
+    I0: NamedWorm;
+    levels: readonly ArticulatedWormLevel[];
 };
 
-function createArticulatedWorms(partTransform: Transform) {
+function nextArticulatedWormLevel(
+    level: number,
+    atoms: Pick<ArticulatedWormSystem, 'E' | 'O'>,
+    previous: ArticulatedWormState,
+): ArticulatedWormLevel {
+    return {
+        level,
+        I: composeI(level, atoms.E, atoms.O, previous.S, previous.I),
+        S: composeS(level, atoms.E, atoms.O, previous.S, previous.I),
+        M: composeM(level, previous.S, previous.I, previous.M),
+        N: composeN(level, previous.S, previous.I),
+    };
+}
+
+function createArticulatedWormSystem(
+    maxLevel: number,
+    partTransform: Transform,
+): ArticulatedWormSystem {
+    if (!Number.isInteger(maxLevel) || maxLevel < 0) {
+        throw new Error(`maxLevel must be a non-negative integer, got ${maxLevel}`);
+    }
     const { E, O, I0 } = createBaseAtoms(partTransform);
-    const I1 = composeI(E, O, S0, I0);
-    const S1 = composeS(E, O, S0, I0);
-    const I2 = composeI(E, O, S1, I1);
-    const S2 = composeS(E, O, S1, I1);
-    const M1 = composeM(S0, I0, M0);
-    const N1 = composeN(N0, I0);
-    const M2 = composeM(S1, I1, M1);
-    const N2 = composeN(S1, I1);
+    const levels: ArticulatedWormLevel[] = [];
+    let previous: ArticulatedWormState = {
+        I: I0,
+        S: EMPTY_WORM,
+        M: EMPTY_WORM,
+    };
+
+    for (let level = 1; level <= maxLevel; level++) {
+        const next = nextArticulatedWormLevel(level, { E, O }, previous);
+        levels.push(next);
+        previous = next;
+    }
+
+    return { E, O, I0, levels };
+}
+
+/** Generate every articulated I/S/M/N worm from level 1 through maxLevel. */
+export function createArticulatedWormLevels(
+    maxLevel: number,
+    partTransform: Transform = IDENTITY_TRANSFORM,
+): readonly ArticulatedWormLevel[] {
+    return createArticulatedWormSystem(maxLevel, partTransform).levels;
+}
+
+function createArticulatedWormRegistry(system: ArticulatedWormSystem) {
+    const { E, O, I0 } = system;
+    const [level1, level2] = system.levels;
+    if (!level1 || !level2) {
+        throw new Error('Articulated worm registry requires levels 1 and 2');
+    }
 
     return {
         E,
@@ -245,14 +313,14 @@ function createArticulatedWorms(partTransform: Transform) {
         'I0:E': concatWorms([I0, E]),
         'I0:O': concatWorms([I0, O]),
         'I0:I0': concatWorms([I0, I0]),
-        I1,
-        S1,
-        I2,
-        S2,
-        M1,
-        N1,
-        M2,
-        N2,
+        I1: level1.I,
+        S1: level1.S,
+        I2: level2.I,
+        S2: level2.S,
+        M1: level1.M,
+        N1: level1.N,
+        M2: level2.M,
+        N2: level2.N,
     } satisfies Record<string, Worm>;
 }
 
@@ -281,8 +349,18 @@ export function wormColorGroups(worm: Worm): WormColorGroup[] {
     }));
 }
 
-export const ARTICULATED_WORMS = createArticulatedWorms(IDENTITY_TRANSFORM);
-export const MIRRORED_ARTICULATED_WORMS = createArticulatedWorms(createReflectionTransform());
+const ARTICULATED_WORM_SYSTEM = createArticulatedWormSystem(2, IDENTITY_TRANSFORM);
+const MIRRORED_ARTICULATED_WORM_SYSTEM = createArticulatedWormSystem(
+    2,
+    createReflectionTransform(),
+);
+
+export const ARTICULATED_WORM_LEVELS = ARTICULATED_WORM_SYSTEM.levels;
+export const MIRRORED_ARTICULATED_WORM_LEVELS = MIRRORED_ARTICULATED_WORM_SYSTEM.levels;
+export const ARTICULATED_WORMS = createArticulatedWormRegistry(ARTICULATED_WORM_SYSTEM);
+export const MIRRORED_ARTICULATED_WORMS = createArticulatedWormRegistry(
+    MIRRORED_ARTICULATED_WORM_SYSTEM,
+);
 
 export type ArticulatedWormKey = keyof typeof ARTICULATED_WORMS;
 export const ARTICULATED_WORM_KEYS = Object.keys(ARTICULATED_WORMS) as ArticulatedWormKey[];
