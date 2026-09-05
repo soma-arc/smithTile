@@ -3,8 +3,9 @@
 import { getPortFromVertex, type Port, transformPort } from './smithPatch';
 import { type SmithTile, smithTileWorldVertices } from './smithTile';
 import {
-    ARTICULATED_WORMS,
-    MIRRORED_ARTICULATED_WORMS,
+    ARTICULATED_WORM_LEVELS,
+    type ArticulatedWormLevel,
+    MIRRORED_ARTICULATED_WORM_LEVELS,
     type NamedWorm,
     WORM_COLOR_MAP,
     type WormAtomKind,
@@ -38,6 +39,18 @@ export type WormAdjustment = { translation: Vec2; rotationRad: number };
 function assertKind(worm: NamedWorm, expected: WormKind): void {
     if (worm.kind !== expected) {
         throw new Error(`Expected ${expected} worm, got ${worm.kind}`);
+    }
+}
+
+function assertLevel(worm: NamedWorm, minimum = 1): void {
+    if (!Number.isInteger(worm.level) || worm.level < minimum) {
+        throw new Error(`Expected worm level >= ${minimum}, got ${worm.level}`);
+    }
+}
+
+function assertSameLevel(first: NamedWorm, second: NamedWorm): void {
+    if (first.level !== second.level) {
+        throw new Error(`Expected worms at the same level, got ${first.level} and ${second.level}`);
     }
 }
 
@@ -165,14 +178,16 @@ function paAttachmentTransform(parent: NamedWorm, child: NamedWorm): Transform {
     );
 }
 
-export function createPA(level: number, s: NamedWorm): SpectreRegion {
+export function createPA(s: NamedWorm): SpectreRegion {
+    assertKind(s, 'S');
+    assertLevel(s);
     const first: PlacedWorm = { worm: s, transform: IDENTITY_TRANSFORM };
     const secondTransform = paAttachmentTransform(first.worm, s);
     const second: PlacedWorm = { worm: s, transform: secondTransform };
 
     return {
         kind: 'PA',
-        level,
+        level: s.level,
         worms: [first, second],
         transform: IDENTITY_TRANSFORM,
     };
@@ -205,38 +220,40 @@ function taRearSideJunction(m: NamedWorm): readonly [Port, Port] {
             rearSocket.position.y - frontSocket.position.y,
         ) > 1e-6
     ) {
-        throw new Error('Expected S.rear(2) and I.front(12) to share the TA2 junction');
+        throw new Error('Expected S.rear(2) and I.front(12) to share the TA junction');
     }
     return [rearSocket, frontSocket];
 }
 
-function createTA1(m: NamedWorm): SpectreRegion {
-    assertKind(m, 'M');
-    const anchor = wormFrontSocket(m);
+function createTriadAtFront(kind: 'TA' | 'TC', worm: NamedWorm): SpectreRegion {
+    const anchor = wormFrontSocket(worm);
     const secondTransform = socketPlacementTransform(
         anchor.position,
         anchor.inwardAngleRad + (Math.PI * 2) / 3,
-        wormFrontSocket(m),
+        wormFrontSocket(worm),
     );
     const thirdTransform = socketPlacementTransform(
         anchor.position,
         anchor.inwardAngleRad - (Math.PI * 2) / 3,
-        wormFrontSocket(m),
+        wormFrontSocket(worm),
     );
     return {
-        kind: 'TA',
-        level: 1,
+        kind,
+        level: worm.level,
         worms: [
-            { worm: m, transform: IDENTITY_TRANSFORM },
-            { worm: m, transform: secondTransform },
-            { worm: m, transform: thirdTransform },
+            { worm, transform: IDENTITY_TRANSFORM },
+            { worm, transform: secondTransform },
+            { worm, transform: thirdTransform },
         ],
         transform: IDENTITY_TRANSFORM,
     };
 }
 
-function createTA2(m: NamedWorm): SpectreRegion {
+export function createTA(m: NamedWorm): SpectreRegion {
     assertKind(m, 'M');
+    assertLevel(m);
+    if (m.level === 1) return createTriadAtFront('TA', m);
+
     const first: PlacedWorm = { worm: m, transform: IDENTITY_TRANSFORM };
     const secondTransform = tripleSocketTransform(taRearSideJunction(m), wormFrontSocket(m));
     const second: PlacedWorm = { worm: m, transform: secondTransform };
@@ -244,9 +261,11 @@ function createTA2(m: NamedWorm): SpectreRegion {
         transformPort(secondTransform, port),
     );
     const thirdTransform = tripleSocketTransform(secondJunction, wormFrontSocket(m));
+    const thirdJunction = taRearSideJunction(m).map((port) => transformPort(thirdTransform, port));
+    assertTripleSocketJunction(thirdJunction, wormFrontSocket(m));
     return {
         kind: 'TA',
-        level: 2,
+        level: m.level,
         worms: [first, second, { worm: m, transform: thirdTransform }],
         transform: IDENTITY_TRANSFORM,
     };
@@ -273,38 +292,16 @@ function tcFrontSideJunction(n: NamedWorm): readonly [Port, Port] {
             sSocket.position.y - iSocket.position.y,
         ) > 1e-6
     ) {
-        throw new Error('Expected front S.rear(2) and I.front(12) to share the TC2 junction');
+        throw new Error('Expected front S.rear(2) and I.front(12) to share the TC junction');
     }
     return [sSocket, iSocket];
 }
 
-function createTC1(n: NamedWorm): SpectreRegion {
+export function createTC(n: NamedWorm): SpectreRegion {
     assertKind(n, 'N');
-    const anchor = wormFrontSocket(n);
-    const secondTransform = socketPlacementTransform(
-        anchor.position,
-        anchor.inwardAngleRad + (Math.PI * 2) / 3,
-        wormFrontSocket(n),
-    );
-    const thirdTransform = socketPlacementTransform(
-        anchor.position,
-        anchor.inwardAngleRad - (Math.PI * 2) / 3,
-        wormFrontSocket(n),
-    );
-    return {
-        kind: 'TC',
-        level: 1,
-        worms: [
-            { worm: n, transform: IDENTITY_TRANSFORM },
-            { worm: n, transform: secondTransform },
-            { worm: n, transform: thirdTransform },
-        ],
-        transform: IDENTITY_TRANSFORM,
-    };
-}
+    assertLevel(n);
+    if (n.level === 1) return createTriadAtFront('TC', n);
 
-function createTC2(n: NamedWorm): SpectreRegion {
-    assertKind(n, 'N');
     const first: PlacedWorm = { worm: n, transform: IDENTITY_TRANSFORM };
     const secondTransform = tripleSocketTransform(tcFrontSideJunction(n), wormFrontSocket(n));
     const second: PlacedWorm = { worm: n, transform: secondTransform };
@@ -316,7 +313,7 @@ function createTC2(n: NamedWorm): SpectreRegion {
     assertTripleSocketJunction(thirdJunction, wormFrontSocket(n));
     return {
         kind: 'TC',
-        level: 2,
+        level: n.level,
         worms: [first, second, { worm: n, transform: thirdTransform }],
         transform: IDENTITY_TRANSFORM,
     };
@@ -370,10 +367,9 @@ export function regionWormPivot(region: SpectreRegion, index: number): Vec2 {
 
 export function regionMovableIndices(region: SpectreRegion): number[] {
     if (region.kind === 'PA') return [1];
-    // PB2 is currently a partition workbench: keep its PA2 boundary fixed and
-    // move only the two placed N2 divider worms.
+    // Keep the PA boundary fixed and move only the two placed N dividers.
     if (region.kind === 'PB') return [2, 3];
-    // Likewise, keep the three M2 worms of TA2 fixed in the TB2 workbench.
+    // Likewise, keep the three M worms of the TA boundary fixed in TB.
     if (region.kind === 'TB') return [3, 4, 5];
     return region.worms.map((_, index) => index);
 }
@@ -503,14 +499,14 @@ function rigidPlacementTransform(
     return createTransform(subVec2(targetA, rotatedSourceA), rotationRad);
 }
 
-/** Place N2.rear vertices 3/4/5 on the E Turtle vertices 1/0/13. */
-function paN2DividerTransform(paBoundary: PlacedWorm, n2: NamedWorm): Transform {
+/** Place N.rear vertices 3/4/5 on the E Turtle vertices 1/0/13. */
+function paNDividerTransform(paBoundary: PlacedWorm, n: NamedWorm): Transform {
     const e = findOnlyDirectComponent(paBoundary.worm, 'E');
     const eTurtle = e.tiles[e.rear.tileIndex];
     const targetVertices = smithTileWorldVertices(eTurtle).map((point) =>
         applyTransform(paBoundary.transform, point),
     );
-    const nRear = n2.tiles[n2.rear.tileIndex];
+    const nRear = n.tiles[n.rear.tileIndex];
     const sourceVertices = smithTileWorldVertices(nRear);
     const transform = rigidPlacementTransform(
         sourceVertices[3],
@@ -528,24 +524,24 @@ function paN2DividerTransform(paBoundary: PlacedWorm, n2: NamedWorm): Transform 
         const placedSource = applyTransform(transform, sourceVertices[sourceIndex]);
         if (distance(placedSource, targetVertices[targetIndex]) > PLACEMENT_EPSILON) {
             throw new Error(
-                `N2.rear vertex ${sourceIndex} does not match E Turtle vertex ${targetIndex}`,
+                `N.rear vertex ${sourceIndex} does not match E Turtle vertex ${targetIndex}`,
             );
         }
     }
     return transform;
 }
 
-/** Place S1.front vertices 0/13/12 on M2's front S rear vertices 0/1/2. */
-function taS1DividerTransform(taBoundary: PlacedWorm, s1: NamedWorm): Transform {
+/** Place S.front vertices 0/13/12 on the next-level M's front S rear vertices 0/1/2. */
+function taSDividerTransform(taBoundary: PlacedWorm, s: NamedWorm): Transform {
     assertKind(taBoundary.worm, 'M');
     const frontSideS = taBoundary.worm.components?.find((component) => component.kind === 'S');
-    if (!frontSideS) throw new Error('Expected a front-side S component in M2');
+    if (!frontSideS) throw new Error('Expected a front-side S component in M');
 
     const targetTile = frontSideS.tiles[frontSideS.rear.tileIndex];
     const targetVertices = smithTileWorldVertices(targetTile).map((point) =>
         applyTransform(taBoundary.transform, point),
     );
-    const sourceTile = s1.tiles[s1.front.tileIndex];
+    const sourceTile = s.tiles[s.front.tileIndex];
     const sourceVertices = smithTileWorldVertices(sourceTile);
     const transform = rigidPlacementTransform(
         sourceVertices[0],
@@ -563,7 +559,7 @@ function taS1DividerTransform(taBoundary: PlacedWorm, s1: NamedWorm): Transform 
         const placedSource = applyTransform(transform, sourceVertices[sourceIndex]);
         if (distance(placedSource, targetVertices[targetIndex]) > PLACEMENT_EPSILON) {
             throw new Error(
-                `S1.front vertex ${sourceIndex} does not match M2 front-S rear vertex ${targetIndex}`,
+                `S.front vertex ${sourceIndex} does not match M front-S rear vertex ${targetIndex}`,
             );
         }
     }
@@ -571,27 +567,30 @@ function taS1DividerTransform(taBoundary: PlacedWorm, s1: NamedWorm): Transform 
 }
 
 /**
- * PA2 partition scene. Each N2 divider is attached to the E Turtle of the
- * corresponding S2 boundary by an orientation-preserving rigid transform.
+ * PA partition scene. Each same-level N divider is attached to the E Turtle of
+ * the corresponding S boundary by an orientation-preserving rigid transform.
  */
-export function createPB2(s2: NamedWorm, n2: NamedWorm): SpectreRegion {
-    assertKind(s2, 'S');
-    assertKind(n2, 'N');
+export function createPB(s: NamedWorm, n: NamedWorm): SpectreRegion {
+    assertKind(s, 'S');
+    assertKind(n, 'N');
+    assertLevel(s);
+    assertLevel(n);
+    assertSameLevel(s, n);
 
-    const pa2 = createPA(2, s2);
+    const pa = createPA(s);
 
     return {
         kind: 'PB',
-        level: 2,
+        level: s.level,
         worms: [
-            ...pa2.worms,
+            ...pa.worms,
             {
-                worm: n2,
-                transform: paN2DividerTransform(pa2.worms[0], n2),
+                worm: n,
+                transform: paNDividerTransform(pa.worms[0], n),
             },
             {
-                worm: n2,
-                transform: paN2DividerTransform(pa2.worms[1], n2),
+                worm: n,
+                transform: paNDividerTransform(pa.worms[1], n),
             },
         ],
         transform: IDENTITY_TRANSFORM,
@@ -599,58 +598,113 @@ export function createPB2(s2: NamedWorm, n2: NamedWorm): SpectreRegion {
 }
 
 /**
- * TA2 partition scene. Each S1 divider is attached to the front-side S of the
- * corresponding M2 boundary by an orientation-preserving rigid transform.
+ * TA partition scene. Each previous-level S divider is attached to the
+ * front-side S of the corresponding M boundary by a rigid transform.
  */
-export function createTB2(m2: NamedWorm, s1: NamedWorm): SpectreRegion {
-    assertKind(m2, 'M');
-    assertKind(s1, 'S');
+export function createTB(m: NamedWorm, previousS: NamedWorm): SpectreRegion {
+    assertKind(m, 'M');
+    assertKind(previousS, 'S');
+    assertLevel(m, 2);
+    assertLevel(previousS);
+    if (previousS.level !== m.level - 1) {
+        throw new Error(
+            `Expected S at level ${m.level - 1} for TB${m.level}, got level ${previousS.level}`,
+        );
+    }
 
-    const ta2 = createTA2(m2);
+    const ta = createTA(m);
 
     return {
         kind: 'TB',
-        level: 2,
+        level: m.level,
         worms: [
-            ...ta2.worms,
+            ...ta.worms,
             {
-                worm: s1,
-                transform: taS1DividerTransform(ta2.worms[0], s1),
+                worm: previousS,
+                transform: taSDividerTransform(ta.worms[0], previousS),
             },
             {
-                worm: s1,
-                transform: taS1DividerTransform(ta2.worms[1], s1),
+                worm: previousS,
+                transform: taSDividerTransform(ta.worms[1], previousS),
             },
             {
-                worm: s1,
-                transform: taS1DividerTransform(ta2.worms[2], s1),
+                worm: previousS,
+                transform: taSDividerTransform(ta.worms[2], previousS),
             },
         ],
         transform: IDENTITY_TRANSFORM,
     };
 }
 
-export const SPECTRE_REGIONS = {
-    PA1: createPA(1, ARTICULATED_WORMS.S1),
-    PA2: createPA(2, ARTICULATED_WORMS.S2),
-    TA1: createTA1(ARTICULATED_WORMS.M1),
-    TA2: createTA2(ARTICULATED_WORMS.M2),
-    TC1: createTC1(ARTICULATED_WORMS.N1),
-    TC2: createTC2(ARTICULATED_WORMS.N2),
-    PB2: createPB2(ARTICULATED_WORMS.S2, ARTICULATED_WORMS.N2),
-    TB2: createTB2(ARTICULATED_WORMS.M2, ARTICULATED_WORMS.S1),
-} satisfies Record<string, SpectreRegion>;
+export type CoreSpectreRegionLevel = {
+    level: number;
+    PA: SpectreRegion;
+    TA: SpectreRegion;
+    TC: SpectreRegion;
+};
 
-export const MIRRORED_SPECTRE_REGIONS = {
-    PA1: createPA(1, MIRRORED_ARTICULATED_WORMS.S1),
-    PA2: createPA(2, MIRRORED_ARTICULATED_WORMS.S2),
-    TA1: createTA1(MIRRORED_ARTICULATED_WORMS.M1),
-    TA2: createTA2(MIRRORED_ARTICULATED_WORMS.M2),
-    TC1: createTC1(MIRRORED_ARTICULATED_WORMS.N1),
-    TC2: createTC2(MIRRORED_ARTICULATED_WORMS.N2),
-    PB2: createPB2(MIRRORED_ARTICULATED_WORMS.S2, MIRRORED_ARTICULATED_WORMS.N2),
-    TB2: createTB2(MIRRORED_ARTICULATED_WORMS.M2, MIRRORED_ARTICULATED_WORMS.S1),
-} satisfies Record<keyof typeof SPECTRE_REGIONS, SpectreRegion>;
+/** Build the three core regions directly from one generated worm level. */
+export function createCoreSpectreRegionLevel(worms: ArticulatedWormLevel): CoreSpectreRegionLevel {
+    for (const worm of [worms.I, worms.S, worms.M, worms.N]) {
+        if (worm.level !== worms.level) {
+            throw new Error(
+                `Worm ${worm.kind} level ${worm.level} does not match level set ${worms.level}`,
+            );
+        }
+    }
+    return {
+        level: worms.level,
+        PA: createPA(worms.S),
+        TA: createTA(worms.M),
+        TC: createTC(worms.N),
+    };
+}
+
+export type ArticulatedRegionLevel = CoreSpectreRegionLevel & {
+    PB: SpectreRegion;
+    /** TB needs S_(k-1), so it is absent when no preceding worm level was supplied. */
+    TB?: SpectreRegion;
+};
+
+/** Generate every supported region at each supplied articulated worm level. */
+export function createArticulatedRegionLevels(
+    wormLevels: readonly ArticulatedWormLevel[],
+): readonly ArticulatedRegionLevel[] {
+    return wormLevels.map((worms, index) => {
+        const core = createCoreSpectreRegionLevel(worms);
+        const previous = wormLevels[index - 1];
+        const TB =
+            previous?.level === worms.level - 1 ? createTB(worms.M, previous.S) : undefined;
+        return {
+            ...core,
+            PB: createPB(worms.S, worms.N),
+            ...(TB ? { TB } : {}),
+        };
+    });
+}
+
+function createRegionRegistry(wormLevels: readonly ArticulatedWormLevel[]) {
+    const [level1, level2] = createArticulatedRegionLevels(wormLevels);
+    if (level1?.level !== 1 || level2?.level !== 2 || !level2.TB) {
+        throw new Error('Spectre region registry requires contiguous worm levels 1 and 2');
+    }
+    return {
+        PA1: level1.PA,
+        PA2: level2.PA,
+        TA1: level1.TA,
+        TA2: level2.TA,
+        TC1: level1.TC,
+        TC2: level2.TC,
+        PB2: level2.PB,
+        TB2: level2.TB,
+    } satisfies Record<string, SpectreRegion>;
+}
+
+export const SPECTRE_REGIONS = createRegionRegistry(ARTICULATED_WORM_LEVELS);
+
+export const MIRRORED_SPECTRE_REGIONS = createRegionRegistry(
+    MIRRORED_ARTICULATED_WORM_LEVELS,
+) satisfies Record<keyof typeof SPECTRE_REGIONS, SpectreRegion>;
 
 export type SpectreRegionKey = keyof typeof SPECTRE_REGIONS;
 export const SPECTRE_REGION_KEYS = Object.keys(SPECTRE_REGIONS) as SpectreRegionKey[];
