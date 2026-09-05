@@ -5,6 +5,7 @@ import {
     createCoreSpectreRegionLevel,
     createPB,
     createTB,
+    createTD,
     MIRRORED_SPECTRE_REGIONS,
     regionMovableIndices,
     regionTiles,
@@ -79,6 +80,41 @@ function expectSFrontAttachedToMFrontS(
     expect(m00 * m11 - m01 * m10).toBeCloseTo(1, 12);
 }
 
+function expectMFrontAttachedToSFifthTile(
+    td: SpectreRegion,
+    boundaryIndex: number,
+    dividerIndex: number,
+): void {
+    const boundary = td.worms[boundaryIndex];
+    const divider = td.worms[dividerIndex];
+    const frontSideS = boundary.worm.components?.find((component) => component.kind === 'S');
+    expect(frontSideS).toBeDefined();
+    if (!frontSideS) return;
+
+    const targetTile = frontSideS.tiles[frontSideS.front.tileIndex + 4];
+    expect(targetTile).toBeDefined();
+    if (!targetTile) return;
+    const targetVertices = smithTileWorldVertices(targetTile).map((point) =>
+        applyTransform(boundary.transform, point),
+    );
+    const dividerTiles = regionWormTiles(td, dividerIndex);
+    const sourceVertices = smithTileWorldVertices(dividerTiles[divider.worm.front.tileIndex]);
+
+    for (const [sourceIndex, targetIndex] of [
+        [0, 0],
+        [13, 1],
+        [12, 2],
+    ] as const) {
+        expect(sourceVertices[sourceIndex].x).toBeCloseTo(targetVertices[targetIndex].x, 10);
+        expect(sourceVertices[sourceIndex].y).toBeCloseTo(targetVertices[targetIndex].y, 10);
+    }
+
+    const { m00, m01, m10, m11 } = divider.transform;
+    expect(Math.hypot(m00, m10)).toBeCloseTo(1, 12);
+    expect(Math.hypot(m01, m11)).toBeCloseTo(1, 12);
+    expect(m00 * m11 - m01 * m10).toBeCloseTo(1, 12);
+}
+
 describe('PB2 partition workbench', () => {
     it('contains a PA2 boundary followed by two N2 divider worms', () => {
         const pb2 = SPECTRE_REGIONS.PB2;
@@ -130,6 +166,32 @@ describe('TB2 partition workbench', () => {
     });
 });
 
+describe('TD2 partition workbench', () => {
+    it('contains a TC2 boundary followed by three M1 divider worms', () => {
+        const td2 = SPECTRE_REGIONS.TD2;
+
+        expect(td2.kind).toBe('TD');
+        expect(td2.level).toBe(2);
+        expect(td2.worms.map(({ worm }) => worm.kind)).toEqual(['N', 'N', 'N', 'M', 'M', 'M']);
+        expect(td2.worms.slice(0, 3)).toEqual(SPECTRE_REGIONS.TC2.worms);
+        expect(regionTiles(td2)).toHaveLength(
+            regionTiles(SPECTRE_REGIONS.TC2).length + ARTICULATED_WORMS.M1.tiles.length * 3,
+        );
+    });
+
+    it('attaches each M1 front to the fifth tile of its corresponding S', () => {
+        for (const td2 of [SPECTRE_REGIONS.TD2, MIRRORED_SPECTRE_REGIONS.TD2]) {
+            for (let boundaryIndex = 0; boundaryIndex < 3; boundaryIndex++) {
+                expectMFrontAttachedToSFifthTile(td2, boundaryIndex, boundaryIndex + 3);
+            }
+        }
+    });
+
+    it('keeps TC2 fixed and exposes only the three dividers for manual placement', () => {
+        expect(regionMovableIndices(SPECTRE_REGIONS.TD2)).toEqual([3, 4, 5]);
+    });
+});
+
 describe('level-driven region creation', () => {
     const normalLevels = createArticulatedWormLevels(3);
     const mirroredLevels = createArticulatedWormLevels(3, createReflectionTransform());
@@ -139,6 +201,7 @@ describe('level-driven region creation', () => {
             const regionLevels = createArticulatedRegionLevels(wormLevels);
             expect(regionLevels.map(({ level }) => level)).toEqual([1, 2, 3]);
             expect(regionLevels.map(({ TB }) => TB?.level)).toEqual([undefined, 2, 3]);
+            expect(regionLevels.map(({ TD }) => TD?.level)).toEqual([undefined, 2, 3]);
             expect(regionLevels.map(({ PB }) => PB.level)).toEqual([1, 2, 3]);
         }
     });
@@ -199,10 +262,35 @@ describe('level-driven region creation', () => {
         }
     });
 
+    it('builds TD workbenches at levels 2 and 3 from the previous-level M worm', () => {
+        for (const levels of [normalLevels, mirroredLevels]) {
+            for (let index = 1; index < levels.length; index++) {
+                const current = levels[index];
+                const previous = levels[index - 1];
+                const td = createTD(current.N, previous.M);
+                expect(td.level).toBe(current.level);
+                expect(td.worms.map(({ worm }) => worm.kind)).toEqual([
+                    'N',
+                    'N',
+                    'N',
+                    'M',
+                    'M',
+                    'M',
+                ]);
+                expect(regionMovableIndices(td)).toEqual([3, 4, 5]);
+                for (let boundaryIndex = 0; boundaryIndex < 3; boundaryIndex++) {
+                    expectMFrontAttachedToSFifthTile(td, boundaryIndex, boundaryIndex + 3);
+                }
+            }
+        }
+    });
+
     it('rejects inconsistent levels at region boundaries', () => {
         const [level1, level2, level3] = normalLevels;
         expect(() => createPB(level3.S, level2.N)).toThrow('same level');
         expect(() => createTB(level3.M, level1.S)).toThrow('Expected S at level 2');
         expect(() => createTB(level1.M, level1.S)).toThrow('worm level >= 2');
+        expect(() => createTD(level3.N, level1.M)).toThrow('Expected M at level 2');
+        expect(() => createTD(level1.N, level1.M)).toThrow('worm level >= 2');
     });
 });

@@ -25,7 +25,7 @@ export type PlacedWorm = {
     transform: Transform;
 };
 
-export type RegionKind = 'PA' | 'TA' | 'TC' | 'PB' | 'TB';
+export type RegionKind = 'PA' | 'TA' | 'TC' | 'PB' | 'TB' | 'TD';
 
 export type SpectreRegion = {
     kind: RegionKind;
@@ -371,6 +371,8 @@ export function regionMovableIndices(region: SpectreRegion): number[] {
     if (region.kind === 'PB') return [2, 3];
     // Likewise, keep the three M worms of the TA boundary fixed in TB.
     if (region.kind === 'TB') return [3, 4, 5];
+    // TD is a TC boundary plus three previous-level M dividers.
+    if (region.kind === 'TD') return [3, 4, 5];
     return region.worms.map((_, index) => index);
 }
 
@@ -567,6 +569,46 @@ function taSDividerTransform(taBoundary: PlacedWorm, s: NamedWorm): Transform {
 }
 
 /**
+ * Place M.front vertices 0/13/12 on vertices 0/1/2 of the fifth tile from
+ * the front of the front-side S contained in an N boundary.
+ */
+function tcMDividerTransform(tcBoundary: PlacedWorm, m: NamedWorm): Transform {
+    assertKind(tcBoundary.worm, 'N');
+    const frontSideS = tcBoundary.worm.components?.find((component) => component.kind === 'S');
+    if (!frontSideS) throw new Error('Expected a front-side S component in N');
+
+    const targetTileIndex = frontSideS.front.tileIndex + 4;
+    const targetTile = frontSideS.tiles[targetTileIndex];
+    if (!targetTile) throw new Error('Expected a fifth tile from the front of S');
+    const targetVertices = smithTileWorldVertices(targetTile).map((point) =>
+        applyTransform(tcBoundary.transform, point),
+    );
+    const sourceTile = m.tiles[m.front.tileIndex];
+    const sourceVertices = smithTileWorldVertices(sourceTile);
+    const transform = rigidPlacementTransform(
+        sourceVertices[0],
+        sourceVertices[13],
+        targetVertices[0],
+        targetVertices[1],
+    );
+
+    const correspondences = [
+        [0, 0],
+        [13, 1],
+        [12, 2],
+    ] as const;
+    for (const [sourceIndex, targetIndex] of correspondences) {
+        const placedSource = applyTransform(transform, sourceVertices[sourceIndex]);
+        if (distance(placedSource, targetVertices[targetIndex]) > PLACEMENT_EPSILON) {
+            throw new Error(
+                `M.front vertex ${sourceIndex} does not match S fifth-tile vertex ${targetIndex}`,
+            );
+        }
+    }
+    return transform;
+}
+
+/**
  * PA partition scene. Each same-level N divider is attached to the E Turtle of
  * the corresponding S boundary by an orientation-preserving rigid transform.
  */
@@ -636,6 +678,33 @@ export function createTB(m: NamedWorm, previousS: NamedWorm): SpectreRegion {
     };
 }
 
+/** TC partition scene with one previous-level M attached to each N boundary. */
+export function createTD(n: NamedWorm, previousM: NamedWorm): SpectreRegion {
+    assertKind(n, 'N');
+    assertKind(previousM, 'M');
+    assertLevel(n, 2);
+    assertLevel(previousM);
+    if (previousM.level !== n.level - 1) {
+        throw new Error(
+            `Expected M at level ${n.level - 1} for TD${n.level}, got level ${previousM.level}`,
+        );
+    }
+
+    const tc = createTC(n);
+    return {
+        kind: 'TD',
+        level: n.level,
+        worms: [
+            ...tc.worms,
+            ...tc.worms.map((boundary) => ({
+                worm: previousM,
+                transform: tcMDividerTransform(boundary, previousM),
+            })),
+        ],
+        transform: IDENTITY_TRANSFORM,
+    };
+}
+
 export type CoreSpectreRegionLevel = {
     level: number;
     PA: SpectreRegion;
@@ -664,6 +733,8 @@ export type ArticulatedRegionLevel = CoreSpectreRegionLevel & {
     PB: SpectreRegion;
     /** TB needs S_(k-1), so it is absent when no preceding worm level was supplied. */
     TB?: SpectreRegion;
+    /** TD needs M_(k-1), so it is absent when no preceding worm level was supplied. */
+    TD?: SpectreRegion;
 };
 
 /** Generate every supported region at each supplied articulated worm level. */
@@ -675,17 +746,20 @@ export function createArticulatedRegionLevels(
         const previous = wormLevels[index - 1];
         const TB =
             previous?.level === worms.level - 1 ? createTB(worms.M, previous.S) : undefined;
+        const TD =
+            previous?.level === worms.level - 1 ? createTD(worms.N, previous.M) : undefined;
         return {
             ...core,
             PB: createPB(worms.S, worms.N),
             ...(TB ? { TB } : {}),
+            ...(TD ? { TD } : {}),
         };
     });
 }
 
 function createRegionRegistry(wormLevels: readonly ArticulatedWormLevel[]) {
     const [level1, level2] = createArticulatedRegionLevels(wormLevels);
-    if (level1?.level !== 1 || level2?.level !== 2 || !level2.TB) {
+    if (level1?.level !== 1 || level2?.level !== 2 || !level2.TB || !level2.TD) {
         throw new Error('Spectre region registry requires contiguous worm levels 1 and 2');
     }
     return {
@@ -697,6 +771,7 @@ function createRegionRegistry(wormLevels: readonly ArticulatedWormLevel[]) {
         TC2: level2.TC,
         PB2: level2.PB,
         TB2: level2.TB,
+        TD2: level2.TD,
     } satisfies Record<string, SpectreRegion>;
 }
 

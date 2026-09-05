@@ -102,4 +102,16 @@ describe('<App> (state + components wiring)', () => {
         expect(screen.getByRole('radio', { name: '手動調整' })).toBeChecked();
         expect(screen.getByText('Worm数').parentElement).toHaveTextContent('6');
     });
+
+    it('opens the TD2 partition workbench with three movable M1 worms', async () => {
+        const user = userEvent.setup();
+        renderApp();
+
+        await user.click(screen.getByRole('radio', { name: 'Region' }));
+        await user.click(screen.getByRole('button', { name: 'TD2' }));
+
+        expect(screen.getByRole('button', { name: 'TD2' })).toHaveClass('active');
+        expect(screen.getByRole('radio', { name: '手動調整' })).toBeChecked();
+        expect(screen.getByText('Worm数').parentElement).toHaveTextContent('6');
+    });
 });

@@ -21,7 +21,7 @@ describe('tileReducer — articulated worm mode', () => {
 
 describe('tileReducer — region mode', () => {
     it('opens partition workbenches in manual placement mode', () => {
-        for (const region of ['PB2', 'TB2'] as const) {
+        for (const region of ['PB2', 'TB2', 'TD2'] as const) {
             const state = tileReducer(
                 {
                     ...initialTileState,
