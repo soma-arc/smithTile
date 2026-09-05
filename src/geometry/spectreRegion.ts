@@ -24,8 +24,10 @@ export type PlacedWorm = {
     transform: Transform;
 };
 
+export type RegionKind = 'PA' | 'TA' | 'TC' | 'PB';
+
 export type SpectreRegion = {
-    kind: 'PA' | 'TA' | 'TC';
+    kind: RegionKind;
     level: number;
     worms: readonly PlacedWorm[];
     transform: Transform;
@@ -367,7 +369,11 @@ export function regionWormPivot(region: SpectreRegion, index: number): Vec2 {
 }
 
 export function regionMovableIndices(region: SpectreRegion): number[] {
-    return region.kind === 'PA' ? [1] : region.worms.map((_, index) => index);
+    if (region.kind === 'PA') return [1];
+    // PB2 is currently a partition workbench: keep its PA2 boundary fixed and
+    // move only the two placed N2 divider worms.
+    if (region.kind === 'PB') return [2, 3];
+    return region.worms.map((_, index) => index);
 }
 
 /** Apply independent manual offsets around each worm's diagnostic pivot. */
@@ -458,6 +464,96 @@ export function regionEndMarkers(region: SpectreRegion): RegionEndMarker[] {
     });
 }
 
+const PLACEMENT_EPSILON = 1e-6;
+
+function distance(a: Vec2, b: Vec2): number {
+    return Math.hypot(b.x - a.x, b.y - a.y);
+}
+
+/** Find the orientation-preserving rigid transform mapping sourceA/B to targetA/B. */
+function rigidPlacementTransform(
+    sourceA: Vec2,
+    sourceB: Vec2,
+    targetA: Vec2,
+    targetB: Vec2,
+): Transform {
+    const sourceLength = distance(sourceA, sourceB);
+    const targetLength = distance(targetA, targetB);
+    if (sourceLength < PLACEMENT_EPSILON || targetLength < PLACEMENT_EPSILON) {
+        throw new Error('Cannot place a worm from coincident anchor points');
+    }
+    if (Math.abs(sourceLength - targetLength) > PLACEMENT_EPSILON) {
+        throw new Error('Worm placement anchors have different lengths');
+    }
+
+    const rotationRad =
+        Math.atan2(targetB.y - targetA.y, targetB.x - targetA.x) -
+        Math.atan2(sourceB.y - sourceA.y, sourceB.x - sourceA.x);
+    const rotation = createTransform({ x: 0, y: 0 }, rotationRad);
+    const rotatedSourceA = applyTransform(rotation, sourceA);
+    return createTransform(subVec2(targetA, rotatedSourceA), rotationRad);
+}
+
+/** Place N2.rear vertices 3/4/5 on the E Turtle vertices 1/0/13. */
+function paN2DividerTransform(paBoundary: PlacedWorm, n2: NamedWorm): Transform {
+    const e = findOnlyDirectComponent(paBoundary.worm, 'E');
+    const eTurtle = e.tiles[e.rear.tileIndex];
+    const targetVertices = smithTileWorldVertices(eTurtle).map((point) =>
+        applyTransform(paBoundary.transform, point),
+    );
+    const nRear = n2.tiles[n2.rear.tileIndex];
+    const sourceVertices = smithTileWorldVertices(nRear);
+    const transform = rigidPlacementTransform(
+        sourceVertices[3],
+        sourceVertices[4],
+        targetVertices[1],
+        targetVertices[0],
+    );
+
+    const correspondences = [
+        [3, 1],
+        [4, 0],
+        [5, 13],
+    ] as const;
+    for (const [sourceIndex, targetIndex] of correspondences) {
+        const placedSource = applyTransform(transform, sourceVertices[sourceIndex]);
+        if (distance(placedSource, targetVertices[targetIndex]) > PLACEMENT_EPSILON) {
+            throw new Error(
+                `N2.rear vertex ${sourceIndex} does not match E Turtle vertex ${targetIndex}`,
+            );
+        }
+    }
+    return transform;
+}
+
+/**
+ * PA2 partition scene. Each N2 divider is attached to the E Turtle of the
+ * corresponding S2 boundary by an orientation-preserving rigid transform.
+ */
+export function createPB2(s2: NamedWorm, n2: NamedWorm): SpectreRegion {
+    assertKind(s2, 'S');
+    assertKind(n2, 'N');
+
+    const pa2 = createPA(2, s2);
+
+    return {
+        kind: 'PB',
+        level: 2,
+        worms: [
+            ...pa2.worms,
+            {
+                worm: n2,
+                transform: paN2DividerTransform(pa2.worms[0], n2),
+            },
+            {
+                worm: n2,
+                transform: paN2DividerTransform(pa2.worms[1], n2),
+            },
+        ],
+        transform: IDENTITY_TRANSFORM,
+    };
+}
+
 export const SPECTRE_REGIONS = {
     PA1: createPA(1, ARTICULATED_WORMS.S1),
     PA2: createPA(2, ARTICULATED_WORMS.S2),
@@ -465,6 +561,7 @@ export const SPECTRE_REGIONS = {
     TA2: createTA2(ARTICULATED_WORMS.M2),
     TC1: createTC1(ARTICULATED_WORMS.N1),
     TC2: createTC2(ARTICULATED_WORMS.N2),
+    PB2: createPB2(ARTICULATED_WORMS.S2, ARTICULATED_WORMS.N2),
 } satisfies Record<string, SpectreRegion>;
 
 export const MIRRORED_SPECTRE_REGIONS = {
@@ -474,6 +571,7 @@ export const MIRRORED_SPECTRE_REGIONS = {
     TA2: createTA2(MIRRORED_ARTICULATED_WORMS.M2),
     TC1: createTC1(MIRRORED_ARTICULATED_WORMS.N1),
     TC2: createTC2(MIRRORED_ARTICULATED_WORMS.N2),
+    PB2: createPB2(MIRRORED_ARTICULATED_WORMS.S2, MIRRORED_ARTICULATED_WORMS.N2),
 } satisfies Record<keyof typeof SPECTRE_REGIONS, SpectreRegion>;
 
 export type SpectreRegionKey = keyof typeof SPECTRE_REGIONS;

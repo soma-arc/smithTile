@@ -19,6 +19,24 @@ describe('tileReducer — articulated worm mode', () => {
     });
 });
 
+describe('tileReducer — region mode', () => {
+    it('opens the PB2 partition workbench in manual placement mode', () => {
+        const state = tileReducer(
+            {
+                ...initialTileState,
+                regionAdjustments: {
+                    2: { translation: { x: 10, y: -5 }, rotationRad: 0.5 },
+                },
+            },
+            { type: 'setSpectreRegion', region: 'PB2' },
+        );
+
+        expect(state.shape).toEqual({ kind: 'region', region: 'PB2' });
+        expect(state.regionPlacementMode).toBe('manual');
+        expect(state.regionAdjustments).toEqual({});
+    });
+});
+
 describe('tileReducer — zoom and pan', () => {
     it('clamps zoom to the 0.05–10 range', () => {
         expect(clampZoom(100)).toBe(10);

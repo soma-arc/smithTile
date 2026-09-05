@@ -78,4 +78,16 @@ describe('<App> (state + components wiring)', () => {
         expect(screen.queryByRole('button', { name: 'STL を保存' })).not.toBeInTheDocument();
         expect(screen.queryByText('Spectre パッチ')).not.toBeInTheDocument();
     });
+
+    it('opens the PB2 partition workbench with two movable N2 worms', async () => {
+        const user = userEvent.setup();
+        renderApp();
+
+        await user.click(screen.getByRole('radio', { name: 'Region' }));
+        await user.click(screen.getByRole('button', { name: 'PB2' }));
+
+        expect(screen.getByRole('button', { name: 'PB2' })).toHaveClass('active');
+        expect(screen.getByRole('radio', { name: '手動調整' })).toBeChecked();
+        expect(screen.getByText('Worm数').parentElement).toHaveTextContent('4');
+    });
 });

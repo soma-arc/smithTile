@@ -3,12 +3,12 @@
  * Ported 1:1 from the former imperative handlers in main.ts.
  */
 
-import type { Lang } from '../i18n';
 import type { SpectrePatchKey } from '../geometry/smithPatch';
 import { type CurveSpec, DEFAULT_SPECTRE_CURVE, type Preset, SQRT3 } from '../geometry/smithTile';
 import type { SpectreRegionKey } from '../geometry/spectreRegion';
 import type { ArticulatedWormKey } from '../geometry/spectreWorm';
 import type { Vec2 } from '../geometry/Vec2';
+import type { Lang } from '../i18n';
 
 export type ParameterMode = 'ratio' | 'independent';
 export type SpectreCurveMode = 'straight' | 'cubicBezier';
@@ -178,7 +178,9 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 pan: { x: 0, y: 0 },
                 shape: { kind: 'region', region: action.region },
                 regionPlacementMode:
-                    action.region.startsWith('TA') || action.region.startsWith('TC')
+                    action.region.startsWith('TA') ||
+                    action.region.startsWith('TC') ||
+                    action.region.startsWith('PB')
                         ? 'manual'
                         : state.regionPlacementMode,
                 regionAdjustments: {},
