@@ -74,7 +74,7 @@ describe('<App> (state + components wiring)', () => {
         expect(container.querySelectorAll('.svg-host svg polygon[fill="orange"]')).toHaveLength(2);
         expect(container.querySelectorAll('.svg-host svg polygon[fill="purple"]')).toHaveLength(1);
         expect(screen.getByRole('checkbox', { name: 'コンポーネント色分け' })).toBeChecked();
-        expect(screen.getByRole('checkbox', { name: 'コンポーネント境界' })).toBeChecked();
+        expect(screen.getByRole('checkbox', { name: 'コンポーネント境界' })).not.toBeChecked();
         expect(screen.queryByRole('button', { name: 'STL を保存' })).not.toBeInTheDocument();
         expect(screen.queryByText('Spectre パッチ')).not.toBeInTheDocument();
     });
