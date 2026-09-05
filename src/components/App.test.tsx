@@ -90,4 +90,16 @@ describe('<App> (state + components wiring)', () => {
         expect(screen.getByRole('radio', { name: '手動調整' })).toBeChecked();
         expect(screen.getByText('Worm数').parentElement).toHaveTextContent('4');
     });
+
+    it('opens the TB2 partition workbench with three movable S1 worms', async () => {
+        const user = userEvent.setup();
+        renderApp();
+
+        await user.click(screen.getByRole('radio', { name: 'Region' }));
+        await user.click(screen.getByRole('button', { name: 'TB2' }));
+
+        expect(screen.getByRole('button', { name: 'TB2' })).toHaveClass('active');
+        expect(screen.getByRole('radio', { name: '手動調整' })).toBeChecked();
+        expect(screen.getByText('Worm数').parentElement).toHaveTextContent('6');
+    });
 });

@@ -20,20 +20,22 @@ describe('tileReducer — articulated worm mode', () => {
 });
 
 describe('tileReducer — region mode', () => {
-    it('opens the PB2 partition workbench in manual placement mode', () => {
-        const state = tileReducer(
-            {
-                ...initialTileState,
-                regionAdjustments: {
-                    2: { translation: { x: 10, y: -5 }, rotationRad: 0.5 },
+    it('opens partition workbenches in manual placement mode', () => {
+        for (const region of ['PB2', 'TB2'] as const) {
+            const state = tileReducer(
+                {
+                    ...initialTileState,
+                    regionAdjustments: {
+                        2: { translation: { x: 10, y: -5 }, rotationRad: 0.5 },
+                    },
                 },
-            },
-            { type: 'setSpectreRegion', region: 'PB2' },
-        );
+                { type: 'setSpectreRegion', region },
+            );
 
-        expect(state.shape).toEqual({ kind: 'region', region: 'PB2' });
-        expect(state.regionPlacementMode).toBe('manual');
-        expect(state.regionAdjustments).toEqual({});
+            expect(state.shape).toEqual({ kind: 'region', region });
+            expect(state.regionPlacementMode).toBe('manual');
+            expect(state.regionAdjustments).toEqual({});
+        }
     });
 });
 

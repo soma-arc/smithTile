@@ -180,7 +180,8 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 regionPlacementMode:
                     action.region.startsWith('TA') ||
                     action.region.startsWith('TC') ||
-                    action.region.startsWith('PB')
+                    action.region.startsWith('PB') ||
+                    action.region.startsWith('TB')
                         ? 'manual'
                         : state.regionPlacementMode,
                 regionAdjustments: {},

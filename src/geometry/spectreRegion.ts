@@ -24,7 +24,7 @@ export type PlacedWorm = {
     transform: Transform;
 };
 
-export type RegionKind = 'PA' | 'TA' | 'TC' | 'PB';
+export type RegionKind = 'PA' | 'TA' | 'TC' | 'PB' | 'TB';
 
 export type SpectreRegion = {
     kind: RegionKind;
@@ -373,6 +373,8 @@ export function regionMovableIndices(region: SpectreRegion): number[] {
     // PB2 is currently a partition workbench: keep its PA2 boundary fixed and
     // move only the two placed N2 divider worms.
     if (region.kind === 'PB') return [2, 3];
+    // Likewise, keep the three M2 worms of TA2 fixed in the TB2 workbench.
+    if (region.kind === 'TB') return [3, 4, 5];
     return region.worms.map((_, index) => index);
 }
 
@@ -405,7 +407,14 @@ export function adjustRegionWorms(
     };
 }
 
-const REGION_WORM_COLORS = ['#d85b4b', '#3b78a8', '#3f8f5f'] as const;
+const REGION_WORM_COLORS = [
+    '#d85b4b',
+    '#3b78a8',
+    '#3f8f5f',
+    '#7c3aed',
+    '#b66a2c',
+    '#168a9c',
+] as const;
 
 /** Fill groups one semantic level below each placed S worm. */
 export function regionColorGroups(region: SpectreRegion) {
@@ -526,6 +535,41 @@ function paN2DividerTransform(paBoundary: PlacedWorm, n2: NamedWorm): Transform 
     return transform;
 }
 
+/** Place S1.front vertices 0/13/12 on M2's front S rear vertices 0/1/2. */
+function taS1DividerTransform(taBoundary: PlacedWorm, s1: NamedWorm): Transform {
+    assertKind(taBoundary.worm, 'M');
+    const frontSideS = taBoundary.worm.components?.find((component) => component.kind === 'S');
+    if (!frontSideS) throw new Error('Expected a front-side S component in M2');
+
+    const targetTile = frontSideS.tiles[frontSideS.rear.tileIndex];
+    const targetVertices = smithTileWorldVertices(targetTile).map((point) =>
+        applyTransform(taBoundary.transform, point),
+    );
+    const sourceTile = s1.tiles[s1.front.tileIndex];
+    const sourceVertices = smithTileWorldVertices(sourceTile);
+    const transform = rigidPlacementTransform(
+        sourceVertices[0],
+        sourceVertices[13],
+        targetVertices[0],
+        targetVertices[1],
+    );
+
+    const correspondences = [
+        [0, 0],
+        [13, 1],
+        [12, 2],
+    ] as const;
+    for (const [sourceIndex, targetIndex] of correspondences) {
+        const placedSource = applyTransform(transform, sourceVertices[sourceIndex]);
+        if (distance(placedSource, targetVertices[targetIndex]) > PLACEMENT_EPSILON) {
+            throw new Error(
+                `S1.front vertex ${sourceIndex} does not match M2 front-S rear vertex ${targetIndex}`,
+            );
+        }
+    }
+    return transform;
+}
+
 /**
  * PA2 partition scene. Each N2 divider is attached to the E Turtle of the
  * corresponding S2 boundary by an orientation-preserving rigid transform.
@@ -554,6 +598,38 @@ export function createPB2(s2: NamedWorm, n2: NamedWorm): SpectreRegion {
     };
 }
 
+/**
+ * TA2 partition scene. Each S1 divider is attached to the front-side S of the
+ * corresponding M2 boundary by an orientation-preserving rigid transform.
+ */
+export function createTB2(m2: NamedWorm, s1: NamedWorm): SpectreRegion {
+    assertKind(m2, 'M');
+    assertKind(s1, 'S');
+
+    const ta2 = createTA2(m2);
+
+    return {
+        kind: 'TB',
+        level: 2,
+        worms: [
+            ...ta2.worms,
+            {
+                worm: s1,
+                transform: taS1DividerTransform(ta2.worms[0], s1),
+            },
+            {
+                worm: s1,
+                transform: taS1DividerTransform(ta2.worms[1], s1),
+            },
+            {
+                worm: s1,
+                transform: taS1DividerTransform(ta2.worms[2], s1),
+            },
+        ],
+        transform: IDENTITY_TRANSFORM,
+    };
+}
+
 export const SPECTRE_REGIONS = {
     PA1: createPA(1, ARTICULATED_WORMS.S1),
     PA2: createPA(2, ARTICULATED_WORMS.S2),
@@ -562,6 +638,7 @@ export const SPECTRE_REGIONS = {
     TC1: createTC1(ARTICULATED_WORMS.N1),
     TC2: createTC2(ARTICULATED_WORMS.N2),
     PB2: createPB2(ARTICULATED_WORMS.S2, ARTICULATED_WORMS.N2),
+    TB2: createTB2(ARTICULATED_WORMS.M2, ARTICULATED_WORMS.S1),
 } satisfies Record<string, SpectreRegion>;
 
 export const MIRRORED_SPECTRE_REGIONS = {
@@ -572,6 +649,7 @@ export const MIRRORED_SPECTRE_REGIONS = {
     TC1: createTC1(MIRRORED_ARTICULATED_WORMS.N1),
     TC2: createTC2(MIRRORED_ARTICULATED_WORMS.N2),
     PB2: createPB2(MIRRORED_ARTICULATED_WORMS.S2, MIRRORED_ARTICULATED_WORMS.N2),
+    TB2: createTB2(MIRRORED_ARTICULATED_WORMS.M2, MIRRORED_ARTICULATED_WORMS.S1),
 } satisfies Record<keyof typeof SPECTRE_REGIONS, SpectreRegion>;
 
 export type SpectreRegionKey = keyof typeof SPECTRE_REGIONS;
