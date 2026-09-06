@@ -36,6 +36,11 @@ export type SpectreRegion = {
 
 export type WormAdjustment = { translation: Vec2; rotationRad: number };
 
+export type RegionWormGroup = {
+    id: number;
+    wormIndices: readonly number[];
+};
+
 function assertKind(worm: NamedWorm, expected: WormKind): void {
     if (worm.kind !== expected) {
         throw new Error(`Expected ${expected} worm, got ${worm.kind}`);
@@ -365,6 +370,11 @@ export function regionWormPivot(region: SpectreRegion, index: number): Vec2 {
     return averagePosition(regionWormTiles(region, index));
 }
 
+export function regionWormGroupPivot(region: SpectreRegion, wormIndices: readonly number[]): Vec2 {
+    if (wormIndices.length === 0) throw new Error('Region worm group must not be empty');
+    return averagePosition(wormIndices.flatMap((index) => regionWormTiles(region, index)));
+}
+
 export function regionMovableIndices(region: SpectreRegion): number[] {
     if (region.kind === 'PA') return [1];
     // Keep the PA boundary fixed and move only the two placed N dividers.
@@ -380,23 +390,39 @@ export function regionMovableIndices(region: SpectreRegion): number[] {
 export function adjustRegionWorms(
     region: SpectreRegion,
     adjustments: Readonly<Record<number, WormAdjustment>>,
+    groups: readonly RegionWormGroup[] = regionMovableIndices(region).map((index) => ({
+        id: index,
+        wormIndices: [index],
+    })),
 ): SpectreRegion {
+    const transforms = new Map<number, Transform>();
+    for (const group of groups) {
+        const adjustment = adjustments[group.id];
+        if (!adjustment) continue;
+        const pivot = regionWormGroupPivot(region, group.wormIndices);
+        const rotation = createTransform({ x: 0, y: 0 }, adjustment.rotationRad);
+        const rotatedPivot = applyTransform(rotation, pivot);
+        const rotateAroundPivot = createTransform(
+            subVec2(pivot, rotatedPivot),
+            adjustment.rotationRad,
+        );
+        const transform = composeTransforms(
+            createTransform(adjustment.translation, 0),
+            rotateAroundPivot,
+        );
+        for (const index of group.wormIndices) {
+            if (transforms.has(index)) {
+                throw new Error(`Region worm ${index} belongs to multiple adjustment groups`);
+            }
+            transforms.set(index, transform);
+        }
+    }
+
     return {
         ...region,
         worms: region.worms.map((placed, index) => {
-            const adjustment = adjustments[index];
-            if (!adjustment) return placed;
-            const pivot = regionWormPivot(region, index);
-            const rotation = createTransform({ x: 0, y: 0 }, adjustment.rotationRad);
-            const rotatedPivot = applyTransform(rotation, pivot);
-            const rotateAroundPivot = createTransform(
-                subVec2(pivot, rotatedPivot),
-                adjustment.rotationRad,
-            );
-            const transform = composeTransforms(
-                createTransform(adjustment.translation, 0),
-                rotateAroundPivot,
-            );
+            const transform = transforms.get(index);
+            if (!transform) return placed;
             return {
                 ...placed,
                 transform: composeTransforms(transform, placed.transform),
@@ -705,6 +731,20 @@ export function createTD(n: NamedWorm, previousM: NamedWorm): SpectreRegion {
     };
 }
 
+/** A fixed partition workbench plus one rigid canonical child candidate. */
+export function createChildRegionExperiment(
+    parentKind: 'PA' | 'TA' | 'TC',
+    partition: SpectreRegion,
+    candidate: SpectreRegion,
+): SpectreRegion {
+    return {
+        kind: parentKind,
+        level: partition.level,
+        worms: [...partition.worms, ...candidate.worms],
+        transform: IDENTITY_TRANSFORM,
+    };
+}
+
 export type CoreSpectreRegionLevel = {
     level: number;
     PA: SpectreRegion;
@@ -772,6 +812,9 @@ function createRegionRegistry(wormLevels: readonly ArticulatedWormLevel[]) {
         PB2: level2.PB,
         TB2: level2.TB,
         TD2: level2.TD,
+        'PA2-TA2': createChildRegionExperiment('PA', level2.PB, level2.TA),
+        'TA2-TC2': createChildRegionExperiment('TA', level2.TB, level2.TC),
+        'TC2-PA1': createChildRegionExperiment('TC', level2.TD, level1.PA),
     } satisfies Record<string, SpectreRegion>;
 }
 
@@ -783,3 +826,12 @@ export const MIRRORED_SPECTRE_REGIONS = createRegionRegistry(
 
 export type SpectreRegionKey = keyof typeof SPECTRE_REGIONS;
 export const SPECTRE_REGION_KEYS = Object.keys(SPECTRE_REGIONS) as SpectreRegionKey[];
+
+/** Rigid candidate groups used only by the child-placement workbenches. */
+export const SPECTRE_REGION_EXPERIMENT_GROUPS: Partial<
+    Record<SpectreRegionKey, readonly RegionWormGroup[]>
+> = {
+    'PA2-TA2': [{ id: 4, wormIndices: [4, 5, 6] }],
+    'TA2-TC2': [{ id: 6, wormIndices: [6, 7, 8] }],
+    'TC2-PA1': [{ id: 6, wormIndices: [6, 7] }],
+};

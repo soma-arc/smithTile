@@ -14,9 +14,11 @@ import {
     regionMovableIndices,
     regionTiles,
     regionWormGroups,
+    regionWormGroupPivot,
     regionWormPivot,
     regionWormTiles,
     SPECTRE_REGIONS,
+    SPECTRE_REGION_EXPERIMENT_GROUPS,
 } from '../geometry/spectreRegion';
 import { ARTICULATED_WORMS, MIRRORED_ARTICULATED_WORMS, wormColorGroups } from '../geometry/spectreWorm';
 import type { TileState } from '../state/tileReducer';
@@ -55,9 +57,15 @@ export function useScene(state: TileState): Scene {
             const baseRegion = (mirrored ? MIRRORED_SPECTRE_REGIONS : SPECTRE_REGIONS)[
                 shape.region
             ];
+            const movableGroups =
+                SPECTRE_REGION_EXPERIMENT_GROUPS[shape.region] ??
+                regionMovableIndices(baseRegion).map((index) => ({
+                    id: index,
+                    wormIndices: [index],
+                }));
             const region =
                 regionPlacementMode === 'manual'
-                    ? adjustRegionWorms(baseRegion, regionAdjustments)
+                    ? adjustRegionWorms(baseRegion, regionAdjustments, movableGroups)
                     : baseRegion;
             const tiles = regionTiles(region);
             const cameraPoints = regionTiles(baseRegion).flatMap((tile) =>
@@ -123,12 +131,18 @@ export function useScene(state: TileState): Scene {
             };
             if (regionPlacementMode !== 'manual') return sceneWithEndpoints;
 
-            const targets = regionMovableIndices(region).map((wormIndex) => {
-                const rotationCenter = camera.project(regionWormPivot(region, wormIndex));
+            const targets = movableGroups.map((group) => {
+                const rotationCenter = camera.project(
+                    group.wormIndices.length === 1
+                        ? regionWormPivot(region, group.wormIndices[0])
+                        : regionWormGroupPivot(region, group.wormIndices),
+                );
                 return {
-                    wormIndex,
-                    movablePolygons: regionWormTiles(region, wormIndex).map((tile) =>
-                        smithTileWorldVertices(tile).map(camera.project),
+                    wormIndex: group.id,
+                    movablePolygons: group.wormIndices.flatMap((wormIndex) =>
+                        regionWormTiles(region, wormIndex).map((tile) =>
+                            smithTileWorldVertices(tile).map(camera.project),
+                        ),
                     ),
                     rotationCenter,
                     rotationHandle: { x: rotationCenter.x, y: rotationCenter.y - 58 },

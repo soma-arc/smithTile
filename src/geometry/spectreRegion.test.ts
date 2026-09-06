@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { smithTileWorldVertices } from './smithTile';
 import {
+    adjustRegionWorms,
     createArticulatedRegionLevels,
     createCoreSpectreRegionLevel,
     createPB,
@@ -11,6 +12,7 @@ import {
     regionTiles,
     regionWormTiles,
     SPECTRE_REGIONS,
+    SPECTRE_REGION_EXPERIMENT_GROUPS,
     type SpectreRegion,
 } from './spectreRegion';
 import { ARTICULATED_WORMS, createArticulatedWormLevels } from './spectreWorm';
@@ -189,6 +191,86 @@ describe('TD2 partition workbench', () => {
 
     it('keeps TC2 fixed and exposes only the three dividers for manual placement', () => {
         expect(regionMovableIndices(SPECTRE_REGIONS.TD2)).toEqual([3, 4, 5]);
+    });
+});
+
+describe('PA2 child-region placement experiment', () => {
+    it('contains the PA2 partition followed by one canonical TA2 candidate', () => {
+        for (const regions of [SPECTRE_REGIONS, MIRRORED_SPECTRE_REGIONS]) {
+            const experiment = regions['PA2-TA2'];
+            expect(experiment.kind).toBe('PA');
+            expect(experiment.level).toBe(2);
+            expect(experiment.worms.map(({ worm }) => worm.kind)).toEqual([
+                'S',
+                'S',
+                'N',
+                'N',
+                'M',
+                'M',
+                'M',
+            ]);
+            expect(experiment.worms.slice(0, 4)).toEqual(regions.PB2.worms);
+            expect(experiment.worms.slice(4)).toEqual(regions.TA2.worms);
+        }
+    });
+
+    it('provides rigid candidates for all three basic level-2 partitions', () => {
+        for (const regions of [SPECTRE_REGIONS, MIRRORED_SPECTRE_REGIONS]) {
+            const taExperiment = regions['TA2-TC2'];
+            expect(taExperiment.worms.slice(0, 6)).toEqual(regions.TB2.worms);
+            expect(taExperiment.worms.slice(6)).toEqual(regions.TC2.worms);
+            expect(taExperiment.worms.map(({ worm }) => worm.kind)).toEqual([
+                'M',
+                'M',
+                'M',
+                'S',
+                'S',
+                'S',
+                'N',
+                'N',
+                'N',
+            ]);
+
+            const tcExperiment = regions['TC2-PA1'];
+            expect(tcExperiment.worms.slice(0, 6)).toEqual(regions.TD2.worms);
+            expect(tcExperiment.worms.slice(6)).toEqual(regions.PA1.worms);
+            expect(tcExperiment.worms.map(({ worm }) => worm.kind)).toEqual([
+                'N',
+                'N',
+                'N',
+                'M',
+                'M',
+                'M',
+                'S',
+                'S',
+            ]);
+        }
+        expect(SPECTRE_REGION_EXPERIMENT_GROUPS).toEqual({
+            'PA2-TA2': [{ id: 4, wormIndices: [4, 5, 6] }],
+            'TA2-TC2': [{ id: 6, wormIndices: [6, 7, 8] }],
+            'TC2-PA1': [{ id: 6, wormIndices: [6, 7] }],
+        });
+    });
+
+    it('moves all three candidate worms as one rigid group', () => {
+        const experiment = SPECTRE_REGIONS['PA2-TA2'];
+        const adjusted = adjustRegionWorms(
+            experiment,
+            { 4: { translation: { x: 7, y: -3 }, rotationRad: 0 } },
+            SPECTRE_REGION_EXPERIMENT_GROUPS['PA2-TA2'],
+        );
+
+        expect(adjusted.worms.slice(0, 4)).toEqual(experiment.worms.slice(0, 4));
+        for (let index = 4; index <= 6; index++) {
+            expect(adjusted.worms[index].transform.tx).toBeCloseTo(
+                experiment.worms[index].transform.tx + 7,
+                12,
+            );
+            expect(adjusted.worms[index].transform.ty).toBeCloseTo(
+                experiment.worms[index].transform.ty - 3,
+                12,
+            );
+        }
     });
 });
 

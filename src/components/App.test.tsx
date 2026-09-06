@@ -114,4 +114,30 @@ describe('<App> (state + components wiring)', () => {
         expect(screen.getByRole('radio', { name: '手動調整' })).toBeChecked();
         expect(screen.getByText('Worm数').parentElement).toHaveTextContent('6');
     });
+
+    it('opens the PA2 child-region placement experiment', async () => {
+        const user = userEvent.setup();
+        renderApp();
+
+        await user.click(screen.getByRole('radio', { name: 'Region' }));
+        await user.click(screen.getByRole('button', { name: 'PA2-TA2' }));
+
+        expect(screen.getByRole('button', { name: 'PA2-TA2' })).toHaveClass('active');
+        expect(screen.getByRole('radio', { name: '手動調整' })).toBeChecked();
+        expect(screen.getByText('Worm数').parentElement).toHaveTextContent('7');
+    });
+
+    it('offers child-region experiments for the TA2 and TC2 partitions', async () => {
+        const user = userEvent.setup();
+        renderApp();
+
+        await user.click(screen.getByRole('radio', { name: 'Region' }));
+        await user.click(screen.getByRole('button', { name: 'TA2-TC2' }));
+        expect(screen.getByRole('button', { name: 'TA2-TC2' })).toHaveClass('active');
+        expect(screen.getByText('Worm数').parentElement).toHaveTextContent('9');
+
+        await user.click(screen.getByRole('button', { name: 'TC2-PA1' }));
+        expect(screen.getByRole('button', { name: 'TC2-PA1' })).toHaveClass('active');
+        expect(screen.getByText('Worm数').parentElement).toHaveTextContent('8');
+    });
 });
