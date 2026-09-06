@@ -219,7 +219,12 @@ export function TileView({ backend = 'svg' }: { backend?: Backend }) {
             style={{
                 width: '100%',
                 height: '100%',
-                cursor: dragging === 'rotateRegion' ? 'grabbing' : dragging ? 'move' : 'grab',
+                cursor:
+                    dragging === 'pan' || dragging === 'rotateRegion'
+                        ? 'grabbing'
+                        : dragging === 'moveRegion'
+                          ? 'move'
+                          : 'grab',
                 touchAction: 'none',
                 userSelect: 'none',
             }}
