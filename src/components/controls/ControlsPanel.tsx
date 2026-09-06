@@ -5,6 +5,7 @@ import { IndependentControls } from './IndependentControls';
 import { ModeToggle } from './ModeToggle';
 import {
     ArticulatedWormSelect,
+    AssemblyTileModeSelect,
     ShapeToggle,
     SpectrePatchSelect,
     SpectreRegionSelect,
@@ -48,6 +49,13 @@ export function ControlsPanel() {
                 <section>
                     <h6>{t.spectreRegions}</h6>
                     <SpectreRegionSelect />
+                </section>
+            )}
+
+            {(isArticulatedWorm || isRegion) && (
+                <section>
+                    <h6>{t.assemblyTiles}</h6>
+                    <AssemblyTileModeSelect />
                 </section>
             )}
 

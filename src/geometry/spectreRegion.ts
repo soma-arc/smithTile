@@ -6,7 +6,9 @@ import {
     ARTICULATED_WORM_LEVELS,
     type ArticulatedWormLevel,
     MIRRORED_ARTICULATED_WORM_LEVELS,
+    MIRRORED_SPECTRE_WORM_LEVELS,
     type NamedWorm,
+    SPECTRE_WORM_LEVELS,
     WORM_COLOR_MAP,
     type WormAtomKind,
     type WormKind,
@@ -784,10 +786,8 @@ export function createArticulatedRegionLevels(
     return wormLevels.map((worms, index) => {
         const core = createCoreSpectreRegionLevel(worms);
         const previous = wormLevels[index - 1];
-        const TB =
-            previous?.level === worms.level - 1 ? createTB(worms.M, previous.S) : undefined;
-        const TD =
-            previous?.level === worms.level - 1 ? createTD(worms.N, previous.M) : undefined;
+        const TB = previous?.level === worms.level - 1 ? createTB(worms.M, previous.S) : undefined;
+        const TD = previous?.level === worms.level - 1 ? createTD(worms.N, previous.M) : undefined;
         return {
             ...core,
             PB: createPB(worms.S, worms.N),
@@ -822,6 +822,12 @@ export const SPECTRE_REGIONS = createRegionRegistry(ARTICULATED_WORM_LEVELS);
 
 export const MIRRORED_SPECTRE_REGIONS = createRegionRegistry(
     MIRRORED_ARTICULATED_WORM_LEVELS,
+) satisfies Record<keyof typeof SPECTRE_REGIONS, SpectreRegion>;
+
+/** The same region grammar rebuilt with one Spectre prototile instead of Hat/Turtle. */
+export const MONOTILE_SPECTRE_REGIONS = createRegionRegistry(SPECTRE_WORM_LEVELS);
+export const MIRRORED_MONOTILE_SPECTRE_REGIONS = createRegionRegistry(
+    MIRRORED_SPECTRE_WORM_LEVELS,
 ) satisfies Record<keyof typeof SPECTRE_REGIONS, SpectreRegion>;
 
 export type SpectreRegionKey = keyof typeof SPECTRE_REGIONS;

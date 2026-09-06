@@ -12,6 +12,7 @@ import type { Lang } from '../i18n';
 
 export type ParameterMode = 'ratio' | 'independent';
 export type SpectreCurveMode = 'straight' | 'cubicBezier';
+export type AssemblyTileMode = 'hatTurtle' | 'spectre';
 export type RegionPlacementMode = 'auto' | 'manual';
 export type RegionAdjustment = { translation: Vec2; rotationRad: number };
 export type ShapeSelection =
@@ -51,6 +52,7 @@ export type TileState = {
     shape: ShapeSelection;
     spectreCurve: CurveSpec;
     spectreCurveMode: SpectreCurveMode;
+    assemblyTileMode: AssemblyTileMode;
     a: number;
     b: number;
     /** Reflect source tiles before constructing Tile(a,b), worms, or regions. */
@@ -72,6 +74,7 @@ export const initialTileState: TileState = {
     shape: { kind: 'tile' },
     spectreCurve: DEFAULT_SPECTRE_CURVE,
     spectreCurveMode: 'cubicBezier',
+    assemblyTileMode: 'hatTurtle',
     a: 1,
     b: SQRT3, // Hat
     mirrored: false,
@@ -111,6 +114,7 @@ export type TileAction =
     | { type: 'resetRegionPlacement' }
     | { type: 'setSpectreControlPoint'; point: 'c1' | 'c2'; value: Vec2 }
     | { type: 'setSpectreCurveMode'; mode: SpectreCurveMode }
+    | { type: 'setAssemblyTileMode'; mode: AssemblyTileMode }
     | { type: 'resetSpectreCurve' }
     | { type: 'setA'; value: number }
     | { type: 'setB'; value: number }
@@ -247,6 +251,14 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
 
         case 'setSpectreCurveMode':
             return { ...state, spectreCurveMode: action.mode };
+
+        case 'setAssemblyTileMode':
+            return {
+                ...state,
+                assemblyTileMode: action.mode,
+                pan: { x: 0, y: 0 },
+                regionAdjustments: {},
+            };
 
         case 'resetSpectreCurve':
             return { ...state, spectreCurve: DEFAULT_SPECTRE_CURVE };

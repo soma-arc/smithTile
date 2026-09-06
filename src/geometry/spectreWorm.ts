@@ -11,6 +11,7 @@ import {
 import { subVec2 } from './Vec2';
 
 export type WormFamily = 'articulated' | 'wriggly';
+export type WormTileMode = 'hatTurtle' | 'spectre';
 export type WormAtomKind = 'E' | 'O' | 'I0';
 export type WormKind = 'I' | 'S' | 'N' | 'M';
 
@@ -136,9 +137,18 @@ function createAtom(
         rear: { atomKind: kind, tileIndex: rearTileIndex },
     };
 }
-function createBaseAtoms(partTransform: Transform): { E: NamedWorm; O: NamedWorm; I0: NamedWorm } {
-    const hat = createSmithTile(1, Math.sqrt(3), partTransform);
-    const turtle = createSmithTile(Math.sqrt(3), 1, partTransform);
+function createBaseAtoms(
+    partTransform: Transform,
+    tileMode: WormTileMode,
+): { E: NamedWorm; O: NamedWorm; I0: NamedWorm } {
+    const hat =
+        tileMode === 'spectre'
+            ? createSmithTile(1, 1, partTransform)
+            : createSmithTile(1, Math.sqrt(3), partTransform);
+    const turtle =
+        tileMode === 'spectre'
+            ? createSmithTile(1, 1, partTransform)
+            : createSmithTile(Math.sqrt(3), 1, partTransform);
     const ETiles = attachTileGroup([hat], { tileIndex: 0, vertexIndex: 4 }, [turtle], {
         tileIndex: 0,
         vertexIndex: 12,
@@ -268,11 +278,12 @@ function nextArticulatedWormLevel(
 function createArticulatedWormSystem(
     maxLevel: number,
     partTransform: Transform,
+    tileMode: WormTileMode,
 ): ArticulatedWormSystem {
     if (!Number.isInteger(maxLevel) || maxLevel < 0) {
         throw new Error(`maxLevel must be a non-negative integer, got ${maxLevel}`);
     }
-    const { E, O, I0 } = createBaseAtoms(partTransform);
+    const { E, O, I0 } = createBaseAtoms(partTransform, tileMode);
     const levels: ArticulatedWormLevel[] = [];
     let previous: ArticulatedWormState = {
         I: I0,
@@ -293,8 +304,9 @@ function createArticulatedWormSystem(
 export function createArticulatedWormLevels(
     maxLevel: number,
     partTransform: Transform = IDENTITY_TRANSFORM,
+    tileMode: WormTileMode = 'hatTurtle',
 ): readonly ArticulatedWormLevel[] {
-    return createArticulatedWormSystem(maxLevel, partTransform).levels;
+    return createArticulatedWormSystem(maxLevel, partTransform, tileMode).levels;
 }
 
 function createArticulatedWormRegistry(system: ArticulatedWormSystem) {
@@ -349,10 +361,17 @@ export function wormColorGroups(worm: Worm): WormColorGroup[] {
     }));
 }
 
-const ARTICULATED_WORM_SYSTEM = createArticulatedWormSystem(2, IDENTITY_TRANSFORM);
+const ARTICULATED_WORM_SYSTEM = createArticulatedWormSystem(2, IDENTITY_TRANSFORM, 'hatTurtle');
 const MIRRORED_ARTICULATED_WORM_SYSTEM = createArticulatedWormSystem(
     2,
     createReflectionTransform(),
+    'hatTurtle',
+);
+const SPECTRE_WORM_SYSTEM = createArticulatedWormSystem(2, IDENTITY_TRANSFORM, 'spectre');
+const MIRRORED_SPECTRE_WORM_SYSTEM = createArticulatedWormSystem(
+    2,
+    createReflectionTransform(),
+    'spectre',
 );
 
 export const ARTICULATED_WORM_LEVELS = ARTICULATED_WORM_SYSTEM.levels;
@@ -361,6 +380,10 @@ export const ARTICULATED_WORMS = createArticulatedWormRegistry(ARTICULATED_WORM_
 export const MIRRORED_ARTICULATED_WORMS = createArticulatedWormRegistry(
     MIRRORED_ARTICULATED_WORM_SYSTEM,
 );
+export const SPECTRE_WORM_LEVELS = SPECTRE_WORM_SYSTEM.levels;
+export const MIRRORED_SPECTRE_WORM_LEVELS = MIRRORED_SPECTRE_WORM_SYSTEM.levels;
+export const SPECTRE_WORMS = createArticulatedWormRegistry(SPECTRE_WORM_SYSTEM);
+export const MIRRORED_SPECTRE_WORMS = createArticulatedWormRegistry(MIRRORED_SPECTRE_WORM_SYSTEM);
 
 export type ArticulatedWormKey = keyof typeof ARTICULATED_WORMS;
 export const ARTICULATED_WORM_KEYS = Object.keys(ARTICULATED_WORMS) as ArticulatedWormKey[];

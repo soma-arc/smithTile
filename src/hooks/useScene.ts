@@ -9,6 +9,8 @@ import { createSmithTile, STRAIGHT_CURVE, smithTileWorldVertices } from '../geom
 import {
     adjustRegionWorms,
     MIRRORED_SPECTRE_REGIONS,
+    MIRRORED_MONOTILE_SPECTRE_REGIONS,
+    MONOTILE_SPECTRE_REGIONS,
     regionColorGroups,
     regionEndMarkers,
     regionMovableIndices,
@@ -20,7 +22,13 @@ import {
     SPECTRE_REGIONS,
     SPECTRE_REGION_EXPERIMENT_GROUPS,
 } from '../geometry/spectreRegion';
-import { ARTICULATED_WORMS, MIRRORED_ARTICULATED_WORMS, wormColorGroups } from '../geometry/spectreWorm';
+import {
+    ARTICULATED_WORMS,
+    MIRRORED_ARTICULATED_WORMS,
+    MIRRORED_SPECTRE_WORMS,
+    SPECTRE_WORMS,
+    wormColorGroups,
+} from '../geometry/spectreWorm';
 import type { TileState } from '../state/tileReducer';
 import { createReflectionTransform, IDENTITY_TRANSFORM } from '../geometry/Transform';
 
@@ -32,6 +40,7 @@ export function useScene(state: TileState): Scene {
         shape,
         spectreCurve,
         spectreCurveMode,
+        assemblyTileMode,
         zoom,
         pan,
         regionPlacementMode,
@@ -54,9 +63,15 @@ export function useScene(state: TileState): Scene {
         };
 
         if (shape.kind === 'region') {
-            const baseRegion = (mirrored ? MIRRORED_SPECTRE_REGIONS : SPECTRE_REGIONS)[
-                shape.region
-            ];
+            const regions =
+                assemblyTileMode === 'spectre'
+                    ? mirrored
+                        ? MIRRORED_MONOTILE_SPECTRE_REGIONS
+                        : MONOTILE_SPECTRE_REGIONS
+                    : mirrored
+                      ? MIRRORED_SPECTRE_REGIONS
+                      : SPECTRE_REGIONS;
+            const baseRegion = regions[shape.region];
             const movableGroups =
                 SPECTRE_REGION_EXPERIMENT_GROUPS[shape.region] ??
                 regionMovableIndices(baseRegion).map((index) => ({
@@ -77,6 +92,7 @@ export function useScene(state: TileState): Scene {
             const scene = buildScene(
                 {
                     tiles,
+                    edgeCurve: assemblyTileMode === 'spectre' ? activeSpectreCurve : undefined,
                     overlays,
                     componentFills: toggles.showComponentColors ? colorGroups : undefined,
                     componentBorders: toggles.showComponentBorders
@@ -184,12 +200,21 @@ export function useScene(state: TileState): Scene {
         }
 
         if (shape.kind === 'articulatedWorm') {
-            const worm = (mirrored ? MIRRORED_ARTICULATED_WORMS : ARTICULATED_WORMS)[shape.worm];
+            const worms =
+                assemblyTileMode === 'spectre'
+                    ? mirrored
+                        ? MIRRORED_SPECTRE_WORMS
+                        : SPECTRE_WORMS
+                    : mirrored
+                      ? MIRRORED_ARTICULATED_WORMS
+                      : ARTICULATED_WORMS;
+            const worm = worms[shape.worm];
             const points = worm.tiles.flatMap((tile) => smithTileWorldVertices(tile));
             const colorGroups = wormColorGroups(worm);
             return buildScene(
                 {
                     tiles: worm.tiles,
+                    edgeCurve: assemblyTileMode === 'spectre' ? activeSpectreCurve : undefined,
                     overlays,
                     componentFills: toggles.showComponentColors ? colorGroups : undefined,
                     componentBorders: toggles.showComponentBorders
@@ -242,6 +267,7 @@ export function useScene(state: TileState): Scene {
         );
     }, [
         a,
+        assemblyTileMode,
         b,
         mirrored,
         shape,

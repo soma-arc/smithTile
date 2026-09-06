@@ -21,6 +21,9 @@ export interface Strings {
     shapeSpectre: string;
     shapeArticulatedWorm: string;
     articulatedWorms: string;
+    assemblyTiles: string;
+    assemblyHatTurtle: string;
+    assemblySpectre: string;
     shapeRegion: string;
     spectreRegions: string;
     regionPlacementAuto: string;
@@ -94,6 +97,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shapeSpectre: 'Spectre',
         shapeArticulatedWorm: 'Worm',
         articulatedWorms: 'Articulated Worm',
+        assemblyTiles: '構成タイル',
+        assemblyHatTurtle: 'Hat / Turtle',
+        assemblySpectre: 'Spectre',
         shapeRegion: 'Region',
         spectreRegions: 'Spectre Region',
         regionPlacementAuto: '自動配置',
@@ -166,6 +172,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shapeSpectre: 'Spectre',
         shapeArticulatedWorm: 'Worm',
         articulatedWorms: 'Articulated worms',
+        assemblyTiles: 'Constituent tiles',
+        assemblyHatTurtle: 'Hat / Turtle',
+        assemblySpectre: 'Spectre',
         shapeRegion: 'Region',
         spectreRegions: 'Spectre regions',
         regionPlacementAuto: 'Automatic',

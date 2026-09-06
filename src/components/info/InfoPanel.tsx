@@ -3,8 +3,19 @@ import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
 import { polykiteValid } from '../../geometry/kiteGrid';
 import { closureError, createSmithTile, isAperiodic, SQRT3 } from '../../geometry/smithTile';
-import { MIRRORED_SPECTRE_REGIONS, regionTiles, SPECTRE_REGIONS } from '../../geometry/spectreRegion';
-import { ARTICULATED_WORMS, MIRRORED_ARTICULATED_WORMS } from '../../geometry/spectreWorm';
+import {
+    MIRRORED_MONOTILE_SPECTRE_REGIONS,
+    MIRRORED_SPECTRE_REGIONS,
+    MONOTILE_SPECTRE_REGIONS,
+    regionTiles,
+    SPECTRE_REGIONS,
+} from '../../geometry/spectreRegion';
+import {
+    ARTICULATED_WORMS,
+    MIRRORED_ARTICULATED_WORMS,
+    MIRRORED_SPECTRE_WORMS,
+    SPECTRE_WORMS,
+} from '../../geometry/spectreWorm';
 import { IDENTITY_TRANSFORM } from '../../geometry/Transform';
 import { Tag } from '../ui/Tag';
 import { SpectreCurveEditor } from './SpectreCurveEditor';
@@ -21,13 +32,22 @@ const POLYKITE_NO_TAG = {
 };
 
 export function InfoPanel() {
-    const { a: tileA, b: tileB, lang, mirrored, shape } = useTileState();
+    const { a: tileA, assemblyTileMode, b: tileB, lang, mirrored, shape } = useTileState();
     const t = TRANSLATIONS[lang];
     if (shape.kind === 'region') {
-        const region = (mirrored ? MIRRORED_SPECTRE_REGIONS : SPECTRE_REGIONS)[shape.region];
+        const regions =
+            assemblyTileMode === 'spectre'
+                ? mirrored
+                    ? MIRRORED_MONOTILE_SPECTRE_REGIONS
+                    : MONOTILE_SPECTRE_REGIONS
+                : mirrored
+                  ? MIRRORED_SPECTRE_REGIONS
+                  : SPECTRE_REGIONS;
+        const region = regions[shape.region];
         return (
             <aside className="info">
                 <h6>{t.info}</h6>
+                {assemblyTileMode === 'spectre' && <SpectreCurveEditor />}
                 <div>
                     <div className="info-stat-label">Spectre Region</div>
                     <div className="info-stat-value">{shape.region}</div>
@@ -51,10 +71,19 @@ export function InfoPanel() {
         );
     }
     if (shape.kind === 'articulatedWorm') {
-        const worm = (mirrored ? MIRRORED_ARTICULATED_WORMS : ARTICULATED_WORMS)[shape.worm];
+        const worms =
+            assemblyTileMode === 'spectre'
+                ? mirrored
+                    ? MIRRORED_SPECTRE_WORMS
+                    : SPECTRE_WORMS
+                : mirrored
+                  ? MIRRORED_ARTICULATED_WORMS
+                  : ARTICULATED_WORMS;
+        const worm = worms[shape.worm];
         return (
             <aside className="info">
                 <h6>{t.info}</h6>
+                {assemblyTileMode === 'spectre' && <SpectreCurveEditor />}
                 <div>
                     <div className="info-stat-label">Articulated Worm</div>
                     <div className="info-stat-value">{shape.worm}</div>

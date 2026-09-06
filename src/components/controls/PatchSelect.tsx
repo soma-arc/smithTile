@@ -5,10 +5,34 @@ import { TRANSLATIONS } from '../../i18n';
 import { SPECTRE_PATCHES, type SpectrePatchKey } from '../../geometry/smithPatch';
 import { SPECTRE_REGION_KEYS } from '../../geometry/spectreRegion';
 import { ARTICULATED_WORM_KEYS } from '../../geometry/spectreWorm';
-import type { RegionPlacementMode, ShapeSelection } from '../../state/tileReducer';
+import type {
+    AssemblyTileMode,
+    RegionPlacementMode,
+    ShapeSelection,
+} from '../../state/tileReducer';
 import { Segmented } from '../ui/Segmented';
 
 const PATCH_KEYS = Object.keys(SPECTRE_PATCHES) as SpectrePatchKey[];
+
+export function AssemblyTileModeSelect() {
+    const { assemblyTileMode, lang } = useTileState();
+    const dispatch = useTileDispatch();
+    const t = TRANSLATIONS[lang];
+
+    return (
+        <Segmented<AssemblyTileMode>
+            name="assembly-tile-mode"
+            value={assemblyTileMode}
+            options={[
+                { value: 'hatTurtle', label: t.assemblyHatTurtle },
+                { value: 'spectre', label: t.assemblySpectre },
+            ]}
+            onChange={(mode) => dispatch({ type: 'setAssemblyTileMode', mode })}
+            containerStyle={{ width: '100%' }}
+            optionStyle={{ flex: 1, justifyContent: 'center' }}
+        />
+    );
+}
 
 export function ShapeToggle() {
     const { lang, shape } = useTileState();

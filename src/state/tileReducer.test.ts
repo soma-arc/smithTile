@@ -17,6 +17,23 @@ describe('tileReducer — articulated worm mode', () => {
         });
         expect(state.shape).toEqual({ kind: 'articulatedWorm', worm: 'I0:E' });
     });
+
+    it('switches constituent tiles and recenters the drawing', () => {
+        const state = tileReducer(
+            {
+                ...initialTileState,
+                pan: { x: 12, y: -8 },
+                regionAdjustments: {
+                    1: { translation: { x: 2, y: 3 }, rotationRad: 0.2 },
+                },
+            },
+            { type: 'setAssemblyTileMode', mode: 'spectre' },
+        );
+
+        expect(state.assemblyTileMode).toBe('spectre');
+        expect(state.pan).toEqual({ x: 0, y: 0 });
+        expect(state.regionAdjustments).toEqual({});
+    });
 });
 
 describe('tileReducer — region mode', () => {

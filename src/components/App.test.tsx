@@ -79,6 +79,20 @@ describe('<App> (state + components wiring)', () => {
         expect(screen.queryByText('Spectre パッチ')).not.toBeInTheDocument();
     });
 
+    it('draws a worm with the single Spectre prototile', async () => {
+        const user = userEvent.setup();
+        const { container } = renderApp();
+
+        await user.click(screen.getByRole('radio', { name: 'Worm' }));
+        const spectreOptions = screen.getAllByRole('radio', { name: 'Spectre' });
+        await user.click(spectreOptions[spectreOptions.length - 1]);
+
+        expect(screen.getByText('構成タイル')).toBeInTheDocument();
+        expect(screen.getByText(/Articulated Worm\s+E\s+·\s+Spectre/)).toBeInTheDocument();
+        expect(container.querySelector('.svg-host svg path[d*="C"]')).toBeInTheDocument();
+        expect(screen.getByLabelText('Spectre の辺の曲線プレビュー')).toBeInTheDocument();
+    });
+
     it('opens the PB2 partition workbench with two movable N2 worms', async () => {
         const user = userEvent.setup();
         renderApp();

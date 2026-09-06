@@ -8,6 +8,7 @@ import {
     createTB,
     createTD,
     MIRRORED_SPECTRE_REGIONS,
+    MONOTILE_SPECTRE_REGIONS,
     regionMovableIndices,
     regionTiles,
     regionWormTiles,
@@ -374,5 +375,21 @@ describe('level-driven region creation', () => {
         expect(() => createTB(level1.M, level1.S)).toThrow('worm level >= 2');
         expect(() => createTD(level3.N, level1.M)).toThrow('Expected M at level 2');
         expect(() => createTD(level1.N, level1.M)).toThrow('worm level >= 2');
+    });
+});
+
+describe('monotile Spectre regions', () => {
+    it('retains the region grammar while using only Tile(1,1)', () => {
+        expect(Object.keys(MONOTILE_SPECTRE_REGIONS)).toEqual(Object.keys(SPECTRE_REGIONS));
+        for (const [key, region] of Object.entries(MONOTILE_SPECTRE_REGIONS)) {
+            expect(region.worms.map(({ worm }) => worm.kind)).toEqual(
+                SPECTRE_REGIONS[key as keyof typeof SPECTRE_REGIONS].worms.map(
+                    ({ worm }) => worm.kind,
+                ),
+            );
+            expect(
+                regionTiles(region).every((tile) => tile.shape.a === 1 && tile.shape.b === 1),
+            ).toBe(true);
+        }
     });
 });

@@ -3,13 +3,14 @@ import { useTileState } from '../../hooks/useTileState';
 import { findPreset } from '../../geometry/smithTile';
 
 export function PresetTitle() {
-    const { a, b, shape, presetName, lang } = useTileState();
+    const { a, assemblyTileMode, b, shape, presetName, lang } = useTileState();
+    const assemblySuffix = assemblyTileMode === 'spectre' ? '  ·  Spectre' : '';
     const preset = findPreset(presetName);
     const title =
         shape.kind === 'region'
-            ? `Spectre Region  ${shape.region}`
+            ? `Spectre Region  ${shape.region}${assemblySuffix}`
             : shape.kind === 'articulatedWorm'
-              ? `Articulated Worm  ${shape.worm}`
+              ? `Articulated Worm  ${shape.worm}${assemblySuffix}`
               : shape.kind === 'spectre'
                 ? shape.patch
                     ? `Spectre Patch  ${shape.patch}`

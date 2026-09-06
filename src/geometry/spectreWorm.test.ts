@@ -7,6 +7,8 @@ import {
     concatWorms,
     createArticulatedWormLevels,
     MIRRORED_ARTICULATED_WORM_LEVELS,
+    MIRRORED_SPECTRE_WORMS,
+    SPECTRE_WORMS,
     WORM_COLOR_MAP,
     wormColorGroups,
 } from './spectreWorm';
@@ -200,5 +202,29 @@ describe('ARTICULATED_WORMS', () => {
             WORM_COLOR_MAP.I,
             WORM_COLOR_MAP.S,
         ]);
+    });
+});
+
+describe('SPECTRE_WORMS', () => {
+    it('rebuilds the same grammar from one Tile(1,1) prototile', () => {
+        expect(Object.keys(SPECTRE_WORMS)).toEqual(ARTICULATED_WORM_KEYS);
+
+        for (const [key, worm] of Object.entries(SPECTRE_WORMS)) {
+            expect(worm.tiles).toHaveLength(
+                ARTICULATED_WORMS[key as keyof typeof ARTICULATED_WORMS].tiles.length,
+            );
+            expect(worm.tiles.every((tile) => tile.shape.a === 1 && tile.shape.b === 1)).toBe(true);
+            expect(
+                MIRRORED_SPECTRE_WORMS[key as keyof typeof MIRRORED_SPECTRE_WORMS].tiles.every(
+                    (tile) => tile.shape.a === 1 && tile.shape.b === 1,
+                ),
+            ).toBe(true);
+        }
+
+        const e = SPECTRE_WORMS.E;
+        const parent = smithTileWorldVertices(e.tiles[0])[4];
+        const child = smithTileWorldVertices(e.tiles[1])[12];
+        expect(parent.x).toBeCloseTo(child.x, 10);
+        expect(parent.y).toBeCloseTo(child.y, 10);
     });
 });
