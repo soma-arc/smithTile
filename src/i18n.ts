@@ -79,6 +79,15 @@ export interface Strings {
     exportStl: string;
     saveStl: string;
     stlInvalidBoundary: string;
+    tilePaint: string;
+    tileColor: string;
+    paintCanvas: string;
+    paintRotation: string;
+    paintVisible: string;
+    paintColor: string;
+    paintWidth: string;
+    paintUndo: string;
+    paintClear: string;
 }
 
 export const TRANSLATIONS: Record<Lang, Strings> = {
@@ -160,6 +169,15 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         exportStl: '3D 出力',
         saveStl: 'STL を保存',
         stlInvalidBoundary: '境界が自己交差しているため、STLを作成できません。',
+        tilePaint: 'タイルペイント',
+        tileColor: 'タイル色',
+        paintCanvas: 'タイルのペイント編集領域',
+        paintRotation: 'ペイント回転',
+        paintVisible: '表示',
+        paintColor: '色',
+        paintWidth: '線幅',
+        paintUndo: '元に戻す',
+        paintClear: '全消去',
     },
     en: {
         appTitle: 'Tile(a, b) Visualizer',
@@ -239,5 +257,14 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         exportStl: '3D export',
         saveStl: 'Save STL',
         stlInvalidBoundary: 'The boundary intersects itself, so an STL cannot be created.',
+        tilePaint: 'Tile paint',
+        tileColor: 'Tile color',
+        paintCanvas: 'Tile paint editor',
+        paintRotation: 'Paint rotation',
+        paintVisible: 'Visible',
+        paintColor: 'Color',
+        paintWidth: 'Width',
+        paintUndo: 'Undo',
+        paintClear: 'Clear',
     },
 };

@@ -19,6 +19,7 @@ import {
 import { IDENTITY_TRANSFORM } from '../../geometry/Transform';
 import { Tag } from '../ui/Tag';
 import { SpectreCurveEditor } from './SpectreCurveEditor';
+import { TilePaintEditor } from './TilePaintEditor';
 
 const APERIODIC_TAG = { background: 'var(--color-accent-100)', color: 'var(--color-accent-800)' };
 const PERIODIC_TAG = { background: 'var(--color-neutral-200)', color: 'var(--color-neutral-800)' };
@@ -48,6 +49,7 @@ export function InfoPanel() {
             <aside className="info">
                 <h6>{t.info}</h6>
                 {assemblyTileMode === 'spectre' && <SpectreCurveEditor />}
+                <TilePaintEditor />
                 <div>
                     <div className="info-stat-label">Spectre Region</div>
                     <div className="info-stat-value">{shape.region}</div>
@@ -84,6 +86,7 @@ export function InfoPanel() {
             <aside className="info">
                 <h6>{t.info}</h6>
                 {assemblyTileMode === 'spectre' && <SpectreCurveEditor />}
+                <TilePaintEditor />
                 <div>
                     <div className="info-stat-label">Articulated Worm</div>
                     <div className="info-stat-value">{shape.worm}</div>
@@ -126,6 +129,7 @@ export function InfoPanel() {
             <h6>{t.info}</h6>
 
             {isSpectre && <SpectreCurveEditor />}
+            <TilePaintEditor />
 
             <div>
                 <div className="info-stat-label">a : b</div>

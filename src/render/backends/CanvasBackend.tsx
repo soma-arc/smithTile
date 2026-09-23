@@ -7,8 +7,45 @@
  */
 
 import { useEffect, useRef } from 'react';
+import type { BoundarySegment } from '../../geometry/smithTile';
+import { paintPressureScale } from '../../geometry/tilePaint';
 import { assertNever } from '../exhaustive';
 import type { BackendProps, Drawable, Style } from '../scene';
+
+function traceBoundary(
+    ctx: CanvasRenderingContext2D,
+    segments: readonly BoundarySegment[],
+    closed: boolean,
+): boolean {
+    const first = segments[0];
+    if (!first) return false;
+    const start = first.kind === 'polyline' ? first.points[0] : first.p0;
+    if (!start) return false;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    for (const segment of segments) {
+        switch (segment.kind) {
+            case 'line':
+                ctx.lineTo(segment.p1.x, segment.p1.y);
+                break;
+            case 'cubicBezier':
+                ctx.bezierCurveTo(
+                    segment.c1.x,
+                    segment.c1.y,
+                    segment.c2.x,
+                    segment.c2.y,
+                    segment.p1.x,
+                    segment.p1.y,
+                );
+                break;
+            case 'polyline':
+                for (const point of segment.points.slice(1)) ctx.lineTo(point.x, point.y);
+                break;
+        }
+    }
+    if (closed) ctx.closePath();
+    return true;
+}
 
 function drawOne(ctx: CanvasRenderingContext2D, d: Drawable): void {
     switch (d.kind) {
@@ -22,35 +59,7 @@ function drawOne(ctx: CanvasRenderingContext2D, d: Drawable): void {
             break;
         }
         case 'path': {
-            const first = d.segments[0];
-            if (!first) return;
-            const start = first.kind === 'polyline' ? first.points[0] : first.p0;
-            if (!start) return;
-            ctx.beginPath();
-            ctx.moveTo(start.x, start.y);
-            for (const segment of d.segments) {
-                switch (segment.kind) {
-                    case 'line':
-                        ctx.lineTo(segment.p1.x, segment.p1.y);
-                        break;
-                    case 'cubicBezier':
-                        ctx.bezierCurveTo(
-                            segment.c1.x,
-                            segment.c1.y,
-                            segment.c2.x,
-                            segment.c2.y,
-                            segment.p1.x,
-                            segment.p1.y,
-                        );
-                        break;
-                    case 'polyline':
-                        for (const point of segment.points.slice(1)) {
-                            ctx.lineTo(point.x, point.y);
-                        }
-                        break;
-                }
-            }
-            if (d.closed) ctx.closePath();
+            if (!traceBoundary(ctx, d.segments, d.closed)) return;
             paint(ctx, d.style);
             break;
         }
@@ -65,6 +74,35 @@ function drawOne(ctx: CanvasRenderingContext2D, d: Drawable): void {
             ctx.beginPath();
             ctx.arc(d.center.x, d.center.y, d.r, 0, Math.PI * 2);
             paint(ctx, d.style);
+            break;
+        }
+        case 'paint': {
+            ctx.save();
+            if (!traceBoundary(ctx, d.boundary, true)) {
+                ctx.restore();
+                return;
+            }
+            ctx.clip();
+            for (const stroke of d.strokes) {
+                ctx.globalAlpha = stroke.opacity;
+                ctx.strokeStyle = stroke.color;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                for (let i = 1; i < stroke.points.length; i++) {
+                    const previous = stroke.points[i - 1];
+                    const point = stroke.points[i];
+                    const pressure =
+                        (paintPressureScale(previous.pressure) +
+                            paintPressureScale(point.pressure)) /
+                        2;
+                    ctx.beginPath();
+                    ctx.moveTo(previous.x, previous.y);
+                    ctx.lineTo(point.x, point.y);
+                    ctx.lineWidth = stroke.width * pressure;
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
             break;
         }
         case 'text': {

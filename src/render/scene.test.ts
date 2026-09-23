@@ -5,7 +5,11 @@
 
 import { describe, expect, it } from 'vitest';
 import { Ma0 } from '../geometry/smithPatch';
-import { createSmithTile, DEFAULT_SPECTRE_CURVE, smithTileWorldVertices } from '../geometry/smithTile';
+import {
+    createSmithTile,
+    DEFAULT_SPECTRE_CURVE,
+    smithTileWorldVertices,
+} from '../geometry/smithTile';
 import { IDENTITY_TRANSFORM } from '../geometry/Transform';
 import { CANVAS_H, CANVAS_W, createCamera, createCenteredCamera } from './camera';
 import { buildScene, type Overlays, type SceneWorld } from './scene';
@@ -210,6 +214,54 @@ describe('buildScene — Spectre boundary', () => {
                     item.segments[0].kind === 'cubicBezier',
             ),
         ).toBe(true);
+    });
+});
+
+describe('buildScene — tile paint', () => {
+    const paint = {
+        visible: true,
+        strokes: [
+            {
+                points: [
+                    { x: 0.2, y: 0.3 },
+                    { x: 0.8, y: 0.7 },
+                ],
+                color: '#123456',
+                width: 0.03,
+                opacity: 0.8,
+            },
+        ],
+    };
+
+    it('places clipped artwork between the fill and boundary layers', () => {
+        const scene = buildScene({ ...world(), paint }, camera);
+        const ids = scene.layers.map((layer) => layer.id);
+        expect(ids.indexOf('paint')).toBeGreaterThan(ids.indexOf('fill'));
+        expect(ids.indexOf('paint')).toBeLessThan(ids.indexOf('boundary'));
+        const item = scene.layers.find((layer) => layer.id === 'paint')?.items[0];
+        expect(item?.kind).toBe('paint');
+        if (item?.kind === 'paint') {
+            expect(item.boundary).toHaveLength(14);
+            expect(item.strokes[0].points).toHaveLength(2);
+            expect(item.strokes[0].width).toBeGreaterThan(0);
+        }
+    });
+
+    it('uses the selected base color when component coloring is absent', () => {
+        const fill = buildScene({ ...world(), fillColor: '#abcdef' }, camera).layers.find(
+            (layer) => layer.id === 'fill',
+        )?.items[0];
+        expect(fill?.kind).toBe('polygon');
+        if (fill?.kind === 'polygon') expect(fill.style.fill).toBe('#abcdef');
+    });
+
+    it('stamps the same document into every tile and honors visibility', () => {
+        const painted = buildScene({ ...world(), tiles: Ma0.tiles, paint }, camera);
+        expect(painted.layers.find((layer) => layer.id === 'paint')?.items).toHaveLength(
+            Ma0.tiles.length,
+        );
+        const hidden = buildScene({ ...world(), paint: { ...paint, visible: false } }, camera);
+        expect(hidden.layers.some((layer) => layer.id === 'paint')).toBe(false);
     });
 });
 

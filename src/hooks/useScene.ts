@@ -37,6 +37,8 @@ export function useScene(state: TileState): Scene {
         a,
         b,
         mirrored,
+        paint,
+        tileColor,
         shape,
         spectreCurve,
         spectrePolyline,
@@ -98,6 +100,8 @@ export function useScene(state: TileState): Scene {
             const scene = buildScene(
                 {
                     tiles,
+                    paint,
+                    fillColor: tileColor,
                     edgeCurve: assemblyTileMode === 'spectre' ? activeSpectreCurve : undefined,
                     overlays,
                     componentFills: toggles.showComponentColors ? colorGroups : undefined,
@@ -220,6 +224,8 @@ export function useScene(state: TileState): Scene {
             return buildScene(
                 {
                     tiles: worm.tiles,
+                    paint,
+                    fillColor: tileColor,
                     edgeCurve: assemblyTileMode === 'spectre' ? activeSpectreCurve : undefined,
                     overlays,
                     componentFills: toggles.showComponentColors ? colorGroups : undefined,
@@ -243,6 +249,8 @@ export function useScene(state: TileState): Scene {
             return buildScene(
                 {
                     tiles: p.tiles,
+                    paint,
+                    fillColor: tileColor,
                     edgeCurve: activeSpectreCurve,
                     overlays,
                     ports: toggles.showPatchPorts
@@ -266,6 +274,8 @@ export function useScene(state: TileState): Scene {
         return buildScene(
             {
                 tiles: [tile],
+                paint,
+                fillColor: tileColor,
                 edgeCurve: isSpectre ? activeSpectreCurve : undefined,
                 overlays,
             },
@@ -276,6 +286,8 @@ export function useScene(state: TileState): Scene {
         assemblyTileMode,
         b,
         mirrored,
+        paint,
+        tileColor,
         shape,
         spectreCurve,
         spectrePolyline,

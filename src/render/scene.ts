@@ -30,6 +30,12 @@ import {
 } from '../geometry/smithTile';
 import { applyTransform, IDENTITY_TRANSFORM } from '../geometry/Transform';
 import type { Vec2 } from '../geometry/Vec2';
+import {
+    type PaintDocument,
+    paintFrameSize,
+    paintPointToLocal,
+    pointsBounds,
+} from '../geometry/tilePaint';
 import type { Camera } from './camera';
 import { COLOR } from './colors';
 
@@ -64,6 +70,16 @@ export type Drawable =
       }
     | { kind: 'segment'; a: Vec2; b: Vec2; style: Style }
     | { kind: 'circle'; center: Vec2; r: number; style: Style }
+    | {
+          kind: 'paint';
+          boundary: readonly BoundarySegment[];
+          strokes: readonly {
+              points: readonly (Vec2 & { pressure?: number })[];
+              color: string;
+              width: number;
+              opacity: number;
+          }[];
+      }
     | { kind: 'text'; at: Vec2; text: string; style: TextStyle };
 
 export type SceneLayer = { id: string; items: Drawable[] };
@@ -109,6 +125,10 @@ export type SceneWorld = {
     tiles: readonly SmithTile[];
     /** One canonical 0→1 curve, placed on every edge with the fixed alternating orientation. */
     edgeCurve?: CurveSpec;
+    /** One normalized drawing stamped into every tile's local bounding box. */
+    paint?: PaintDocument;
+    /** Base fill used when component coloring is not active. */
+    fillColor?: string;
     overlays: Overlays;
     ports?: PatchPorts;
     /**
@@ -205,6 +225,7 @@ function portArrow(port: Port, color: string, P: (p: Vec2) => Vec2, label?: stri
 
 export function buildScene(world: SceneWorld, camera: Camera): Scene {
     const { overlays } = world;
+    const fillColor = world.fillColor ?? COLOR.fill;
     const P = camera.project;
 
     const geomCache = new WeakMap<SmithTile, TileGeom>();
@@ -308,13 +329,48 @@ export function buildScene(world: SceneWorld, camera: Camera): Scene {
                               kind: 'path',
                               segments: g.boundary,
                               closed: true,
-                              style: { fill: COLOR.fill },
+                              style: { fill: fillColor },
                           }
-                        : { kind: 'polygon', points: g.V, style: { fill: COLOR.fill } },
+                        : { kind: 'polygon', points: g.V, style: { fill: fillColor } },
                 );
             }
         }
         if (items.length) layers.push({ id: 'fill', items });
+    }
+
+    // Artwork uses normalized tile-local coordinates and is clipped independently
+    // to each tile. It sits above fills but below every boundary/annotation layer.
+    if (world.paint?.visible && world.paint.strokes.length > 0) {
+        const items: Drawable[] = geoms.map((g) => {
+            const bounds = pointsBounds(g.local);
+            const projectLocal = (point: Vec2) => P(applyTransform(g.tile.transform, point));
+            const widthReference = paintFrameSize(bounds);
+            const widthOrigin = projectLocal({ x: bounds.minX, y: bounds.minY });
+            return {
+                kind: 'paint',
+                boundary: g.boundary,
+                strokes:
+                    world.paint?.strokes.map((stroke) => {
+                        const widthPoint = projectLocal({
+                            x: bounds.minX + stroke.width * widthReference,
+                            y: bounds.minY,
+                        });
+                        return {
+                            points: stroke.points.map((point) => ({
+                                ...projectLocal(paintPointToLocal(point, bounds)),
+                                pressure: point.pressure,
+                            })),
+                            color: stroke.color,
+                            width: Math.hypot(
+                                widthPoint.x - widthOrigin.x,
+                                widthPoint.y - widthOrigin.y,
+                            ),
+                            opacity: stroke.opacity,
+                        };
+                    }) ?? [],
+            };
+        });
+        layers.push({ id: 'paint', items });
     }
 
     // 4/5. boundary or A/B edge distinction. Under component borders the per-tile

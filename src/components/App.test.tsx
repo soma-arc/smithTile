@@ -94,6 +94,112 @@ describe('<App> (state + components wiring)', () => {
         expect(screen.queryByRole('button', { name: '点列の制御点 1' })).not.toBeInTheDocument();
     });
 
+    it('paints once in the editor and transfers the stroke to the tile', () => {
+        const { container } = renderApp();
+        const editor = screen.getByLabelText('タイルのペイント編集領域');
+        Object.defineProperties(editor, {
+            getScreenCTM: {
+                value: () => ({ inverse: () => ({}) }),
+            },
+            createSVGPoint: {
+                value: () => ({
+                    x: 0,
+                    y: 0,
+                    matrixTransform() {
+                        return { x: this.x, y: this.y };
+                    },
+                }),
+            },
+            setPointerCapture: { value: () => {} },
+            hasPointerCapture: { value: () => false },
+        });
+
+        fireEvent.pointerDown(editor, {
+            button: 0,
+            isPrimary: true,
+            pointerId: 1,
+            clientX: 0.25,
+            clientY: 0.7,
+        });
+        fireEvent.pointerMove(editor, { pointerId: 1, clientX: 0.75, clientY: 0.3 });
+        fireEvent.pointerUp(editor, { pointerId: 1, clientX: 0.75, clientY: 0.3 });
+
+        expect(screen.getByRole('button', { name: '元に戻す' })).toBeEnabled();
+        expect(container.querySelector('.svg-host svg g[clip-path] line')).toBeInTheDocument();
+    });
+
+    it('uses stylus pressure to vary the transferred line width', () => {
+        const { container } = renderApp();
+        const editor = screen.getByLabelText('タイルのペイント編集領域');
+        Object.defineProperties(editor, {
+            getScreenCTM: { value: () => ({ inverse: () => ({}) }) },
+            createSVGPoint: {
+                value: () => ({
+                    x: 0,
+                    y: 0,
+                    matrixTransform() {
+                        return { x: this.x, y: this.y };
+                    },
+                }),
+            },
+            setPointerCapture: { value: () => {} },
+            hasPointerCapture: { value: () => false },
+        });
+
+        fireEvent.pointerDown(editor, {
+            button: 0,
+            isPrimary: true,
+            pointerType: 'pen',
+            pointerId: 7,
+            pressure: 0.1,
+            clientX: 0.2,
+            clientY: 0.8,
+        });
+        fireEvent.pointerMove(editor, {
+            pointerType: 'pen',
+            pointerId: 7,
+            pressure: 1,
+            clientX: 0.8,
+            clientY: 0.2,
+        });
+        fireEvent.pointerUp(editor, { pointerType: 'pen', pointerId: 7, pressure: 0 });
+
+        const editorLine = container.querySelector('.paint-editor-stroke');
+        const transferredLine = container.querySelector('.svg-host svg g[clip-path] line');
+        expect(editorLine).toBeInTheDocument();
+        expect(transferredLine).toBeInTheDocument();
+        expect(Number(editorLine?.getAttribute('stroke-width'))).toBeLessThan(0.025);
+    });
+
+    it('suppresses the pen long-press context menu only in the paint canvas', () => {
+        renderApp();
+        const editor = screen.getByLabelText('タイルのペイント編集領域');
+        expect(fireEvent.contextMenu(editor)).toBe(false);
+    });
+
+    it('changes the base color of the tile and editor preview', () => {
+        const { container } = renderApp();
+        fireEvent.change(screen.getByLabelText('タイル色'), { target: { value: '#12ab34' } });
+
+        expect(container.querySelector('.paint-editor-tile')).toHaveAttribute('fill', '#12ab34');
+        expect(
+            container.querySelector('.svg-host svg polygon[fill="#12ab34"]'),
+        ).toBeInTheDocument();
+    });
+
+    it('rotates the paint preview with the shared scene rotation', () => {
+        const { container } = renderApp();
+        fireEvent.change(screen.getByRole('slider', { name: 'ペイント回転 0°' }), {
+            target: { value: '90' },
+        });
+
+        expect(container.querySelector('.paint-editor-rotating')).toHaveAttribute(
+            'transform',
+            'rotate(-90 0.5 0.5)',
+        );
+        expect(screen.getByRole('slider', { name: '回転 90°' })).toHaveValue('90');
+    });
+
     it('selects and draws an articulated worm', async () => {
         const user = userEvent.setup();
         const { container } = renderApp();

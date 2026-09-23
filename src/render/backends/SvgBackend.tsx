@@ -1,7 +1,9 @@
 /** SVG backend — renders a Scene as declarative JSX. */
 
+import { useId } from 'react';
 import type { BoundarySegment } from '../../geometry/smithTile';
 import type { Vec2 } from '../../geometry/Vec2';
+import { paintPressureScale } from '../../geometry/tilePaint';
 import { assertNever } from '../exhaustive';
 import type { BackendProps, Drawable } from '../scene';
 
@@ -38,6 +40,7 @@ function pathData(segments: readonly BoundarySegment[], closed: boolean): string
 }
 
 function DrawableEl({ d }: { d: Drawable }) {
+    const generatedId = useId().replace(/:/g, '');
     switch (d.kind) {
         case 'polygon': {
             const s = d.style;
@@ -103,6 +106,50 @@ function DrawableEl({ d }: { d: Drawable }) {
                     opacity={s.opacity}
                     vectorEffect={s.stroke ? 'non-scaling-stroke' : undefined}
                 />
+            );
+        }
+        case 'paint': {
+            const clipId = `tile-paint-${generatedId}`;
+            return (
+                <>
+                    <defs>
+                        <clipPath id={clipId}>
+                            <path d={pathData(d.boundary, true)} />
+                        </clipPath>
+                    </defs>
+                    <g clipPath={`url(#${clipId})`}>
+                        {d.strokes.map((stroke, strokeIndex) => (
+                            <g
+                                // biome-ignore lint/suspicious/noArrayIndexKey: committed strokes are immutable and positional
+                                key={strokeIndex}
+                            >
+                                {stroke.points.slice(1).map((point, pointIndex) => {
+                                    const previous = stroke.points[pointIndex];
+                                    const pressure =
+                                        (paintPressureScale(previous.pressure) +
+                                            paintPressureScale(point.pressure)) /
+                                        2;
+                                    return (
+                                        <line
+                                            // biome-ignore lint/suspicious/noArrayIndexKey: stroke points are immutable and positional
+                                            key={pointIndex}
+                                            x1={previous.x}
+                                            y1={previous.y}
+                                            x2={point.x}
+                                            y2={point.y}
+                                            fill="none"
+                                            stroke={stroke.color}
+                                            strokeWidth={stroke.width * pressure}
+                                            strokeOpacity={stroke.opacity}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    );
+                                })}
+                            </g>
+                        ))}
+                    </g>
+                </>
             );
         }
         case 'text': {

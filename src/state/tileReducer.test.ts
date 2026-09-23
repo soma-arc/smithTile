@@ -120,6 +120,41 @@ describe('tileReducer — Spectre polyline editor', () => {
     });
 });
 
+describe('tileReducer — tile paint', () => {
+    const stroke = {
+        points: [
+            { x: 0.2, y: 0.3 },
+            { x: 0.7, y: 0.8 },
+        ],
+        color: '#123456',
+        width: 0.03,
+        opacity: 1,
+    } as const;
+
+    it('adds, undoes, and clears committed strokes', () => {
+        const added = tileReducer(initialTileState, { type: 'addPaintStroke', stroke });
+        expect(added.paint.strokes).toEqual([stroke]);
+        expect(tileReducer(added, { type: 'undoPaintStroke' }).paint.strokes).toEqual([]);
+        expect(tileReducer(added, { type: 'clearPaint' }).paint.strokes).toEqual([]);
+    });
+
+    it('updates paint presentation settings and clamps brush width', () => {
+        expect(
+            tileReducer(initialTileState, { type: 'setPaintVisible', visible: false }).paint
+                .visible,
+        ).toBe(false);
+        expect(
+            tileReducer(initialTileState, { type: 'setPaintColor', color: '#abcdef' }).paintColor,
+        ).toBe('#abcdef');
+        expect(
+            tileReducer(initialTileState, { type: 'setTileColor', color: '#fedcba' }).tileColor,
+        ).toBe('#fedcba');
+        expect(tileReducer(initialTileState, { type: 'setPaintWidth', width: 1 }).paintWidth).toBe(
+            0.12,
+        );
+    });
+});
+
 describe('tileReducer — zoom and pan', () => {
     it('clamps zoom to the 0.05–10 range', () => {
         expect(clampZoom(100)).toBe(10);

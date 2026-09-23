@@ -15,6 +15,7 @@ import {
 import type { SpectreRegionKey } from '../geometry/spectreRegion';
 import type { ArticulatedWormKey } from '../geometry/spectreWorm';
 import type { Vec2 } from '../geometry/Vec2';
+import type { PaintDocument, PaintStroke } from '../geometry/tilePaint';
 import type { Lang } from '../i18n';
 
 export type ParameterMode = 'ratio' | 'independent';
@@ -60,6 +61,10 @@ export type TileState = {
     spectreCurve: CubicBezierCurve;
     spectrePolyline: PolylineCurve;
     spectreCurveMode: SpectreCurveMode;
+    paint: PaintDocument;
+    paintColor: string;
+    paintWidth: number;
+    tileColor: string;
     assemblyTileMode: AssemblyTileMode;
     a: number;
     b: number;
@@ -83,6 +88,10 @@ export const initialTileState: TileState = {
     spectreCurve: DEFAULT_SPECTRE_CURVE,
     spectrePolyline: DEFAULT_SPECTRE_POLYLINE,
     spectreCurveMode: 'cubicBezier',
+    paint: { strokes: [], visible: true },
+    paintColor: '#d9485f',
+    paintWidth: 0.025,
+    tileColor: '#dfe5eb',
     assemblyTileMode: 'hatTurtle',
     a: 1,
     b: SQRT3, // Hat
@@ -128,6 +137,13 @@ export type TileAction =
     | { type: 'setSpectreCurveMode'; mode: SpectreCurveMode }
     | { type: 'setAssemblyTileMode'; mode: AssemblyTileMode }
     | { type: 'resetSpectreCurve' }
+    | { type: 'addPaintStroke'; stroke: PaintStroke }
+    | { type: 'undoPaintStroke' }
+    | { type: 'clearPaint' }
+    | { type: 'setPaintVisible'; visible: boolean }
+    | { type: 'setPaintColor'; color: string }
+    | { type: 'setPaintWidth'; width: number }
+    | { type: 'setTileColor'; color: string }
     | { type: 'setA'; value: number }
     | { type: 'setB'; value: number }
     | { type: 'setRatio'; ratio: number }
@@ -317,6 +333,37 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
             return state.spectreCurveMode === 'polyline'
                 ? { ...state, spectrePolyline: DEFAULT_SPECTRE_POLYLINE }
                 : { ...state, spectreCurve: DEFAULT_SPECTRE_CURVE };
+
+        case 'addPaintStroke':
+            if (action.stroke.points.length < 2) return state;
+            return {
+                ...state,
+                paint: { ...state.paint, strokes: [...state.paint.strokes, action.stroke] },
+            };
+
+        case 'undoPaintStroke':
+            return {
+                ...state,
+                paint: { ...state.paint, strokes: state.paint.strokes.slice(0, -1) },
+            };
+
+        case 'clearPaint':
+            return { ...state, paint: { ...state.paint, strokes: [] } };
+
+        case 'setPaintVisible':
+            return { ...state, paint: { ...state.paint, visible: action.visible } };
+
+        case 'setPaintColor':
+            return { ...state, paintColor: action.color };
+
+        case 'setPaintWidth':
+            return {
+                ...state,
+                paintWidth: Math.max(0.005, Math.min(0.12, action.width)),
+            };
+
+        case 'setTileColor':
+            return { ...state, tileColor: action.color };
 
         case 'setA': {
             const v = nonNegative(action.value);
