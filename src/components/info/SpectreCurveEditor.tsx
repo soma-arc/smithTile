@@ -8,7 +8,7 @@ import { Segmented } from '../ui/Segmented';
 type ControlPoint = 'c1' | 'c2';
 type ActiveDrag = { point: ControlPoint; pointerId: number };
 
-const VIEW = { minX: -0.5, minY: -0.8, width: 2, height: 1.6 } as const;
+const VIEW = { minX: -1, minY: -1.2, width: 3, height: 2.4 } as const;
 
 function svgPoint(point: Vec2): Vec2 {
     return { x: point.x, y: -point.y };
