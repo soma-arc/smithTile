@@ -39,6 +39,7 @@ export function useScene(state: TileState): Scene {
         mirrored,
         shape,
         spectreCurve,
+        spectrePolyline,
         spectreCurveMode,
         assemblyTileMode,
         zoom,
@@ -49,7 +50,12 @@ export function useScene(state: TileState): Scene {
         toggles,
     } = state;
     return useMemo(() => {
-        const activeSpectreCurve = spectreCurveMode === 'straight' ? STRAIGHT_CURVE : spectreCurve;
+        const activeSpectreCurve =
+            spectreCurveMode === 'straight'
+                ? STRAIGHT_CURVE
+                : spectreCurveMode === 'polyline'
+                  ? spectrePolyline
+                  : spectreCurve;
         const overlays: Overlays = {
             grid: toggles.showGrid,
             polykite: toggles.showPolykite,
@@ -272,6 +278,7 @@ export function useScene(state: TileState): Scene {
         mirrored,
         shape,
         spectreCurve,
+        spectrePolyline,
         spectreCurveMode,
         zoom,
         pan,

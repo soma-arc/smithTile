@@ -4,14 +4,21 @@
  */
 
 import type { SpectrePatchKey } from '../geometry/smithPatch';
-import { type CurveSpec, DEFAULT_SPECTRE_CURVE, type Preset, SQRT3 } from '../geometry/smithTile';
+import {
+    type CubicBezierCurve,
+    DEFAULT_SPECTRE_CURVE,
+    DEFAULT_SPECTRE_POLYLINE,
+    type PolylineCurve,
+    type Preset,
+    SQRT3,
+} from '../geometry/smithTile';
 import type { SpectreRegionKey } from '../geometry/spectreRegion';
 import type { ArticulatedWormKey } from '../geometry/spectreWorm';
 import type { Vec2 } from '../geometry/Vec2';
 import type { Lang } from '../i18n';
 
 export type ParameterMode = 'ratio' | 'independent';
-export type SpectreCurveMode = 'straight' | 'cubicBezier';
+export type SpectreCurveMode = 'straight' | 'cubicBezier' | 'polyline';
 export type AssemblyTileMode = 'hatTurtle' | 'spectre';
 export type RegionPlacementMode = 'auto' | 'manual';
 export type RegionAdjustment = { translation: Vec2; rotationRad: number };
@@ -50,7 +57,8 @@ export type TileState = {
     lang: Lang;
     parameterMode: ParameterMode;
     shape: ShapeSelection;
-    spectreCurve: CurveSpec;
+    spectreCurve: CubicBezierCurve;
+    spectrePolyline: PolylineCurve;
     spectreCurveMode: SpectreCurveMode;
     assemblyTileMode: AssemblyTileMode;
     a: number;
@@ -73,6 +81,7 @@ export const initialTileState: TileState = {
     parameterMode: 'ratio', // implementation policy §6: prioritize ratio mode initially
     shape: { kind: 'tile' },
     spectreCurve: DEFAULT_SPECTRE_CURVE,
+    spectrePolyline: DEFAULT_SPECTRE_POLYLINE,
     spectreCurveMode: 'cubicBezier',
     assemblyTileMode: 'hatTurtle',
     a: 1,
@@ -113,6 +122,9 @@ export type TileAction =
     | { type: 'rotateRegionWorm'; wormIndex: number; deltaRad: number }
     | { type: 'resetRegionPlacement' }
     | { type: 'setSpectreControlPoint'; point: 'c1' | 'c2'; value: Vec2 }
+    | { type: 'addSpectrePolylinePoint'; segmentIndex: number; value: Vec2 }
+    | { type: 'moveSpectrePolylinePoint'; pointIndex: number; value: Vec2 }
+    | { type: 'removeSpectrePolylinePoint'; pointIndex: number }
     | { type: 'setSpectreCurveMode'; mode: SpectreCurveMode }
     | { type: 'setAssemblyTileMode'; mode: AssemblyTileMode }
     | { type: 'resetSpectreCurve' }
@@ -240,7 +252,6 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
             };
 
         case 'setSpectreControlPoint':
-            if (state.spectreCurve.kind !== 'cubicBezier') return state;
             return {
                 ...state,
                 spectreCurve: {
@@ -248,6 +259,48 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                     [action.point]: action.value,
                 },
             };
+
+        case 'addSpectrePolylinePoint': {
+            const points = state.spectrePolyline.points;
+            if (action.segmentIndex < 0 || action.segmentIndex >= points.length - 1) return state;
+            return {
+                ...state,
+                spectrePolyline: {
+                    kind: 'polyline',
+                    points: [
+                        ...points.slice(0, action.segmentIndex + 1),
+                        action.value,
+                        ...points.slice(action.segmentIndex + 1),
+                    ],
+                },
+            };
+        }
+
+        case 'moveSpectrePolylinePoint': {
+            const points = state.spectrePolyline.points;
+            if (action.pointIndex <= 0 || action.pointIndex >= points.length - 1) return state;
+            return {
+                ...state,
+                spectrePolyline: {
+                    kind: 'polyline',
+                    points: points.map((point, index) =>
+                        index === action.pointIndex ? action.value : point,
+                    ),
+                },
+            };
+        }
+
+        case 'removeSpectrePolylinePoint': {
+            const points = state.spectrePolyline.points;
+            if (action.pointIndex <= 0 || action.pointIndex >= points.length - 1) return state;
+            return {
+                ...state,
+                spectrePolyline: {
+                    kind: 'polyline',
+                    points: points.filter((_, index) => index !== action.pointIndex),
+                },
+            };
+        }
 
         case 'setSpectreCurveMode':
             return { ...state, spectreCurveMode: action.mode };
@@ -261,7 +314,9 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
             };
 
         case 'resetSpectreCurve':
-            return { ...state, spectreCurve: DEFAULT_SPECTRE_CURVE };
+            return state.spectreCurveMode === 'polyline'
+                ? { ...state, spectrePolyline: DEFAULT_SPECTRE_POLYLINE }
+                : { ...state, spectreCurve: DEFAULT_SPECTRE_CURVE };
 
         case 'setA': {
             const v = nonNegative(action.value);

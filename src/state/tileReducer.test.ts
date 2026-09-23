@@ -56,6 +56,70 @@ describe('tileReducer — region mode', () => {
     });
 });
 
+describe('tileReducer — Spectre polyline editor', () => {
+    it('adds, moves, and removes an interior control point', () => {
+        const added = tileReducer(initialTileState, {
+            type: 'addSpectrePolylinePoint',
+            segmentIndex: 0,
+            value: { x: 0.4, y: 0 },
+        });
+        expect(added.spectrePolyline.points).toEqual([
+            { x: 0, y: 0 },
+            { x: 0.4, y: 0 },
+            { x: 1, y: 0 },
+        ]);
+
+        const moved = tileReducer(added, {
+            type: 'moveSpectrePolylinePoint',
+            pointIndex: 1,
+            value: { x: 0.35, y: 0.2 },
+        });
+        expect(moved.spectrePolyline.points[1]).toEqual({ x: 0.35, y: 0.2 });
+
+        const removed = tileReducer(moved, {
+            type: 'removeSpectrePolylinePoint',
+            pointIndex: 1,
+        });
+        expect(removed.spectrePolyline.points).toEqual([
+            { x: 0, y: 0 },
+            { x: 1, y: 0 },
+        ]);
+    });
+
+    it('keeps both endpoint anchors fixed', () => {
+        const movedStart = tileReducer(initialTileState, {
+            type: 'moveSpectrePolylinePoint',
+            pointIndex: 0,
+            value: { x: -1, y: 1 },
+        });
+        const removedEnd = tileReducer(initialTileState, {
+            type: 'removeSpectrePolylinePoint',
+            pointIndex: 1,
+        });
+
+        expect(movedStart).toBe(initialTileState);
+        expect(removedEnd).toBe(initialTileState);
+    });
+
+    it('resets only the selected polyline draft', () => {
+        const edited = tileReducer(initialTileState, {
+            type: 'addSpectrePolylinePoint',
+            segmentIndex: 0,
+            value: { x: 0.5, y: 0.25 },
+        });
+        const reset = tileReducer(
+            { ...edited, spectreCurveMode: 'polyline' },
+            { type: 'resetSpectreCurve' },
+        );
+
+        expect(reset.spectrePolyline.points).toEqual([
+            { x: 0, y: 0 },
+            { x: 1, y: 0 },
+        ]);
+        expect(reset.spectreCurve).toBe(initialTileState.spectreCurve);
+    });
+});
+
 describe('tileReducer — zoom and pan', () => {
     it('clamps zoom to the 0.05–10 range', () => {
         expect(clampZoom(100)).toBe(10);

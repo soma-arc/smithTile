@@ -352,6 +352,14 @@ input[type="range"]::-moz-range-thumb {
     stroke: var(--color-text);
     stroke-width: 0.022;
     stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.curve-editor-hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 0.14;
+    pointer-events: stroke;
+    cursor: copy;
 }
 .curve-editor-endpoint {
     fill: var(--color-text);

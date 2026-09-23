@@ -202,10 +202,9 @@ export function evaluateCubicBezier(p0: Vec2, p1: Vec2, p2: Vec2, p3: Vec2, t: n
     };
 }
 
-export type CurveSpec =
-    | { kind: 'straight' }
-    | { kind: 'cubicBezier'; c1: Vec2; c2: Vec2 }
-    | { kind: 'polyline'; points: readonly Vec2[] };
+export type CubicBezierCurve = { kind: 'cubicBezier'; c1: Vec2; c2: Vec2 };
+export type PolylineCurve = { kind: 'polyline'; points: readonly Vec2[] };
+export type CurveSpec = { kind: 'straight' } | CubicBezierCurve | PolylineCurve;
 
 export type BoundarySegment =
     | {
@@ -282,7 +281,7 @@ export type SmithTile = {
 };
 
 export const STRAIGHT_CURVE: CurveSpec = { kind: 'straight' };
-export const DEFAULT_SPECTRE_CURVE: CurveSpec = {
+export const DEFAULT_SPECTRE_CURVE: CubicBezierCurve = {
     kind: 'cubicBezier',
 
     c1: {
@@ -294,6 +293,13 @@ export const DEFAULT_SPECTRE_CURVE: CurveSpec = {
         x: 0.95,
         y: 0.0,
     },
+};
+export const DEFAULT_SPECTRE_POLYLINE: PolylineCurve = {
+    kind: 'polyline',
+    points: [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+    ],
 };
 
 //   const articulatedPorts: PortLayout = { plugVertexIndex: 4, socketVertices: [11, 1] }; // socket vertices are in CCW order

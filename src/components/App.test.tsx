@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { TileStateProvider } from '../hooks/useTileState';
@@ -59,6 +59,39 @@ describe('<App> (state + components wiring)', () => {
         expect(screen.getByText(/Spectre\s+Tile\(1, 1\)/)).toBeInTheDocument();
         expect(container.querySelector('svg path[d*="C"]')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'STL を保存' })).not.toBeInTheDocument();
+    });
+
+    it('adds a polyline point with the middle button and removes it with a double-click', async () => {
+        const user = userEvent.setup();
+        const { container } = renderApp();
+
+        await user.click(screen.getByRole('radio', { name: 'Spectre' }));
+        await user.click(screen.getByRole('radio', { name: '点列' }));
+
+        const editor = screen.getByLabelText('Spectre の辺の曲線プレビュー');
+        Object.defineProperties(editor, {
+            getScreenCTM: {
+                value: () => ({ inverse: () => ({}) }),
+            },
+            createSVGPoint: {
+                value: () => ({
+                    x: 0,
+                    y: 0,
+                    matrixTransform() {
+                        return { x: this.x, y: this.y };
+                    },
+                }),
+            },
+        });
+
+        const hitLine = container.querySelector('.curve-editor-hit');
+        expect(hitLine).toBeInTheDocument();
+        fireEvent.pointerDown(hitLine as Element, { button: 1, clientX: 0.4, clientY: 0 });
+
+        const controlPoint = screen.getByRole('button', { name: '点列の制御点 1' });
+        expect(controlPoint).toHaveAttribute('cx', '0.4');
+        await user.dblClick(controlPoint);
+        expect(screen.queryByRole('button', { name: '点列の制御点 1' })).not.toBeInTheDocument();
     });
 
     it('selects and draws an articulated worm', async () => {

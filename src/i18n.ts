@@ -35,7 +35,10 @@ export interface Strings {
     spectreCurvePreview: string;
     curveStraight: string;
     curveBezier: string;
+    curvePolyline: string;
     dragControlPoints: string;
+    editPolylinePoints: string;
+    polylineControlPoint: string;
     resetCurve: string;
     presets: string;
     display: string;
@@ -111,7 +114,10 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         spectreCurvePreview: 'Spectre の辺の曲線プレビュー',
         curveStraight: '直線',
         curveBezier: 'ベジェ',
+        curvePolyline: '点列',
         dragControlPoints: 'C1 / C2 をドラッグして調整',
+        editPolylinePoints: 'ホイールクリックで追加・ドラッグで移動・ダブルクリックで削除',
+        polylineControlPoint: '点列の制御点',
         resetCurve: '初期値',
         presets: 'プリセット',
         display: '表示',
@@ -186,7 +192,10 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         spectreCurvePreview: 'Spectre edge curve preview',
         curveStraight: 'Straight',
         curveBezier: 'Bézier',
+        curvePolyline: 'Polyline',
         dragControlPoints: 'Drag C1 / C2 to adjust',
+        editPolylinePoints: 'Middle-click to add, drag to move, double-click to remove',
+        polylineControlPoint: 'Polyline control point',
         resetCurve: 'Reset',
         presets: 'Presets',
         display: 'Display',
