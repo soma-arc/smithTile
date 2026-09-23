@@ -58,7 +58,7 @@ describe('<App> (state + components wiring)', () => {
 
         expect(screen.getByText(/Spectre\s+Tile\(1, 1\)/)).toBeInTheDocument();
         expect(container.querySelector('svg path[d*="C"]')).toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: 'STL を保存' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'STL を保存' })).toBeInTheDocument();
     });
 
     it('adds a polyline point with the middle button and removes it with a double-click', async () => {

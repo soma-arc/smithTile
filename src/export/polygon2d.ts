@@ -75,3 +75,48 @@ export function cleanPolygon(points: readonly Vec2[], eps: number = DEFAULT_EPS)
     }
     return out;
 }
+
+function orientation(a: Vec2, b: Vec2, c: Vec2, eps: number): number {
+    const value = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    return Math.abs(value) <= eps ? 0 : Math.sign(value);
+}
+
+function onSegment(a: Vec2, p: Vec2, b: Vec2, eps: number): boolean {
+    return (
+        p.x >= Math.min(a.x, b.x) - eps &&
+        p.x <= Math.max(a.x, b.x) + eps &&
+        p.y >= Math.min(a.y, b.y) - eps &&
+        p.y <= Math.max(a.y, b.y) + eps
+    );
+}
+
+function segmentsIntersect(a: Vec2, b: Vec2, c: Vec2, d: Vec2, eps: number): boolean {
+    const abc = orientation(a, b, c, eps);
+    const abd = orientation(a, b, d, eps);
+    const cda = orientation(c, d, a, eps);
+    const cdb = orientation(c, d, b, eps);
+
+    if (abc !== abd && cda !== cdb) return true;
+    return (
+        (abc === 0 && onSegment(a, c, b, eps)) ||
+        (abd === 0 && onSegment(a, d, b, eps)) ||
+        (cda === 0 && onSegment(c, a, d, eps)) ||
+        (cdb === 0 && onSegment(c, b, d, eps))
+    );
+}
+
+/** Whether a cyclic polygon has no intersections between non-adjacent edges. */
+export function isSimplePolygon(points: readonly Vec2[], eps: number = DEFAULT_EPS): boolean {
+    for (let i = 0; i < points.length; i++) {
+        const a = points[i];
+        const b = points[(i + 1) % points.length];
+        for (let j = i + 1; j < points.length; j++) {
+            // Consecutive edges intentionally meet at their shared endpoint.
+            if (j === i + 1 || (i === 0 && j === points.length - 1)) continue;
+            const c = points[j];
+            const d = points[(j + 1) % points.length];
+            if (segmentsIntersect(a, b, c, d, eps)) return false;
+        }
+    }
+    return true;
+}

@@ -81,7 +81,7 @@ export function ControlsPanel() {
                 <DisplayToggles />
             </section>
 
-            {isTile && (
+            {(isTile || (isSpectre && !shape.patch)) && (
                 <section>
                     <h6>{t.exportStl}</h6>
                     <StlExportPanel />

@@ -55,4 +55,26 @@ describe('<StlExportPanel>', () => {
         await user.click(screen.getByRole('button', { name: 'Ma0' }));
         expect(screen.queryByRole('button', { name: 'STL を保存' })).not.toBeInTheDocument();
     });
+
+    it('downloads the currently displayed single Spectre', async () => {
+        const { createObjectURL, click } = stubDownload();
+        const user = userEvent.setup();
+        render(
+            <TileStateProvider>
+                <App />
+            </TileStateProvider>,
+        );
+
+        await user.click(screen.getByRole('radio', { name: 'Spectre' }));
+        await user.click(screen.getByRole('button', { name: 'STL を保存' }));
+
+        expect(click).toHaveBeenCalledOnce();
+        const anchor = click.mock.instances[0] as unknown as HTMLAnchorElement;
+        expect(anchor.download).toBe('spectre.stl');
+        const blob = createObjectURL.mock.calls[0][0];
+        expect(blob.type).toBe('application/sla');
+        expect(blob.size).toBeGreaterThan(84);
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
 });

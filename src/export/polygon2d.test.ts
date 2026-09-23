@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createSmithTile, PRESETS, polygonArea, smithTileWorldVertices } from '../geometry/smithTile';
 import { IDENTITY_TRANSFORM } from '../geometry/Transform';
 import type { Vec2 } from '../geometry/Vec2';
-import { cleanPolygon } from './polygon2d';
+import { cleanPolygon, isSimplePolygon } from './polygon2d';
 
 /** The boundary of a preset tile at its natural placement. */
 function presetPolygon(key: string): Vec2[] {
@@ -76,5 +76,27 @@ describe('cleanPolygon', () => {
                 { x: 2, y: 0 },
             ]),
         ).toThrow(RangeError);
+    });
+});
+
+describe('isSimplePolygon', () => {
+    it('accepts concave polygons and rejects self-intersections', () => {
+        expect(
+            isSimplePolygon([
+                { x: 0, y: 0 },
+                { x: 2, y: 0 },
+                { x: 1, y: 1 },
+                { x: 2, y: 2 },
+                { x: 0, y: 2 },
+            ]),
+        ).toBe(true);
+        expect(
+            isSimplePolygon([
+                { x: 0, y: 0 },
+                { x: 2, y: 2 },
+                { x: 0, y: 2 },
+                { x: 2, y: 0 },
+            ]),
+        ).toBe(false);
     });
 });

@@ -78,6 +78,7 @@ export interface Strings {
     shown: string;
     exportStl: string;
     saveStl: string;
+    stlInvalidBoundary: string;
 }
 
 export const TRANSLATIONS: Record<Lang, Strings> = {
@@ -158,6 +159,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shown: '表示',
         exportStl: '3D 出力',
         saveStl: 'STL を保存',
+        stlInvalidBoundary: '境界が自己交差しているため、STLを作成できません。',
     },
     en: {
         appTitle: 'Tile(a, b) Visualizer',
@@ -236,5 +238,6 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shown: 'shown',
         exportStl: '3D export',
         saveStl: 'Save STL',
+        stlInvalidBoundary: 'The boundary intersects itself, so an STL cannot be created.',
     },
 };

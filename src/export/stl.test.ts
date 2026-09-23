@@ -1,10 +1,24 @@
 import { geometries, measurements } from '@jscad/modeling';
 import type { Geom3 } from '@jscad/modeling/src/geometries/types';
 import { describe, expect, it } from 'vitest';
-import { createSmithTile, PRESETS, polygonArea, smithTileWorldVertices } from '../geometry/smithTile';
+import {
+    createSmithTile,
+    DEFAULT_SPECTRE_CURVE,
+    PRESETS,
+    polygonArea,
+    smithTileWorldVertices,
+} from '../geometry/smithTile';
 import { IDENTITY_TRANSFORM } from '../geometry/Transform';
 import { cleanPolygon } from './polygon2d';
-import { DEFAULT_STL_OPTIONS, stlFilename, tileSolid, tileStl } from './stl';
+import {
+    DEFAULT_STL_OPTIONS,
+    spectreOutline,
+    spectreSolid,
+    spectreStl,
+    stlFilename,
+    tileSolid,
+    tileStl,
+} from './stl';
 
 /**
  * Every edge of a closed, orientable surface must be shared by exactly two
@@ -97,6 +111,50 @@ describe('tileStl', () => {
     it('applies the default options and accepts overrides', () => {
         expect(tileStl(1, 1)).toEqual(tileStl(1, 1, DEFAULT_STL_OPTIONS));
         expect(tileStl(1, 1, { thickness: 8 })).not.toEqual(tileStl(1, 1));
+    });
+});
+
+describe('Spectre STL', () => {
+    const curved = {
+        kind: 'cubicBezier' as const,
+        c1: { x: 0.2, y: 0.12 },
+        c2: { x: 0.8, y: 0.12 },
+    };
+
+    it('adaptively samples curved edges into a watertight slab', () => {
+        const outline = spectreOutline(curved, 0.005);
+        expect(outline.length).toBeGreaterThan(14);
+        expect(nonManifoldEdges(spectreSolid(curved, DEFAULT_STL_OPTIONS))).toEqual([]);
+    });
+
+    it('supports straight-equivalent Bézier and polyline boundaries', () => {
+        expect(nonManifoldEdges(spectreSolid(DEFAULT_SPECTRE_CURVE, DEFAULT_STL_OPTIONS))).toEqual(
+            [],
+        );
+        expect(
+            nonManifoldEdges(
+                spectreSolid(
+                    {
+                        kind: 'polyline',
+                        points: [
+                            { x: 0, y: 0 },
+                            { x: 0.5, y: 0.08 },
+                            { x: 1, y: 0 },
+                        ],
+                    },
+                    DEFAULT_STL_OPTIONS,
+                ),
+            ),
+        ).toEqual([]);
+    });
+
+    it('serializes a binary STL with a consistent triangle count', () => {
+        const bytes = spectreStl(curved);
+        const triangles = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(
+            80,
+            true,
+        );
+        expect(bytes.byteLength).toBe(84 + 50 * triangles);
     });
 });
 
