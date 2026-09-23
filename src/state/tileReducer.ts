@@ -15,7 +15,13 @@ import {
 import type { SpectreRegionKey } from '../geometry/spectreRegion';
 import type { ArticulatedWormKey } from '../geometry/spectreWorm';
 import type { Vec2 } from '../geometry/Vec2';
-import type { PaintDocument, PaintStroke } from '../geometry/tilePaint';
+import {
+    erasePaintStrokes,
+    type PaintDocument,
+    type PaintPoint,
+    type PaintStroke,
+    type PaintTool,
+} from '../geometry/tilePaint';
 import type { Lang } from '../i18n';
 
 export type ParameterMode = 'ratio' | 'independent';
@@ -62,8 +68,11 @@ export type TileState = {
     spectrePolyline: PolylineCurve;
     spectreCurveMode: SpectreCurveMode;
     paint: PaintDocument;
+    paintHistory: readonly (readonly PaintStroke[])[];
+    paintTool: PaintTool;
     paintColor: string;
     paintWidth: number;
+    paintEraserWidth: number;
     tileColor: string;
     assemblyTileMode: AssemblyTileMode;
     a: number;
@@ -89,8 +98,11 @@ export const initialTileState: TileState = {
     spectrePolyline: DEFAULT_SPECTRE_POLYLINE,
     spectreCurveMode: 'cubicBezier',
     paint: { strokes: [], visible: true },
+    paintHistory: [],
+    paintTool: 'brush',
     paintColor: '#d9485f',
     paintWidth: 0.025,
+    paintEraserWidth: 0.08,
     tileColor: '#dfe5eb',
     assemblyTileMode: 'hatTurtle',
     a: 1,
@@ -138,11 +150,14 @@ export type TileAction =
     | { type: 'setAssemblyTileMode'; mode: AssemblyTileMode }
     | { type: 'resetSpectreCurve' }
     | { type: 'addPaintStroke'; stroke: PaintStroke }
+    | { type: 'erasePaintPath'; points: readonly PaintPoint[]; width: number }
     | { type: 'undoPaintStroke' }
     | { type: 'clearPaint' }
     | { type: 'setPaintVisible'; visible: boolean }
     | { type: 'setPaintColor'; color: string }
     | { type: 'setPaintWidth'; width: number }
+    | { type: 'setPaintEraserWidth'; width: number }
+    | { type: 'setPaintTool'; tool: PaintTool }
     | { type: 'setTileColor'; color: string }
     | { type: 'setA'; value: number }
     | { type: 'setB'; value: number }
@@ -161,6 +176,10 @@ function custom(state: TileState, patch: Partial<TileState>): TileState {
 
 function nonNegative(value: number): number {
     return Math.max(0, Number.isFinite(value) ? value : 0);
+}
+
+function appendPaintHistory(state: TileState): readonly (readonly PaintStroke[])[] {
+    return [...state.paintHistory.slice(-49), state.paint.strokes];
 }
 
 export function tileReducer(state: TileState, action: TileAction): TileState {
@@ -338,17 +357,43 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
             if (action.stroke.points.length < 2) return state;
             return {
                 ...state,
+                paintHistory: appendPaintHistory(state),
                 paint: { ...state.paint, strokes: [...state.paint.strokes, action.stroke] },
             };
 
-        case 'undoPaintStroke':
+        case 'erasePaintPath': {
+            const strokes = erasePaintStrokes(state.paint.strokes, action.points, action.width / 2);
+            if (
+                strokes.length === state.paint.strokes.length &&
+                strokes.every((stroke, index) => stroke === state.paint.strokes[index])
+            ) {
+                return state;
+            }
             return {
                 ...state,
-                paint: { ...state.paint, strokes: state.paint.strokes.slice(0, -1) },
+                paintHistory: appendPaintHistory(state),
+                paint: { ...state.paint, strokes },
             };
+        }
+
+        case 'undoPaintStroke': {
+            const previous = state.paintHistory[state.paintHistory.length - 1];
+            if (!previous) return state;
+            return {
+                ...state,
+                paintHistory: state.paintHistory.slice(0, -1),
+                paint: { ...state.paint, strokes: previous },
+            };
+        }
 
         case 'clearPaint':
-            return { ...state, paint: { ...state.paint, strokes: [] } };
+            return state.paint.strokes.length === 0
+                ? state
+                : {
+                      ...state,
+                      paintHistory: appendPaintHistory(state),
+                      paint: { ...state.paint, strokes: [] },
+                  };
 
         case 'setPaintVisible':
             return { ...state, paint: { ...state.paint, visible: action.visible } };
@@ -361,6 +406,15 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 ...state,
                 paintWidth: Math.max(0.005, Math.min(0.12, action.width)),
             };
+
+        case 'setPaintEraserWidth':
+            return {
+                ...state,
+                paintEraserWidth: Math.max(0.01, Math.min(0.25, action.width)),
+            };
+
+        case 'setPaintTool':
+            return { ...state, paintTool: action.tool };
 
         case 'setTileColor':
             return { ...state, tileColor: action.color };

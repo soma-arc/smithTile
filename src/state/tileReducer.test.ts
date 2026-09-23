@@ -152,6 +152,27 @@ describe('tileReducer — tile paint', () => {
         expect(tileReducer(initialTileState, { type: 'setPaintWidth', width: 1 }).paintWidth).toBe(
             0.12,
         );
+        expect(
+            tileReducer(initialTileState, { type: 'setPaintEraserWidth', width: 1 })
+                .paintEraserWidth,
+        ).toBe(0.25);
+        expect(
+            tileReducer(initialTileState, { type: 'setPaintTool', tool: 'eraser' }).paintTool,
+        ).toBe('eraser');
+    });
+
+    it('erases part of a stroke and restores it with undo', () => {
+        const added = tileReducer(initialTileState, { type: 'addPaintStroke', stroke });
+        const erased = tileReducer(added, {
+            type: 'erasePaintPath',
+            points: [
+                { x: 0.45, y: 0 },
+                { x: 0.45, y: 1 },
+            ],
+            width: 0.08,
+        });
+        expect(erased.paint.strokes).not.toEqual([stroke]);
+        expect(tileReducer(erased, { type: 'undoPaintStroke' }).paint.strokes).toEqual([stroke]);
     });
 });
 

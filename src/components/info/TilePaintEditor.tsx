@@ -10,11 +10,13 @@ import {
     localPointToPaint,
     type PaintPoint,
     paintPressureScale,
+    type PaintTool,
     pointsBounds,
 } from '../../geometry/tilePaint';
 import type { Vec2 } from '../../geometry/Vec2';
 import { useTileDispatch, useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
+import { Segmented } from '../ui/Segmented';
 
 function mapSegment(segment: BoundarySegment, map: (point: Vec2) => Vec2): BoundarySegment {
     switch (segment.kind) {
@@ -107,7 +109,11 @@ export function TilePaintEditor() {
     const state = useTileState();
     const dispatch = useTileDispatch();
     const [draft, setDraft] = useState<readonly PaintPoint[]>([]);
-    const activeRef = useRef<{ pointerId: number; points: PaintPoint[] } | null>(null);
+    const activeRef = useRef<{
+        pointerId: number;
+        points: PaintPoint[];
+        tool: PaintTool;
+    } | null>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const clipId = `paint-editor-${useId().replace(/:/g, '')}`;
     const t = TRANSLATIONS[state.lang];
@@ -160,12 +166,18 @@ export function TilePaintEditor() {
     };
 
     const start = (event: ReactPointerEvent<SVGSVGElement>) => {
-        if (!event.isPrimary || event.button !== 0) return;
+        const penEraser =
+            event.pointerType === 'pen' && (event.button === 5 || (event.buttons & 32) !== 0);
+        if (!event.isPrimary || (event.button !== 0 && !penEraser)) return;
         const point = eventPoint(event);
         if (!point) return;
         event.preventDefault();
         event.currentTarget.setPointerCapture(event.pointerId);
-        const active = { pointerId: event.pointerId, points: [point] };
+        const active = {
+            pointerId: event.pointerId,
+            points: [point],
+            tool: penEraser ? ('eraser' as const) : state.paintTool,
+        };
         activeRef.current = active;
         setDraft(active.points);
     };
@@ -187,16 +199,24 @@ export function TilePaintEditor() {
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
         }
-        if (active.points.length >= 2) {
-            dispatch({
-                type: 'addPaintStroke',
-                stroke: {
-                    points: active.points,
-                    color: state.paintColor,
-                    width: state.paintWidth,
-                    opacity: 1,
-                },
-            });
+        if (active.points.length >= (active.tool === 'eraser' ? 1 : 2)) {
+            dispatch(
+                active.tool === 'eraser'
+                    ? {
+                          type: 'erasePaintPath',
+                          points: active.points,
+                          width: state.paintEraserWidth,
+                      }
+                    : {
+                          type: 'addPaintStroke',
+                          stroke: {
+                              points: active.points,
+                              color: state.paintColor,
+                              width: state.paintWidth,
+                              opacity: 1,
+                          },
+                      },
+            );
         }
         activeRef.current = null;
         setDraft([]);
@@ -217,6 +237,17 @@ export function TilePaintEditor() {
                     {t.paintVisible}
                 </label>
             </div>
+            <Segmented<PaintTool>
+                name="paint-tool"
+                value={state.paintTool}
+                options={[
+                    { value: 'brush', label: t.paintBrush },
+                    { value: 'eraser', label: t.paintEraser },
+                ]}
+                onChange={(tool) => dispatch({ type: 'setPaintTool', tool })}
+                containerStyle={{ width: '100%' }}
+                optionStyle={{ flex: 1, justifyContent: 'center' }}
+            />
             <svg
                 ref={svgRef}
                 className="paint-editor-svg"
@@ -260,8 +291,27 @@ export function TilePaintEditor() {
                         {draft.length > 1 && (
                             <StrokeSegments
                                 points={draft}
-                                color={state.paintColor}
-                                width={state.paintWidth}
+                                color={
+                                    activeRef.current?.tool === 'eraser'
+                                        ? state.tileColor
+                                        : state.paintColor
+                                }
+                                width={
+                                    activeRef.current?.tool === 'eraser'
+                                        ? state.paintEraserWidth
+                                        : state.paintWidth
+                                }
+                                opacity={activeRef.current?.tool === 'eraser' ? 0.75 : 1}
+                            />
+                        )}
+                        {activeRef.current?.tool === 'eraser' && draft.length > 0 && (
+                            <circle
+                                className="paint-eraser-cursor"
+                                cx={draft[draft.length - 1].x}
+                                cy={1 - draft[draft.length - 1].y}
+                                r={state.paintEraserWidth / 2}
+                                fill={state.tileColor}
+                                fillOpacity="0.75"
                             />
                         )}
                     </g>
@@ -295,28 +345,40 @@ export function TilePaintEditor() {
                 </label>
             </div>
             <div className="paint-editor-controls">
-                <label>
-                    <span>{t.paintColor}</span>
-                    <input
-                        type="color"
-                        aria-label={t.paintColor}
-                        value={state.paintColor}
-                        onChange={(event) =>
-                            dispatch({ type: 'setPaintColor', color: event.target.value })
-                        }
-                    />
-                </label>
+                {state.paintTool === 'brush' && (
+                    <label>
+                        <span>{t.paintColor}</span>
+                        <input
+                            type="color"
+                            aria-label={t.paintColor}
+                            value={state.paintColor}
+                            onChange={(event) =>
+                                dispatch({ type: 'setPaintColor', color: event.target.value })
+                            }
+                        />
+                    </label>
+                )}
                 <label className="paint-width-control">
-                    <span>{t.paintWidth}</span>
+                    <span>{state.paintTool === 'eraser' ? t.paintEraserWidth : t.paintWidth}</span>
                     <input
                         type="range"
-                        aria-label={t.paintWidth}
-                        min="0.005"
-                        max="0.12"
+                        aria-label={
+                            state.paintTool === 'eraser' ? t.paintEraserWidth : t.paintWidth
+                        }
+                        min={state.paintTool === 'eraser' ? '0.01' : '0.005'}
+                        max={state.paintTool === 'eraser' ? '0.25' : '0.12'}
                         step="0.005"
-                        value={state.paintWidth}
+                        value={
+                            state.paintTool === 'eraser' ? state.paintEraserWidth : state.paintWidth
+                        }
                         onChange={(event) =>
-                            dispatch({ type: 'setPaintWidth', width: Number(event.target.value) })
+                            dispatch({
+                                type:
+                                    state.paintTool === 'eraser'
+                                        ? 'setPaintEraserWidth'
+                                        : 'setPaintWidth',
+                                width: Number(event.target.value),
+                            })
                         }
                     />
                 </label>
@@ -325,7 +387,7 @@ export function TilePaintEditor() {
                 <button
                     type="button"
                     className="btn"
-                    disabled={state.paint.strokes.length === 0}
+                    disabled={state.paintHistory.length === 0}
                     onClick={() => dispatch({ type: 'undoPaintStroke' })}
                 >
                     {t.paintUndo}

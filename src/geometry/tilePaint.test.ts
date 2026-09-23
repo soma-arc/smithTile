@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    erasePaintStrokes,
     localPointToPaint,
     paintFrameSize,
     paintPointToLocal,
@@ -33,5 +34,38 @@ describe('tile paint coordinate frame', () => {
         expect(paintPressureScale(-1)).toBe(0.25);
         expect(paintPressureScale(2)).toBe(1);
         expect(paintPressureScale(undefined)).toBe(1);
+    });
+});
+
+describe('erasePaintStrokes', () => {
+    const stroke = {
+        points: [
+            { x: 0.1, y: 0.5 },
+            { x: 0.9, y: 0.5 },
+        ],
+        color: '#123456',
+        width: 0.02,
+        opacity: 1,
+    };
+
+    it('splits a stroke around the portion crossed by the eraser', () => {
+        const erased = erasePaintStrokes(
+            [stroke],
+            [
+                { x: 0.5, y: 0.3 },
+                { x: 0.5, y: 0.7 },
+            ],
+            0.08,
+        );
+
+        expect(erased).toHaveLength(2);
+        expect(erased.every((fragment) => fragment.color === stroke.color)).toBe(true);
+        expect(erased[0].points[erased[0].points.length - 1].x).toBeLessThan(0.5);
+        expect(erased[1].points[0].x).toBeGreaterThan(0.5);
+    });
+
+    it('preserves untouched strokes without resampling them', () => {
+        const result = erasePaintStrokes([stroke], [{ x: 0.5, y: 0.9 }], 0.02);
+        expect(result[0]).toBe(stroke);
     });
 });

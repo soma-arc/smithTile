@@ -83,6 +83,9 @@ export interface Strings {
     tileColor: string;
     paintCanvas: string;
     paintRotation: string;
+    paintBrush: string;
+    paintEraser: string;
+    paintEraserWidth: string;
     paintVisible: string;
     paintColor: string;
     paintWidth: string;
@@ -173,6 +176,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         tileColor: 'タイル色',
         paintCanvas: 'タイルのペイント編集領域',
         paintRotation: 'ペイント回転',
+        paintBrush: 'ブラシ',
+        paintEraser: '消しゴム',
+        paintEraserWidth: '消しゴム幅',
         paintVisible: '表示',
         paintColor: '色',
         paintWidth: '線幅',
@@ -261,6 +267,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         tileColor: 'Tile color',
         paintCanvas: 'Tile paint editor',
         paintRotation: 'Paint rotation',
+        paintBrush: 'Brush',
+        paintEraser: 'Eraser',
+        paintEraserWidth: 'Eraser size',
         paintVisible: 'Visible',
         paintColor: 'Color',
         paintWidth: 'Width',

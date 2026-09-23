@@ -177,6 +177,17 @@ describe('<App> (state + components wiring)', () => {
         expect(fireEvent.contextMenu(editor)).toBe(false);
     });
 
+    it('switches between the brush and partial-stroke eraser tools', async () => {
+        const user = userEvent.setup();
+        renderApp();
+
+        expect(screen.getByRole('radio', { name: 'ブラシ' })).toBeChecked();
+        await user.click(screen.getByRole('radio', { name: '消しゴム' }));
+        expect(screen.getByRole('radio', { name: '消しゴム' })).toBeChecked();
+        expect(screen.getByRole('slider', { name: '消しゴム幅' })).toHaveValue('0.08');
+        expect(screen.queryByLabelText('色')).not.toBeInTheDocument();
+    });
+
     it('changes the base color of the tile and editor preview', () => {
         const { container } = renderApp();
         fireEvent.change(screen.getByLabelText('タイル色'), { target: { value: '#12ab34' } });
