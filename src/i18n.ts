@@ -79,6 +79,15 @@ export interface Strings {
     exportStl: string;
     saveStl: string;
     stlInvalidBoundary: string;
+    savePatchStl: string;
+    stlPatchDescription: string;
+    stlUnitMm: string;
+    stlThickness: string;
+    stlBevel: string;
+    stlInvalidPatch: string;
+    stlEmptyPatch: string;
+    stlGenerating: string;
+    stlExportFailed: string;
     tilePaint: string;
     tileColor: string;
     paintCanvas: string;
@@ -172,6 +181,17 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         exportStl: '3D 出力',
         saveStl: 'STL を保存',
         stlInvalidBoundary: '境界が自己交差しているため、STLを作成できません。',
+        savePatchStl: '直線パッチのSTLを保存',
+        stlPatchDescription:
+            '直線の輪郭で、隙間なくパッチを立体化します。上縁だけを45°面取りします。',
+        stlUnitMm: '単位辺長 (mm)',
+        stlThickness: '厚さ (mm)',
+        stlBevel: '面取り幅 (mm)',
+        stlInvalidPatch:
+            '寸法を確認してください。面取り幅は厚さ未満で、輪郭が潰れない大きさにしてください。',
+        stlEmptyPatch: 'このパッチにはタイルがありません。',
+        stlGenerating: 'STLを生成中…',
+        stlExportFailed: 'STLを生成できませんでした。',
         tilePaint: 'タイルペイント',
         tileColor: 'タイル色',
         paintCanvas: 'タイルのペイント編集領域',
@@ -263,6 +283,17 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         exportStl: '3D export',
         saveStl: 'Save STL',
         stlInvalidBoundary: 'The boundary intersects itself, so an STL cannot be created.',
+        savePatchStl: 'Save straight patch STL',
+        stlPatchDescription:
+            'Create a straight-edged patch with no gaps and a 45° bevel on the top edges only.',
+        stlUnitMm: 'Unit edge length (mm)',
+        stlThickness: 'Thickness (mm)',
+        stlBevel: 'Bevel width (mm)',
+        stlInvalidPatch:
+            'Check the dimensions. The bevel must be smaller than the thickness and must not collapse the outline.',
+        stlEmptyPatch: 'This patch contains no tiles.',
+        stlGenerating: 'Generating STL…',
+        stlExportFailed: 'Could not generate the STL.',
         tilePaint: 'Tile paint',
         tileColor: 'Tile color',
         paintCanvas: 'Tile paint editor',
