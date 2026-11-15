@@ -15,6 +15,7 @@ import {
 } from '../../export/stl';
 import { SPECTRE_PATCHES } from '../../geometry/smithPatch';
 import { STRAIGHT_CURVE } from '../../geometry/smithTile';
+import { getTileArticulatedPatch } from '../../geometry/tileArticulatedPatch';
 import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
 
@@ -32,15 +33,24 @@ export function StlExportPanel() {
     useEffect(() => () => job.current?.cancel(), []);
     const t = TRANSLATIONS[lang];
     const patchKey = shape.kind === 'spectre' ? shape.patch : null;
-    const emptyPatch = patchKey !== null && SPECTRE_PATCHES[patchKey].tiles.length === 0;
+    const selection =
+        shape.kind === 'articulatedPatch'
+            ? { tilePatch: { tile: shape.tile, patch: shape.patch, level: shape.level, mirrored } }
+            : patchKey
+              ? { patchKey }
+              : null;
+    const emptyPatch =
+        shape.kind === 'articulatedPatch'
+            ? getTileArticulatedPatch(shape.tile, shape.patch, shape.level).tiles.length === 0
+            : patchKey !== null && SPECTRE_PATCHES[patchKey].tiles.length === 0;
     const save = async () => {
         if (saving) return;
         try {
             setError(null);
-            if (patchKey) {
+            if (selection) {
                 setSaving(true);
                 job.current = startPatchStlJob({
-                    patchKey,
+                    ...selection,
                     options: {
                         unitMm: Number.parseFloat(options.unitMm),
                         thickness: Number.parseFloat(options.thickness),
@@ -49,7 +59,9 @@ export function StlExportPanel() {
                 });
                 downloadBytes(
                     await job.current.result,
-                    `patch-${patchKey}-straight.stl`,
+                    shape.kind === 'articulatedPatch'
+                        ? `patch-${shape.tile}-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-straight.stl`
+                        : `patch-${patchKey}-straight.stl`,
                     STL_MIME_TYPE,
                 );
                 return;
@@ -67,7 +79,7 @@ export function StlExportPanel() {
             downloadBytes(tileStl(a, b, { mirrored }), stlFilename(a, b, mirrored), STL_MIME_TYPE);
         } catch (cause) {
             if (cause instanceof RangeError) {
-                setError(patchKey ? t.stlInvalidPatch : t.stlInvalidBoundary);
+                setError(selection ? t.stlInvalidPatch : t.stlInvalidBoundary);
                 return;
             }
             setError(t.stlExportFailed);
@@ -79,7 +91,7 @@ export function StlExportPanel() {
 
     return (
         <>
-            {patchKey && (
+            {selection && (
                 <>
                     <p>{t.stlPatchDescription}</p>
                     {(
@@ -112,7 +124,7 @@ export function StlExportPanel() {
                 onClick={save}
                 disabled={emptyPatch || saving}
             >
-                {saving ? t.stlGenerating : patchKey ? t.savePatchStl : t.saveStl}
+                {saving ? t.stlGenerating : selection ? t.savePatchStl : t.saveStl}
             </button>
             {error && <div role="alert">{error}</div>}
         </>

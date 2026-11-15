@@ -1,10 +1,16 @@
 /** Selects the Tile/Spectre family and, within Spectre, an optional patch. */
 
-import { useTileDispatch, useTileState } from '../../hooks/useTileState';
-import { TRANSLATIONS } from '../../i18n';
 import { SPECTRE_PATCHES, type SpectrePatchKey } from '../../geometry/smithPatch';
 import { SPECTRE_REGION_KEYS } from '../../geometry/spectreRegion';
 import { ARTICULATED_WORM_KEYS } from '../../geometry/spectreWorm';
+import {
+    type ArticulatedTile,
+    MAX_TILE_PATCH_LEVEL,
+    TILE_PATCH_KINDS,
+    type TilePatchKind,
+} from '../../geometry/tileArticulatedPatch';
+import { useTileDispatch, useTileState } from '../../hooks/useTileState';
+import { TRANSLATIONS } from '../../i18n';
 import type {
     AssemblyTileMode,
     RegionPlacementMode,
@@ -13,6 +19,7 @@ import type {
 import { Segmented } from '../ui/Segmented';
 
 const PATCH_KEYS = Object.keys(SPECTRE_PATCHES) as SpectrePatchKey[];
+const TILE_PATCH_LEVELS = Array.from({ length: MAX_TILE_PATCH_LEVEL + 1 }, (_, level) => level);
 
 export function AssemblyTileModeSelect() {
     const { assemblyTileMode, lang } = useTileState();
@@ -46,6 +53,7 @@ export function ShapeToggle() {
             options={[
                 { value: 'tile', label: t.shapeTile },
                 { value: 'spectre', label: t.shapeSpectre },
+                { value: 'articulatedPatch', label: t.shapeArticulatedPatch },
                 { value: 'articulatedWorm', label: t.shapeArticulatedWorm },
                 { value: 'region', label: t.shapeRegion },
             ]}
@@ -53,6 +61,52 @@ export function ShapeToggle() {
             containerStyle={{ width: '100%' }}
             optionStyle={{ flex: 1, justifyContent: 'center' }}
         />
+    );
+}
+
+export function TileArticulatedPatchSelect() {
+    const { shape, lang } = useTileState();
+    const dispatch = useTileDispatch();
+    const t = TRANSLATIONS[lang];
+    if (shape.kind !== 'articulatedPatch') return null;
+    return (
+        <div className="shape-grid">
+            <Segmented<ArticulatedTile>
+                name="patch-tile"
+                value={shape.tile}
+                options={[
+                    { value: 'hat', label: 'Hat' },
+                    { value: 'turtle', label: 'Turtle' },
+                ]}
+                onChange={(tile) => dispatch({ type: 'setTilePatch', tile })}
+                containerStyle={{ gridColumn: '1 / -1', width: '100%' }}
+                optionStyle={{ flex: 1, justifyContent: 'center' }}
+            />
+            <Segmented<TilePatchKind>
+                name="patch-function"
+                value={shape.patch}
+                options={TILE_PATCH_KINDS.map((value) => ({ value, label: value }))}
+                onChange={(patch) => dispatch({ type: 'setTilePatch', patch })}
+                containerStyle={{ gridColumn: '1 / -1', width: '100%' }}
+                optionStyle={{ flex: 1, justifyContent: 'center' }}
+            />
+            <label className="patch-level">
+                {t.regionLevel}
+                <select
+                    aria-label={t.regionLevel}
+                    value={shape.level}
+                    onChange={(event) =>
+                        dispatch({ type: 'setTilePatch', level: Number(event.target.value) })
+                    }
+                >
+                    {TILE_PATCH_LEVELS.map((level) => (
+                        <option key={level} value={level}>
+                            {level}
+                        </option>
+                    ))}
+                </select>
+            </label>
+        </div>
     );
 }
 

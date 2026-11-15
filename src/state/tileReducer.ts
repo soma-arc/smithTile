@@ -14,7 +14,11 @@ import {
 } from '../geometry/smithTile';
 import type { SpectreRegionKey } from '../geometry/spectreRegion';
 import type { ArticulatedWormKey } from '../geometry/spectreWorm';
-import type { Vec2 } from '../geometry/Vec2';
+import {
+    type ArticulatedTile,
+    MAX_TILE_PATCH_LEVEL,
+    type TilePatchKind,
+} from '../geometry/tileArticulatedPatch';
 import {
     erasePaintStrokes,
     type PaintDocument,
@@ -22,6 +26,7 @@ import {
     type PaintStroke,
     type PaintTool,
 } from '../geometry/tilePaint';
+import type { Vec2 } from '../geometry/Vec2';
 import type { Lang } from '../i18n';
 
 export type ParameterMode = 'ratio' | 'independent';
@@ -32,6 +37,7 @@ export type RegionAdjustment = { translation: Vec2; rotationRad: number };
 export type ShapeSelection =
     | { kind: 'tile' }
     | { kind: 'spectre'; patch: SpectrePatchKey | null }
+    | { kind: 'articulatedPatch'; tile: ArticulatedTile; patch: TilePatchKind; level: number }
     | { kind: 'articulatedWorm'; worm: ArticulatedWormKey }
     | { kind: 'region'; region: SpectreRegionKey };
 
@@ -136,6 +142,7 @@ export type TileAction =
     | { type: 'setParameterMode'; mode: ParameterMode }
     | { type: 'setShape'; shape: ShapeSelection['kind'] }
     | { type: 'setSpectrePatch'; patch: SpectrePatchKey | null }
+    | { type: 'setTilePatch'; tile?: ArticulatedTile; patch?: TilePatchKind; level?: number }
     | { type: 'setArticulatedWorm'; worm: ArticulatedWormKey }
     | { type: 'setSpectreRegion'; region: SpectreRegionKey }
     | { type: 'setRegionPlacementMode'; mode: RegionPlacementMode }
@@ -199,15 +206,43 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
             return {
                 ...state,
                 pan: { x: 0, y: 0 },
+                zoom: action.shape === 'articulatedPatch' ? 1 : state.zoom,
                 shape:
-                    action.shape === 'spectre'
-                        ? { kind: 'spectre', patch: null }
-                        : action.shape === 'articulatedWorm'
-                          ? { kind: 'articulatedWorm', worm: 'E' }
-                          : action.shape === 'region'
-                            ? { kind: 'region', region: 'PA1' }
-                            : { kind: 'tile' },
+                    action.shape === 'articulatedPatch'
+                        ? { kind: 'articulatedPatch', tile: 'turtle', patch: 'B', level: 1 }
+                        : action.shape === 'spectre'
+                          ? { kind: 'spectre', patch: null }
+                          : action.shape === 'articulatedWorm'
+                            ? { kind: 'articulatedWorm', worm: 'E' }
+                            : action.shape === 'region'
+                              ? { kind: 'region', region: 'PA1' }
+                              : { kind: 'tile' },
             };
+
+        case 'setTilePatch': {
+            const current =
+                state.shape.kind === 'articulatedPatch'
+                    ? state.shape
+                    : {
+                          kind: 'articulatedPatch' as const,
+                          tile: 'turtle' as const,
+                          patch: 'B' as const,
+                          level: 1,
+                      };
+            const level = action.level ?? current.level;
+            if (!Number.isInteger(level) || level < 0 || level > MAX_TILE_PATCH_LEVEL) return state;
+            return {
+                ...state,
+                pan: { x: 0, y: 0 },
+                zoom: action.level !== undefined ? 1 : state.zoom,
+                shape: {
+                    kind: 'articulatedPatch',
+                    tile: action.tile ?? current.tile,
+                    patch: action.patch ?? current.patch,
+                    level,
+                },
+            };
+        }
 
         case 'setSpectrePatch':
             return {

@@ -1,6 +1,4 @@
 import { fmtMath } from '../../format';
-import { useTileState } from '../../hooks/useTileState';
-import { TRANSLATIONS } from '../../i18n';
 import { polykiteValid } from '../../geometry/kiteGrid';
 import { closureError, createSmithTile, isAperiodic, SQRT3 } from '../../geometry/smithTile';
 import {
@@ -17,6 +15,9 @@ import {
     SPECTRE_WORMS,
 } from '../../geometry/spectreWorm';
 import { IDENTITY_TRANSFORM } from '../../geometry/Transform';
+import { getTileArticulatedPatch } from '../../geometry/tileArticulatedPatch';
+import { useTileState } from '../../hooks/useTileState';
+import { TRANSLATIONS } from '../../i18n';
 import { Tag } from '../ui/Tag';
 import { SpectreCurveEditor } from './SpectreCurveEditor';
 import { TilePaintEditor } from './TilePaintEditor';
@@ -35,6 +36,30 @@ const POLYKITE_NO_TAG = {
 export function InfoPanel() {
     const { a: tileA, assemblyTileMode, b: tileB, lang, mirrored, shape } = useTileState();
     const t = TRANSLATIONS[lang];
+    if (shape.kind === 'articulatedPatch') {
+        const patch = getTileArticulatedPatch(shape.tile, shape.patch, shape.level, mirrored);
+        return (
+            <aside className="info">
+                <h6>{t.info}</h6>
+                <TilePaintEditor />
+                <div className="info-stat-label">{t.tileArticulatedPatches}</div>
+                <div className="info-stat-value">
+                    {shape.patch}
+                    {shape.level}
+                </div>
+                <div className="info-list">
+                    <div className="info-row">
+                        <span className="k">{t.regionLevel}</span>
+                        <span className="v">{shape.level}</span>
+                    </div>
+                    <div className="info-row">
+                        <span className="k">{t.tileCount}</span>
+                        <span className="v">{patch.tiles.length}</span>
+                    </div>
+                </div>
+            </aside>
+        );
+    }
     if (shape.kind === 'region') {
         const regions =
             assemblyTileMode === 'spectre'

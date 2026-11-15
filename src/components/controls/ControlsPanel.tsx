@@ -9,6 +9,7 @@ import {
     ShapeToggle,
     SpectrePatchSelect,
     SpectreRegionSelect,
+    TileArticulatedPatchSelect,
 } from './PatchSelect';
 import { PresetGrid } from './PresetGrid';
 import { RatioControl } from './RatioControl';
@@ -24,6 +25,7 @@ export function ControlsPanel() {
     const isSpectre = shape.kind === 'spectre';
     const isArticulatedWorm = shape.kind === 'articulatedWorm';
     const isRegion = shape.kind === 'region';
+    const isPatch = shape.kind === 'articulatedPatch';
     return (
         <aside className="controls">
             <section>
@@ -35,6 +37,13 @@ export function ControlsPanel() {
                 <section>
                     <h6>{t.spectrePatches}</h6>
                     <SpectrePatchSelect />
+                </section>
+            )}
+
+            {isPatch && (
+                <section>
+                    <h6>{t.tileArticulatedPatches}</h6>
+                    <TileArticulatedPatchSelect />
                 </section>
             )}
 
@@ -64,7 +73,7 @@ export function ControlsPanel() {
                 {isTile && <ModeToggle />}
                 {isTile && parameterMode === 'independent' && <IndependentControls />}
                 {isTile && parameterMode === 'ratio' && <RatioControl />}
-                {(isTile || isArticulatedWorm || isRegion) && <ReflectionToggle />}
+                {(isTile || isArticulatedWorm || isRegion || isPatch) && <ReflectionToggle />}
                 <ZoomControl />
                 <RotationControl />
             </section>
@@ -81,7 +90,7 @@ export function ControlsPanel() {
                 <DisplayToggles />
             </section>
 
-            {(isTile || isSpectre) && (
+            {(isTile || isSpectre || isPatch) && (
                 <section>
                     <h6>{t.exportStl}</h6>
                     <StlExportPanel />

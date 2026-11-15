@@ -131,6 +131,22 @@ body {
     border-color: var(--color-accent);
 }
 
+.patch-level {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 13px;
+}
+.patch-level select {
+    padding: 6px 10px;
+    border: 1px solid var(--color-neutral-300);
+    border-radius: 2px;
+    background: var(--color-bg);
+    color: inherit;
+    font: inherit;
+}
+
 /* range input */
 input[type="range"] {
     -webkit-appearance: none;

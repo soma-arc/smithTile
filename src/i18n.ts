@@ -19,6 +19,8 @@ export interface Strings {
     shape: string;
     shapeTile: string;
     shapeSpectre: string;
+    shapeArticulatedPatch: string;
+    tileArticulatedPatches: string;
     shapeArticulatedWorm: string;
     articulatedWorms: string;
     assemblyTiles: string;
@@ -120,6 +122,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shape: '図形',
         shapeTile: 'Tile(a, b)',
         shapeSpectre: 'Spectre',
+        shapeArticulatedPatch: 'Patch',
+        tileArticulatedPatches: 'Hat / Turtle Articulated',
         shapeArticulatedWorm: 'Worm',
         articulatedWorms: 'Articulated Worm',
         assemblyTiles: '構成タイル',
@@ -222,6 +226,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         shape: 'Shape',
         shapeTile: 'Tile(a, b)',
         shapeSpectre: 'Spectre',
+        shapeArticulatedPatch: 'Patch',
+        tileArticulatedPatches: 'Hat / Turtle Articulated',
         shapeArticulatedWorm: 'Worm',
         articulatedWorms: 'Articulated worms',
         assemblyTiles: 'Constituent tiles',

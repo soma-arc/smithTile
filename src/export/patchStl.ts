@@ -107,7 +107,10 @@ export function beveledSolid(pointsMm: readonly Vec2[], thickness: number, bevel
 }
 
 /** Straight-edged tiles at the patch's model coordinates, with no gap or camera transform. */
-export function patchSolids(patch: SmithPatch, options: Partial<PatchStlOptions> = {}): Geom3[] {
+export function patchSolids(
+    patch: Pick<SmithPatch, 'tiles'>,
+    options: Partial<PatchStlOptions> = {},
+): Geom3[] {
     const opts = { ...DEFAULT_PATCH_STL_OPTIONS, ...options };
     if (!Number.isFinite(opts.unitMm) || opts.unitMm <= 0 || patch.tiles.length === 0) {
         throw new RangeError('Expected a positive scale and a nonempty patch');
@@ -130,7 +133,10 @@ export function patchSolids(patch: SmithPatch, options: Partial<PatchStlOptions>
  * Keeping the collinear boundary vertices is essential at tile junctions.
  * This avoids a global BSP union, which is prohibitively large for level 2.
  */
-export function patchSolid(patch: SmithPatch, options: Partial<PatchStlOptions> = {}): Geom3 {
+export function patchSolid(
+    patch: Pick<SmithPatch, 'tiles'>,
+    options: Partial<PatchStlOptions> = {},
+): Geom3 {
     const { unitMm, thickness, bevel } = { ...DEFAULT_PATCH_STL_OPTIONS, ...options };
     if (
         !Number.isFinite(unitMm) ||
@@ -221,7 +227,7 @@ export function patchSolid(patch: SmithPatch, options: Partial<PatchStlOptions> 
 }
 
 export function patchStl(
-    patch: SmithPatch,
+    patch: Pick<SmithPatch, 'tiles'>,
     options: Partial<PatchStlOptions> = {},
 ): Uint8Array<ArrayBuffer> {
     return solidToStl(patchSolid(patch, options));

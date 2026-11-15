@@ -64,8 +64,14 @@ function referenceScale(): number {
 }
 
 /** A fixed-scale camera rotated about the supplied world-space center. */
-function cameraFromCenter(center: Vec2, zoom: number, rotationDeg: number, pan: Vec2): Camera {
-    const sc = referenceScale() * zoom;
+function cameraFromCenter(
+    center: Vec2,
+    zoom: number,
+    rotationDeg: number,
+    pan: Vec2,
+    baseScale = referenceScale(),
+): Camera {
+    const sc = baseScale * zoom;
     const rad = (rotationDeg * Math.PI) / 180;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
@@ -127,6 +133,18 @@ export function createCenteredCamera(
 ): Camera {
     const frame = frameOfPoints(points);
     return cameraFromCenter({ x: frame.cx, y: frame.cy }, zoom, rotationDeg, pan);
+}
+
+/** Fit a discrete patch selection at zoom=1, including point-only identity patches. */
+export function createFittedCamera(
+    points: readonly Vec2[],
+    zoom = 1,
+    rotationDeg = 0,
+    pan: Vec2 = { x: 0, y: 0 },
+): Camera {
+    const frame = frameOfPoints(points);
+    const scale = Math.min((CANVAS_W - 2 * PAD) / frame.w, (CANVAS_H - 2 * PAD) / frame.h);
+    return cameraFromCenter({ x: frame.cx, y: frame.cy }, zoom, rotationDeg, pan, scale);
 }
 
 /** Invert the camera's rotation, Y flip, and scale for a screen-space drag vector. */

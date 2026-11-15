@@ -1,10 +1,14 @@
+import { polykiteValid } from '../../geometry/kiteGrid';
 import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
-import { polykiteValid } from '../../geometry/kiteGrid';
 
 export function NotPolykiteNote() {
     const { a: tileA, b: tileB, lang, shape, toggles } = useTileState();
-    if (shape.kind === 'articulatedWorm' || shape.kind === 'region') {
+    if (
+        shape.kind === 'articulatedWorm' ||
+        shape.kind === 'region' ||
+        shape.kind === 'articulatedPatch'
+    ) {
         return null;
     }
     const a = shape.kind === 'spectre' ? 1 : tileA;

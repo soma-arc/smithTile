@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { SPECTRE_PATCHES } from '../geometry/smithPatch';
 import { createSmithTile, PRESETS, smithTileWorldVertices } from '../geometry/smithTile';
 import { createReflectionTransform, IDENTITY_TRANSFORM } from '../geometry/Transform';
+import { getTileArticulatedPatch } from '../geometry/tileArticulatedPatch';
 import { ccwPolygon, insetPolygon } from './insetPolygon';
 import { beveledSolid, patchSolid, patchSolids, patchStl } from './patchStl';
 
@@ -102,6 +103,25 @@ describe('constant-width inset', () => {
 });
 
 describe('beveled patch STL', () => {
+    it.each(['hat', 'turtle'] as const)(
+        'exports closed %s B/C patches including reflected tiles',
+        (tile) => {
+            for (const kind of ['B', 'C'] as const) {
+                for (const mirrored of [false, true]) {
+                    for (const level of [1, 2]) {
+                        const patch = getTileArticulatedPatch(tile, kind, level, mirrored);
+                        for (const bevel of [0, 0.8]) {
+                            expectClosed(
+                                readStl(patchStl(patch, { bevel })),
+                                `${tile} ${kind}${level} ${mirrored}`,
+                            );
+                        }
+                    }
+                }
+            }
+        },
+    );
+
     it('makes closed, consistently oriented solids for presets and reflected tiles', () => {
         for (const preset of PRESETS) {
             for (const transform of [IDENTITY_TRANSFORM, createReflectionTransform()]) {
