@@ -6,6 +6,7 @@ import { createSmithTile, PRESETS, smithTileWorldVertices } from '../geometry/sm
 import { createReflectionTransform, IDENTITY_TRANSFORM } from '../geometry/Transform';
 import { ccwPolygon, insetPolygon } from './insetPolygon';
 import { beveledSolid, patchSolid, patchSolids, patchStl } from './patchStl';
+import { PatchStlValidationError } from './patchStlError';
 
 function expectClosed(solid: Geom3, label = '') {
     const edges = new Map<string, { count: number; balance: number }>();
@@ -102,6 +103,12 @@ describe('constant-width inset', () => {
 });
 
 describe('beveled patch STL', () => {
+    const curved = {
+        kind: 'cubicBezier' as const,
+        c1: { x: 0.2, y: 0.12 },
+        c2: { x: 0.8, y: 0.12 },
+    };
+
     it('makes closed, consistently oriented solids for presets and reflected tiles', () => {
         for (const preset of PRESETS) {
             for (const transform of [IDENTITY_TRANSFORM, createReflectionTransform()]) {
@@ -173,6 +180,40 @@ describe('beveled patch STL', () => {
         },
     );
 
+    it('writes a closed patch with shared cubic Bezier edges', () => {
+        for (const bevel of [0, 0.8]) {
+            expectClosed(
+                readStl(patchStl(SPECTRE_PATCHES.Ma0, { bevel, edgeCurve: curved })),
+                `curved bevel=${bevel}`,
+            );
+        }
+    });
+
+    it('adds triangles when the curve tolerance is tightened', () => {
+        const triangleCount = (curveToleranceMm: number) =>
+            new DataView(
+                patchStl(SPECTRE_PATCHES.Ma0, {
+                    bevel: 0,
+                    edgeCurve: curved,
+                    curveToleranceMm,
+                }).buffer,
+            ).getUint32(80, true);
+        expect(triangleCount(0.01)).toBeGreaterThan(triangleCount(0.2));
+    });
+
+    it('reports when the bevel is too wide for a finely sampled curve', () => {
+        try {
+            patchStl(SPECTRE_PATCHES.Ma0, {
+                edgeCurve: curved,
+                curveToleranceMm: 0.01,
+            });
+            throw new Error('Expected patchStl to reject the bevel');
+        } catch (error) {
+            expect(error).toBeInstanceOf(PatchStlValidationError);
+            expect((error as PatchStlValidationError).code).toBe('bevelGeometry');
+        }
+    });
+
     it('rejects empty patches, nonfinite dimensions, and excessive bevels', () => {
         expect(() => patchStl(SPECTRE_PATCHES.S0)).toThrow(RangeError);
         for (const options of [
@@ -184,6 +225,8 @@ describe('beveled patch STL', () => {
             { bevel: 4 },
             { bevel: Number.NaN },
             { unitMm: 0.1, bevel: 0.8 },
+            { curveToleranceMm: 0 },
+            { curveToleranceMm: Number.NaN },
         ]) {
             expect(() => patchStl(SPECTRE_PATCHES.Ma0, options)).toThrow(RangeError);
         }

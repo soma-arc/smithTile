@@ -64,7 +64,7 @@ describe('<StlExportPanel>', () => {
         vi.unstubAllGlobals();
     });
 
-    it('downloads the selected straight patch with a top bevel', async () => {
+    it('downloads the selected patch with its displayed Bezier edges', async () => {
         const { createObjectURL, click } = stubDownload();
         const user = userEvent.setup();
         render(
@@ -74,10 +74,10 @@ describe('<StlExportPanel>', () => {
         );
         await user.click(screen.getByRole('radio', { name: 'Spectre' }));
         await user.click(screen.getByRole('button', { name: 'Ma0' }));
-        await user.click(screen.getByRole('button', { name: '直線パッチのSTLを保存' }));
+        await user.click(screen.getByRole('button', { name: 'パッチのSTLを保存' }));
         expect(click).toHaveBeenCalledOnce();
         const anchor = click.mock.instances[0] as unknown as HTMLAnchorElement;
-        expect(anchor.download).toBe('patch-Ma0-straight.stl');
+        expect(anchor.download).toBe('patch-Ma0-cubicBezier.stl');
         expect(createObjectURL.mock.calls[0][0].size).toBeGreaterThan(2484);
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
@@ -118,8 +118,10 @@ describe('<StlExportPanel>', () => {
         const bevel = screen.getByRole('spinbutton', { name: '面取り幅 (mm)' });
         await user.clear(bevel);
         await user.type(bevel, '4');
-        await user.click(screen.getByRole('button', { name: '直線パッチのSTLを保存' }));
-        expect(await screen.findByRole('alert')).toHaveTextContent('面取り幅は厚さ未満');
+        await user.click(screen.getByRole('button', { name: 'パッチのSTLを保存' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            '面取り幅は0以上かつ厚さ未満にしてください。',
+        );
         expect(click).not.toHaveBeenCalled();
     });
 
@@ -132,7 +134,7 @@ describe('<StlExportPanel>', () => {
         );
         await user.click(screen.getByRole('radio', { name: 'Spectre' }));
         await user.click(screen.getByRole('button', { name: 'S0' }));
-        expect(screen.getByRole('button', { name: '直線パッチのSTLを保存' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'パッチのSTLを保存' })).toBeDisabled();
         expect(screen.getByText('このパッチにはタイルがありません。')).toBeInTheDocument();
     });
 });

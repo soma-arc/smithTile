@@ -84,7 +84,17 @@ export interface Strings {
     stlUnitMm: string;
     stlThickness: string;
     stlBevel: string;
+    stlCurveTolerance: string;
     stlInvalidPatch: string;
+    stlInvalidScale: string;
+    stlInvalidThickness: string;
+    stlInvalidBevel: string;
+    stlInvalidTolerance: string;
+    stlInvalidCurve: string;
+    stlPatchSelfIntersection: string;
+    stlBevelGeometry: string;
+    stlOverlappingTiles: string;
+    stlTriangulationFailed: string;
     stlEmptyPatch: string;
     stlGenerating: string;
     stlExportFailed: string;
@@ -181,14 +191,27 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         exportStl: '3D 出力',
         saveStl: 'STL を保存',
         stlInvalidBoundary: '境界が自己交差しているため、STLを作成できません。',
-        savePatchStl: '直線パッチのSTLを保存',
+        savePatchStl: 'パッチのSTLを保存',
         stlPatchDescription:
-            '直線の輪郭で、隙間なくパッチを立体化します。上縁だけを45°面取りします。',
+            '表示中の辺形状で、隙間なくパッチを立体化します。上縁だけを45°面取りします。',
         stlUnitMm: '単位辺長 (mm)',
         stlThickness: '厚さ (mm)',
         stlBevel: '面取り幅 (mm)',
+        stlCurveTolerance: '曲線許容誤差 (mm)',
         stlInvalidPatch:
             '寸法を確認してください。面取り幅は厚さ未満で、輪郭が潰れない大きさにしてください。',
+        stlInvalidScale: '単位辺長には0より大きい有限値を指定してください。',
+        stlInvalidThickness: '厚さには0より大きい有限値を指定してください。',
+        stlInvalidBevel: '面取り幅は0以上かつ厚さ未満にしてください。',
+        stlInvalidTolerance: '曲線許容誤差には0より大きい有限値を指定してください。',
+        stlInvalidCurve: '曲線の点が不足しているか、曲線データが不正です。',
+        stlPatchSelfIntersection:
+            '曲線を適用したタイル境界が自己交差しています。曲線の曲がりを小さくしてください。',
+        stlBevelGeometry:
+            '選択した曲線に対して面取り幅が大きすぎます。面取り幅を小さくするか、0にしてください。',
+        stlOverlappingTiles: 'パッチ内に重複または重なったタイル辺があります。',
+        stlTriangulationFailed:
+            '曲線から生成した輪郭を三角形化できませんでした。曲線を緩やかにするか、曲線許容誤差を大きくしてください。',
         stlEmptyPatch: 'このパッチにはタイルがありません。',
         stlGenerating: 'STLを生成中…',
         stlExportFailed: 'STLを生成できませんでした。',
@@ -283,14 +306,27 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         exportStl: '3D export',
         saveStl: 'Save STL',
         stlInvalidBoundary: 'The boundary intersects itself, so an STL cannot be created.',
-        savePatchStl: 'Save straight patch STL',
+        savePatchStl: 'Save patch STL',
         stlPatchDescription:
-            'Create a straight-edged patch with no gaps and a 45° bevel on the top edges only.',
+            'Create the patch with the displayed edge shape, no gaps, and a 45° bevel on the top edges only.',
         stlUnitMm: 'Unit edge length (mm)',
         stlThickness: 'Thickness (mm)',
         stlBevel: 'Bevel width (mm)',
+        stlCurveTolerance: 'Curve tolerance (mm)',
         stlInvalidPatch:
             'Check the dimensions. The bevel must be smaller than the thickness and must not collapse the outline.',
+        stlInvalidScale: 'Unit edge length must be a finite value greater than zero.',
+        stlInvalidThickness: 'Thickness must be a finite value greater than zero.',
+        stlInvalidBevel: 'Bevel width must be at least zero and smaller than the thickness.',
+        stlInvalidTolerance: 'Curve tolerance must be a finite value greater than zero.',
+        stlInvalidCurve: 'The curve has too few points or contains invalid data.',
+        stlPatchSelfIntersection:
+            'The curved tile boundary intersects itself. Reduce the amount of curvature.',
+        stlBevelGeometry:
+            'The bevel is too wide for the selected curve. Reduce the bevel width or set it to zero.',
+        stlOverlappingTiles: 'The patch contains duplicate or overlapping tile edges.',
+        stlTriangulationFailed:
+            'The curved outline could not be triangulated. Use a gentler curve or increase the curve tolerance.',
         stlEmptyPatch: 'This patch contains no tiles.',
         stlGenerating: 'Generating STL…',
         stlExportFailed: 'Could not generate the STL.',

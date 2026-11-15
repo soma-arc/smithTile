@@ -1,9 +1,11 @@
 import { extrusions, geometries } from '@jscad/modeling';
 import type { Geom3 } from '@jscad/modeling/src/geometries/types';
 import type { SmithPatch } from '../geometry/smithPatch';
-import { smithTileWorldVertices } from '../geometry/smithTile';
+import { type CurveSpec, type SmithTile, STRAIGHT_CURVE } from '../geometry/smithTile';
 import type { Vec2 } from '../geometry/Vec2';
+import { DEFAULT_CURVE_TOLERANCE_MM, tileCurveOutline } from './curveTessellation';
 import { ccwPolygon, insetPolygon } from './insetPolygon';
+import { classifyPatchStlError, PatchStlValidationError } from './patchStlError';
 import { solidToStl } from './stl';
 
 export type PatchStlOptions = {
@@ -11,13 +13,56 @@ export type PatchStlOptions = {
     thickness: number;
     /** Horizontal width and height of the 45-degree top bevel, in mm. */
     bevel: number;
+    /** One canonical edge curve, placed on every patch tile edge. */
+    edgeCurve?: CurveSpec;
+    /** Maximum deviation of an STL chord from a curved boundary, in mm. */
+    curveToleranceMm?: number;
 };
 
-export const DEFAULT_PATCH_STL_OPTIONS: PatchStlOptions = {
+type ResolvedPatchStlOptions = PatchStlOptions & {
+    edgeCurve: CurveSpec;
+    curveToleranceMm: number;
+};
+
+export const DEFAULT_PATCH_STL_OPTIONS: ResolvedPatchStlOptions = {
     unitMm: 10,
     thickness: 4,
     bevel: 0.8,
+    edgeCurve: STRAIGHT_CURVE,
+    curveToleranceMm: DEFAULT_CURVE_TOLERANCE_MM,
 };
+
+function resolveOptions(options: Partial<PatchStlOptions>): ResolvedPatchStlOptions {
+    return {
+        ...DEFAULT_PATCH_STL_OPTIONS,
+        ...options,
+        edgeCurve: options.edgeCurve ?? DEFAULT_PATCH_STL_OPTIONS.edgeCurve,
+        curveToleranceMm: options.curveToleranceMm ?? DEFAULT_PATCH_STL_OPTIONS.curveToleranceMm,
+    };
+}
+
+function tileOutlineMm(tile: SmithTile, opts: ResolvedPatchStlOptions): Vec2[] {
+    return tileCurveOutline(tile, opts.edgeCurve, opts.curveToleranceMm / opts.unitMm).map((p) => ({
+        x: p.x * opts.unitMm,
+        y: p.y * opts.unitMm,
+    }));
+}
+
+function validatePatchOptions(patch: SmithPatch, opts: ResolvedPatchStlOptions): void {
+    if (patch.tiles.length === 0) throw new PatchStlValidationError('emptyPatch');
+    if (!Number.isFinite(opts.unitMm) || opts.unitMm <= 0) {
+        throw new PatchStlValidationError('invalidScale');
+    }
+    if (!Number.isFinite(opts.thickness) || opts.thickness <= 0) {
+        throw new PatchStlValidationError('invalidThickness');
+    }
+    if (!Number.isFinite(opts.bevel) || opts.bevel < 0 || opts.bevel >= opts.thickness) {
+        throw new PatchStlValidationError('invalidBevel');
+    }
+    if (!Number.isFinite(opts.curveToleranceMm) || opts.curveToleranceMm <= 0) {
+        throw new PatchStlValidationError('invalidTolerance');
+    }
+}
 
 /** Ear clipping with inclusive point tests avoids zero-area ears along diagonals. */
 function cap(points: readonly Vec2[], z: number, reverse: boolean) {
@@ -106,21 +151,12 @@ export function beveledSolid(pointsMm: readonly Vec2[], thickness: number, bevel
     ]);
 }
 
-/** Straight-edged tiles at the patch's model coordinates, with no gap or camera transform. */
+/** Curved tiles at the patch's model coordinates, with no gap or camera transform. */
 export function patchSolids(patch: SmithPatch, options: Partial<PatchStlOptions> = {}): Geom3[] {
-    const opts = { ...DEFAULT_PATCH_STL_OPTIONS, ...options };
-    if (!Number.isFinite(opts.unitMm) || opts.unitMm <= 0 || patch.tiles.length === 0) {
-        throw new RangeError('Expected a positive scale and a nonempty patch');
-    }
+    const opts = resolveOptions(options);
+    validatePatchOptions(patch, opts);
     return patch.tiles.map((tile) =>
-        beveledSolid(
-            smithTileWorldVertices(tile).map((p) => ({
-                x: p.x * opts.unitMm,
-                y: p.y * opts.unitMm,
-            })),
-            opts.thickness,
-            opts.bevel,
-        ),
+        beveledSolid(tileOutlineMm(tile, opts), opts.thickness, opts.bevel),
     );
 }
 
@@ -131,19 +167,9 @@ export function patchSolids(patch: SmithPatch, options: Partial<PatchStlOptions>
  * This avoids a global BSP union, which is prohibitively large for level 2.
  */
 export function patchSolid(patch: SmithPatch, options: Partial<PatchStlOptions> = {}): Geom3 {
-    const { unitMm, thickness, bevel } = { ...DEFAULT_PATCH_STL_OPTIONS, ...options };
-    if (
-        !Number.isFinite(unitMm) ||
-        unitMm <= 0 ||
-        patch.tiles.length === 0 ||
-        !Number.isFinite(thickness) ||
-        thickness <= 0 ||
-        !Number.isFinite(bevel) ||
-        bevel < 0 ||
-        bevel >= thickness
-    ) {
-        throw new RangeError('Invalid patch dimensions or empty patch');
-    }
+    const opts = resolveOptions(options);
+    const { unitMm, thickness, bevel } = opts;
+    validatePatchOptions(patch, opts);
     const polygons: ReturnType<typeof cap> = [];
     const walls = new Map<string, { a: Vec2; b: Vec2 }>();
     const paired = new Set<string>();
@@ -181,9 +207,7 @@ export function patchSolid(patch: SmithPatch, options: Partial<PatchStlOptions> 
         );
     };
     for (const tile of patch.tiles) {
-        const bottom = smithTileWorldVertices(tile).map((p) =>
-            weld({ x: p.x * unitMm, y: p.y * unitMm }),
-        );
+        const bottom = tileOutlineMm(tile, opts).map(weld);
         ccwPolygon(bottom); // validate without removing the shared collinear vertices
         const area2 = bottom.reduce((sum, p, i) => {
             const q = bottom[(i + 1) % bottom.length];
@@ -224,5 +248,12 @@ export function patchStl(
     patch: SmithPatch,
     options: Partial<PatchStlOptions> = {},
 ): Uint8Array<ArrayBuffer> {
-    return solidToStl(patchSolid(patch, options));
+    try {
+        return solidToStl(patchSolid(patch, options));
+    } catch (error) {
+        if (error instanceof RangeError) {
+            throw new PatchStlValidationError(classifyPatchStlError(error), error.message);
+        }
+        throw error;
+    }
 }

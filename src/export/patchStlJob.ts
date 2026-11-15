@@ -1,4 +1,5 @@
 import type { PatchStlReply, PatchStlRequest } from './patchStl.worker';
+import { PatchStlValidationError } from './patchStlError';
 
 /** Keep patch generation off the UI thread. Each job releases its worker on completion. */
 export function startPatchStlJob(request: PatchStlRequest) {
@@ -7,12 +8,9 @@ export function startPatchStlJob(request: PatchStlRequest) {
         worker.onmessage = (event: MessageEvent<PatchStlReply>) => {
             worker.terminate();
             if ('bytes' in event.data) resolve(event.data.bytes);
-            else
-                reject(
-                    event.data.error === 'dimensions'
-                        ? new RangeError('Invalid patch dimensions')
-                        : new Error('Patch generation failed'),
-                );
+            else if (event.data.error === 'validation') {
+                reject(new PatchStlValidationError(event.data.code));
+            } else reject(new Error('Patch generation failed'));
         };
         worker.onerror = () => {
             worker.terminate();
