@@ -8,15 +8,24 @@ import { App } from '../App';
 
 // jsdom has no Worker; run the same model builder in-process for UI integration tests.
 vi.mock('../../export/patchStlJob', () => ({
-    startPatchStlJob: (request: {
-        patchKey: import('../../geometry/smithPatch').SpectrePatchKey;
-        options: import('../../export/patchStl').PatchStlOptions;
-    }) => ({
+    startPatchStlJob: (request: import('../../export/patchStl.worker').PatchStlRequest) => ({
         result: Promise.all([
             import('../../export/patchStl'),
             import('../../geometry/smithPatch'),
-        ]).then(([{ patchStl }, { SPECTRE_PATCHES }]) =>
-            patchStl(SPECTRE_PATCHES[request.patchKey], request.options),
+            import('../../geometry/tileArticulatedPatch'),
+        ]).then(([{ patchStl }, { SPECTRE_PATCHES }, { getTileArticulatedPatch }]) =>
+            patchStl(
+                'tilePatch' in request
+                    ? getTileArticulatedPatch(
+                          request.tilePatch.a,
+                          request.tilePatch.b,
+                          request.tilePatch.patch,
+                          request.tilePatch.level,
+                          request.tilePatch.mirrored,
+                      )
+                    : SPECTRE_PATCHES[request.patchKey],
+                request.options,
+            ),
         ),
         cancel: vi.fn(),
     }),
@@ -42,6 +51,26 @@ function stubDownload() {
 }
 
 describe('<StlExportPanel>', () => {
+    it('downloads the selected Tile(a, b) articulated patch and disables the empty S0', async () => {
+        const { click } = stubDownload();
+        const user = userEvent.setup();
+        render(
+            <TileStateProvider>
+                <App />
+            </TileStateProvider>,
+        );
+        await user.click(screen.getByRole('radio', { name: 'Patch' }));
+        await user.click(screen.getByRole('button', { name: 'Tile(1,4)' }));
+        await user.click(screen.getByRole('radio', { name: '鏡像' }));
+        await user.click(screen.getByRole('button', { name: 'パッチのSTLを保存' }));
+        expect(click).toHaveBeenCalledOnce();
+        const anchor = click.mock.instances[0] as unknown as HTMLAnchorElement;
+        expect(anchor.download).toBe('patch-tile-a1-b4-B1-mirrored-straight.stl');
+        await user.click(screen.getByRole('radio', { name: 'S' }));
+        await user.selectOptions(screen.getByRole('combobox', { name: 'レベル' }), '0');
+        expect(screen.getByRole('button', { name: 'パッチのSTLを保存' })).toBeDisabled();
+    });
+
     it('downloads an STL named after the current (a, b)', async () => {
         const { createObjectURL, click } = stubDownload();
         const user = userEvent.setup();

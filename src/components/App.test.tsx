@@ -17,6 +17,40 @@ function renderApp() {
 }
 
 describe('<App> (state + components wiring)', () => {
+    it('uses any Tile(a, b) in articulated patches, displays levels and mirrors the drawing', async () => {
+        const user = userEvent.setup();
+        const { container } = renderApp();
+        await user.click(screen.getByRole('radio', { name: 'Patch' }));
+        expect(screen.getByText('ハット Tile(1, 1.7321) Articulated Patch B1')).toBeInTheDocument();
+        const componentLegend = screen.getByRole('group', { name: 'コンポーネント色分け' });
+        expect(componentLegend).toHaveTextContent('B');
+        expect(componentLegend).toHaveTextContent('S');
+        expect(componentLegend).toHaveTextContent('C');
+        expect(componentLegend.querySelectorAll('.component-legend-swatch')).toHaveLength(3);
+        await user.click(screen.getByRole('checkbox', { name: 'プラグ/ソケット矢印' }));
+        expect(
+            container.querySelectorAll('.svg-host polygon[fill]:not([fill="none"])'),
+        ).toHaveLength(9);
+        await user.click(screen.getByRole('button', { name: 'Tile(1,4)' }));
+        await user.click(screen.getByRole('radio', { name: 'C' }));
+        await user.selectOptions(screen.getByRole('combobox', { name: 'レベル' }), '2');
+        expect(screen.getByText('Tile(1,4) Tile(1, 4) Articulated Patch C2')).toBeInTheDocument();
+        expect(
+            container.querySelectorAll('.svg-host polygon[fill]:not([fill="none"])'),
+        ).toHaveLength(57);
+        const before = container.querySelector('.svg-host polygon')?.getAttribute('points');
+        await user.click(screen.getByRole('radio', { name: '鏡像' }));
+        expect(container.querySelector('.svg-host polygon')?.getAttribute('points')).not.toBe(
+            before,
+        );
+        await user.click(screen.getByRole('checkbox', { name: 'コンポーネント色分け' }));
+        expect(
+            container.querySelectorAll('.svg-host polygon[fill]:not([fill="none"])'),
+        ).toHaveLength(57);
+        await user.click(screen.getByRole('radio', { name: 'English' }));
+        expect(screen.getByRole('combobox', { name: 'Level' })).toHaveValue('2');
+    });
+
     it('starts on the Hat preset', () => {
         renderApp();
         expect(screen.getByRole('button', { name: /ハット/ })).toHaveClass('active');

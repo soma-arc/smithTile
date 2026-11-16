@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { SPECTRE_PATCHES } from '../geometry/smithPatch';
 import { createSmithTile, PRESETS, smithTileWorldVertices } from '../geometry/smithTile';
 import { createReflectionTransform, IDENTITY_TRANSFORM } from '../geometry/Transform';
+import { getTileArticulatedPatch } from '../geometry/tileArticulatedPatch';
 import { ccwPolygon, insetPolygon } from './insetPolygon';
 import { beveledSolid, patchSolid, patchSolids, patchStl } from './patchStl';
 import { PatchStlValidationError } from './patchStlError';
@@ -108,6 +109,26 @@ describe('beveled patch STL', () => {
         c1: { x: 0.2, y: 0.12 },
         c2: { x: 0.8, y: 0.12 },
     };
+
+    it.each([
+        ['hat', 1, Math.sqrt(3)],
+        ['turtle', Math.sqrt(3), 1],
+        ['Tile(2, 3)', 2, 3],
+    ] as const)('exports closed %s B/C patches including reflected tiles', (name, a, b) => {
+        for (const kind of ['B', 'C'] as const) {
+            for (const mirrored of [false, true]) {
+                for (const level of [1, 2]) {
+                    const patch = getTileArticulatedPatch(a, b, kind, level, mirrored);
+                    for (const bevel of [0, 0.8]) {
+                        expectClosed(
+                            readStl(patchStl(patch, { bevel })),
+                            `${name} ${kind}${level} ${mirrored}`,
+                        );
+                    }
+                }
+            }
+        }
+    });
 
     it('makes closed, consistently oriented solids for presets and reflected tiles', () => {
         for (const preset of PRESETS) {

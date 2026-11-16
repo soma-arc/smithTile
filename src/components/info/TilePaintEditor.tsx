@@ -2,15 +2,15 @@ import { type PointerEvent as ReactPointerEvent, useId, useMemo, useRef, useStat
 import {
     type BoundarySegment,
     createSmithTile,
-    smithTileBoundary,
     STRAIGHT_CURVE,
+    smithTileBoundary,
 } from '../../geometry/smithTile';
 import { IDENTITY_TRANSFORM } from '../../geometry/Transform';
 import {
     localPointToPaint,
     type PaintPoint,
-    paintPressureScale,
     type PaintTool,
+    paintPressureScale,
     pointsBounds,
 } from '../../geometry/tilePaint';
 import type { Vec2 } from '../../geometry/Vec2';

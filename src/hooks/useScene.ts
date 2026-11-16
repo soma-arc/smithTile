@@ -1,26 +1,23 @@
 /** Derives the (memoized) render Scene from UI state. Replaces the old dirty-guard. */
 
 import { useMemo } from 'react';
-import { createCamera, createCenteredCamera } from '../render/camera';
-import { colorGroupBorders, componentBorders } from '../render/patchBorders';
-import { buildScene, type Overlays, type Scene } from '../render/scene';
 import { patchColorGroups, SPECTRE_PATCHES } from '../geometry/smithPatch';
 import { createSmithTile, STRAIGHT_CURVE, smithTileWorldVertices } from '../geometry/smithTile';
 import {
     adjustRegionWorms,
-    MIRRORED_SPECTRE_REGIONS,
     MIRRORED_MONOTILE_SPECTRE_REGIONS,
+    MIRRORED_SPECTRE_REGIONS,
     MONOTILE_SPECTRE_REGIONS,
     regionColorGroups,
     regionEndMarkers,
     regionMovableIndices,
     regionTiles,
-    regionWormGroups,
     regionWormGroupPivot,
+    regionWormGroups,
     regionWormPivot,
     regionWormTiles,
-    SPECTRE_REGIONS,
     SPECTRE_REGION_EXPERIMENT_GROUPS,
+    SPECTRE_REGIONS,
 } from '../geometry/spectreRegion';
 import {
     ARTICULATED_WORMS,
@@ -29,8 +26,16 @@ import {
     SPECTRE_WORMS,
     wormColorGroups,
 } from '../geometry/spectreWorm';
-import type { TileState } from '../state/tileReducer';
 import { createReflectionTransform, IDENTITY_TRANSFORM } from '../geometry/Transform';
+import {
+    getTileArticulatedPatch,
+    tilePatchColorGroups,
+    tilePatchPort,
+} from '../geometry/tileArticulatedPatch';
+import { createCamera, createCenteredCamera, createFittedCamera } from '../render/camera';
+import { colorGroupBorders, componentBorders } from '../render/patchBorders';
+import { buildScene, type Overlays, type Scene } from '../render/scene';
+import type { TileState } from '../state/tileReducer';
 
 export function useScene(state: TileState): Scene {
     const {
@@ -69,6 +74,35 @@ export function useScene(state: TileState): Scene {
             angles: toggles.showAngles,
             ports: toggles.showPorts,
         };
+
+        if (shape.kind === 'articulatedPatch') {
+            const patch = getTileArticulatedPatch(a, b, shape.patch, shape.level, mirrored);
+            const groups = tilePatchColorGroups(patch);
+            const points = [
+                ...patch.tiles.flatMap(smithTileWorldVertices),
+                patch.plug.position,
+                ...patch.sockets.map((port) => port.position),
+            ];
+            return buildScene(
+                {
+                    tiles: patch.tiles,
+                    paint,
+                    fillColor: tileColor,
+                    overlays,
+                    ports: toggles.showPatchPorts
+                        ? {
+                              plug: tilePatchPort(patch.plug),
+                              sockets: patch.sockets.map(tilePatchPort),
+                          }
+                        : undefined,
+                    componentFills: toggles.showComponentColors ? groups : undefined,
+                    componentBorders: toggles.showComponentBorders
+                        ? colorGroupBorders(groups)
+                        : undefined,
+                },
+                createFittedCamera(points, zoom, rotationDeg, pan),
+            );
+        }
 
         if (shape.kind === 'region') {
             const regions =

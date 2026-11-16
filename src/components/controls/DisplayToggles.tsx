@@ -17,10 +17,15 @@ export function DisplayToggles() {
         { key: 'showAngles', label: t.angles },
         { key: 'showPorts', label: t.ports },
     ];
-    if (shape.kind === 'spectre') {
+    if (shape.kind === 'spectre' || shape.kind === 'articulatedPatch') {
         defs.push({ key: 'showPatchPorts', label: t.patchPorts });
     }
-    if (shape.kind === 'spectre' || shape.kind === 'articulatedWorm' || shape.kind === 'region') {
+    if (
+        shape.kind === 'spectre' ||
+        shape.kind === 'articulatedWorm' ||
+        shape.kind === 'region' ||
+        shape.kind === 'articulatedPatch'
+    ) {
         defs.push(
             { key: 'showComponentColors', label: t.componentColors },
             { key: 'showComponentBorders', label: t.componentBorders },

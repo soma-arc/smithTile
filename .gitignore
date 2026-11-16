@@ -46,4 +46,7 @@ coverage/
 # TypeScript cache
 *.tsbuildinfo
 
+# Local code-analysis cache
+.serena/
+
 docs/plan/*

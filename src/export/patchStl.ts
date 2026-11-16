@@ -48,7 +48,10 @@ function tileOutlineMm(tile: SmithTile, opts: ResolvedPatchStlOptions): Vec2[] {
     }));
 }
 
-function validatePatchOptions(patch: SmithPatch, opts: ResolvedPatchStlOptions): void {
+function validatePatchOptions(
+    patch: Pick<SmithPatch, 'tiles'>,
+    opts: ResolvedPatchStlOptions,
+): void {
     if (patch.tiles.length === 0) throw new PatchStlValidationError('emptyPatch');
     if (!Number.isFinite(opts.unitMm) || opts.unitMm <= 0) {
         throw new PatchStlValidationError('invalidScale');
@@ -152,7 +155,10 @@ export function beveledSolid(pointsMm: readonly Vec2[], thickness: number, bevel
 }
 
 /** Curved tiles at the patch's model coordinates, with no gap or camera transform. */
-export function patchSolids(patch: SmithPatch, options: Partial<PatchStlOptions> = {}): Geom3[] {
+export function patchSolids(
+    patch: Pick<SmithPatch, 'tiles'>,
+    options: Partial<PatchStlOptions> = {},
+): Geom3[] {
     const opts = resolveOptions(options);
     validatePatchOptions(patch, opts);
     return patch.tiles.map((tile) =>
@@ -166,7 +172,10 @@ export function patchSolids(patch: SmithPatch, options: Partial<PatchStlOptions>
  * Keeping the collinear boundary vertices is essential at tile junctions.
  * This avoids a global BSP union, which is prohibitively large for level 2.
  */
-export function patchSolid(patch: SmithPatch, options: Partial<PatchStlOptions> = {}): Geom3 {
+export function patchSolid(
+    patch: Pick<SmithPatch, 'tiles'>,
+    options: Partial<PatchStlOptions> = {},
+): Geom3 {
     const opts = resolveOptions(options);
     const { unitMm, thickness, bevel } = opts;
     validatePatchOptions(patch, opts);
@@ -245,7 +254,7 @@ export function patchSolid(patch: SmithPatch, options: Partial<PatchStlOptions> 
 }
 
 export function patchStl(
-    patch: SmithPatch,
+    patch: Pick<SmithPatch, 'tiles'>,
     options: Partial<PatchStlOptions> = {},
 ): Uint8Array<ArrayBuffer> {
     try {
