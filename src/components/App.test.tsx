@@ -2,7 +2,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TileStateProvider } from '../hooks/useTileState';
 import { App } from './App';
 
@@ -17,6 +17,96 @@ function renderApp() {
 }
 
 describe('<App> (state + components wiring)', () => {
+    it('draws level-2 Wriggly Spectres with native Canvas curves and restores SVG at level 0', async () => {
+        const noop = () => {};
+        const bezierCurveTo = vi.fn();
+        const ctx = {
+            beginPath: noop,
+            moveTo: noop,
+            lineTo: noop,
+            closePath: noop,
+            fill: noop,
+            stroke: noop,
+            setLineDash: noop,
+            setTransform: noop,
+            clearRect: noop,
+            fillText: noop,
+            arc: noop,
+            save: noop,
+            restore: noop,
+            clip: noop,
+            bezierCurveTo,
+        };
+        const getContext = vi
+            .spyOn(HTMLCanvasElement.prototype, 'getContext')
+            .mockReturnValue(ctx as unknown as CanvasRenderingContext2D);
+        try {
+            const user = userEvent.setup();
+            const { container } = renderApp();
+            await user.click(screen.getByRole('radio', { name: 'Spectre' }));
+            await user.click(screen.getByRole('radio', { name: 'Wriggly' }));
+            await user.selectOptions(screen.getByRole('combobox', { name: 'レベル' }), '2');
+            expect(container.querySelector('.svg-host canvas')).toBeInTheDocument();
+            expect(container.querySelector('.svg-host svg')).not.toBeInTheDocument();
+            expect(bezierCurveTo.mock.calls.length).toBeGreaterThan(6107);
+            await user.selectOptions(screen.getByRole('combobox', { name: 'レベル' }), '0');
+            expect(container.querySelector('.svg-host canvas')).not.toBeInTheDocument();
+            expect(container.querySelector('.svg-host svg')).toBeInTheDocument();
+        } finally {
+            getContext.mockRestore();
+        }
+    });
+
+    it('switches between Tile(a, b) patch families and retains Wriggly on preset changes', async () => {
+        const user = userEvent.setup();
+        const { container } = renderApp();
+        await user.click(screen.getByRole('radio', { name: 'Patch' }));
+        await user.click(screen.getByRole('radio', { name: 'Wriggly' }));
+        expect(screen.getByText('ハット Tile(1, 1.7321) Wriggly Patch B1')).toBeInTheDocument();
+        await user.click(screen.getByRole('checkbox', { name: 'プラグ/ソケット矢印' }));
+        expect(
+            container.querySelectorAll('.svg-host polygon[fill]:not([fill="none"])'),
+        ).toHaveLength(8);
+        await user.click(screen.getByRole('button', { name: /タートル/ }));
+        await user.click(screen.getByRole('radio', { name: 'S' }));
+        await user.selectOptions(screen.getByRole('combobox', { name: 'レベル' }), '0');
+        expect(screen.getByText('タートル Tile(1.7321, 1) Wriggly Patch S0')).toBeInTheDocument();
+        expect(
+            container.querySelectorAll('.svg-host polygon[fill]:not([fill="none"])'),
+        ).toHaveLength(3);
+        const points = container.querySelector('.svg-host polygon')?.getAttribute('points');
+        await user.click(screen.getByRole('radio', { name: '鏡像' }));
+        expect(container.querySelector('.svg-host polygon')?.getAttribute('points')).not.toBe(
+            points,
+        );
+        await user.click(screen.getByRole('radio', { name: '関節型' }));
+        expect(
+            screen.getByText('タートル Tile(1.7321, 1) Articulated Patch B1'),
+        ).toBeInTheDocument();
+    });
+
+    it('draws the Wriggly Spectre family with curves, ports and component colors', async () => {
+        const user = userEvent.setup();
+        const { container } = renderApp();
+        await user.click(screen.getByRole('radio', { name: 'Spectre' }));
+        await user.click(screen.getByRole('radio', { name: 'Wriggly' }));
+        expect(screen.getByText('Spectre Wriggly Patch I1')).toBeInTheDocument();
+        expect(
+            container.querySelectorAll('.svg-host path[d*="C"][fill]:not([fill="none"])'),
+        ).toHaveLength(100);
+        await user.click(screen.getByRole('button', { name: 'S' }));
+        await user.selectOptions(screen.getByRole('combobox', { name: 'レベル' }), '0');
+        expect(
+            container.querySelectorAll('.svg-host path[d*="C"][fill]:not([fill="none"])'),
+        ).toHaveLength(2);
+        await user.click(screen.getByRole('checkbox', { name: 'プラグ/ソケット矢印' }));
+        expect(screen.getByRole('group', { name: 'コンポーネント色分け' })).toHaveTextContent('Ma');
+        await user.click(screen.getByRole('radio', { name: 'English' }));
+        expect(screen.getByRole('combobox', { name: 'Level' })).toHaveValue('0');
+        await user.click(screen.getByRole('radio', { name: 'Articulated' }));
+        expect(screen.getByRole('button', { name: 'Ma0' })).toBeInTheDocument();
+    });
+
     it('uses any Tile(a, b) in articulated patches, displays levels and mirrors the drawing', async () => {
         const user = userEvent.setup();
         const { container } = renderApp();

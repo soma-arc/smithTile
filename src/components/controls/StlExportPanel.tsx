@@ -17,7 +17,9 @@ import {
 import { fmtNum } from '../../format';
 import { SPECTRE_PATCHES } from '../../geometry/smithPatch';
 import { STRAIGHT_CURVE } from '../../geometry/smithTile';
+import { getSpectreWrigglyPatch } from '../../geometry/spectreWrigglyPatch';
 import { getTileArticulatedPatch } from '../../geometry/tileArticulatedPatch';
+import { getTileWrigglyPatch } from '../../geometry/tileWrigglyPatch';
 import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
 
@@ -36,16 +38,38 @@ export function StlExportPanel() {
     useEffect(() => () => job.current?.cancel(), []);
     const t = TRANSLATIONS[lang];
     const patchKey = shape.kind === 'spectre' ? shape.patch : null;
+    const isTilePatch = shape.kind === 'articulatedPatch' || shape.kind === 'wrigglyPatch';
     const selection =
-        shape.kind === 'articulatedPatch'
-            ? { tilePatch: { a, b, patch: shape.patch, level: shape.level, mirrored } }
-            : patchKey
-              ? { patchKey }
-              : null;
+        shape.kind === 'spectreWriggly'
+            ? { spectreWrigglyPatch: { patch: shape.patch, level: shape.level, mirrored } }
+            : isTilePatch
+              ? {
+                    tilePatch: {
+                        a,
+                        b,
+                        patch: shape.patch,
+                        level: shape.level,
+                        mirrored,
+                        family:
+                            shape.kind === 'wrigglyPatch'
+                                ? ('wriggly' as const)
+                                : ('articulated' as const),
+                    },
+                }
+              : patchKey
+                ? { patchKey }
+                : null;
     const emptyPatch =
-        shape.kind === 'articulatedPatch'
-            ? getTileArticulatedPatch(a, b, shape.patch, shape.level).tiles.length === 0
-            : patchKey !== null && SPECTRE_PATCHES[patchKey].tiles.length === 0;
+        shape.kind === 'spectreWriggly'
+            ? getSpectreWrigglyPatch(shape.patch, shape.level).tiles.length === 0
+            : isTilePatch
+              ? (shape.kind === 'wrigglyPatch' ? getTileWrigglyPatch : getTileArticulatedPatch)(
+                    a,
+                    b,
+                    shape.patch,
+                    shape.level,
+                ).tiles.length === 0
+              : patchKey !== null && SPECTRE_PATCHES[patchKey].tiles.length === 0;
     const activeCurve =
         spectreCurveMode === 'straight'
             ? STRAIGHT_CURVE
@@ -88,15 +112,17 @@ export function StlExportPanel() {
                         unitMm: Number.parseFloat(options.unitMm),
                         thickness: Number.parseFloat(options.thickness),
                         bevel: Number.parseFloat(options.bevel),
-                        edgeCurve: shape.kind === 'articulatedPatch' ? STRAIGHT_CURVE : activeCurve,
+                        edgeCurve: isTilePatch ? STRAIGHT_CURVE : activeCurve,
                         curveToleranceMm: Number.parseFloat(options.curveToleranceMm),
                     },
                 });
                 downloadBytes(
                     await job.current.result,
-                    shape.kind === 'articulatedPatch'
-                        ? `patch-tile-a${fmtNum(a)}-b${fmtNum(b)}-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-straight.stl`
-                        : `patch-${patchKey}-${spectreCurveMode}.stl`,
+                    shape.kind === 'spectreWriggly'
+                        ? `patch-spectre-wriggly-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-${spectreCurveMode}.stl`
+                        : isTilePatch
+                          ? `patch-tile-${shape.kind === 'wrigglyPatch' ? 'wriggly-' : ''}a${fmtNum(a)}-b${fmtNum(b)}-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-straight.stl`
+                          : `patch-${patchKey}-${spectreCurveMode}.stl`,
                     STL_MIME_TYPE,
                 );
                 return;

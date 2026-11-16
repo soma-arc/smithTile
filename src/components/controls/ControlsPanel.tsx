@@ -6,9 +6,11 @@ import { ModeToggle } from './ModeToggle';
 import {
     ArticulatedWormSelect,
     AssemblyTileModeSelect,
+    PatchFamilySelect,
     ShapeToggle,
     SpectrePatchSelect,
     SpectreRegionSelect,
+    SpectreWrigglyPatchSelect,
     TileArticulatedPatchSelect,
 } from './PatchSelect';
 import { PresetGrid } from './PresetGrid';
@@ -22,10 +24,10 @@ export function ControlsPanel() {
     const { lang, parameterMode, shape } = useTileState();
     const t = TRANSLATIONS[lang];
     const isTile = shape.kind === 'tile';
-    const isSpectre = shape.kind === 'spectre';
+    const isSpectre = shape.kind === 'spectre' || shape.kind === 'spectreWriggly';
     const isArticulatedWorm = shape.kind === 'articulatedWorm';
     const isRegion = shape.kind === 'region';
-    const isPatch = shape.kind === 'articulatedPatch';
+    const isPatch = shape.kind === 'articulatedPatch' || shape.kind === 'wrigglyPatch';
     return (
         <aside className="controls">
             <section>
@@ -36,13 +38,23 @@ export function ControlsPanel() {
             {isSpectre && (
                 <section>
                     <h6>{t.spectrePatches}</h6>
-                    <SpectrePatchSelect />
+                    <PatchFamilySelect />
+                    {shape.kind === 'spectreWriggly' ? (
+                        <SpectreWrigglyPatchSelect />
+                    ) : (
+                        <SpectrePatchSelect />
+                    )}
                 </section>
             )}
 
             {isPatch && (
                 <section>
-                    <h6>{t.tileArticulatedPatches}</h6>
+                    <h6>
+                        {shape.kind === 'wrigglyPatch'
+                            ? t.tileWrigglyPatches
+                            : t.tileArticulatedPatches}
+                    </h6>
+                    <PatchFamilySelect />
                     <TileArticulatedPatchSelect />
                 </section>
             )}
@@ -73,7 +85,11 @@ export function ControlsPanel() {
                 {(isTile || isPatch) && <ModeToggle />}
                 {(isTile || isPatch) && parameterMode === 'independent' && <IndependentControls />}
                 {(isTile || isPatch) && parameterMode === 'ratio' && <RatioControl />}
-                {(isTile || isArticulatedWorm || isRegion || isPatch) && <ReflectionToggle />}
+                {(isTile ||
+                    isArticulatedWorm ||
+                    isRegion ||
+                    isPatch ||
+                    shape.kind === 'spectreWriggly') && <ReflectionToggle />}
                 <ZoomControl />
                 <RotationControl />
             </section>

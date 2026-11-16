@@ -1,6 +1,7 @@
 /** Derives the (memoized) render Scene from UI state. Replaces the old dirty-guard. */
 
 import { useMemo } from 'react';
+import { patchPort } from '../geometry/patchComposition';
 import { patchColorGroups, SPECTRE_PATCHES } from '../geometry/smithPatch';
 import { createSmithTile, STRAIGHT_CURVE, smithTileWorldVertices } from '../geometry/smithTile';
 import {
@@ -26,12 +27,14 @@ import {
     SPECTRE_WORMS,
     wormColorGroups,
 } from '../geometry/spectreWorm';
+import { getSpectreWrigglyPatch, spectreWrigglyColorGroups } from '../geometry/spectreWrigglyPatch';
 import { createReflectionTransform, IDENTITY_TRANSFORM } from '../geometry/Transform';
 import {
     getTileArticulatedPatch,
     tilePatchColorGroups,
     tilePatchPort,
 } from '../geometry/tileArticulatedPatch';
+import { getTileWrigglyPatch } from '../geometry/tileWrigglyPatch';
 import { createCamera, createCenteredCamera, createFittedCamera } from '../render/camera';
 import { colorGroupBorders, componentBorders } from '../render/patchBorders';
 import { buildScene, type Overlays, type Scene } from '../render/scene';
@@ -75,8 +78,11 @@ export function useScene(state: TileState): Scene {
             ports: toggles.showPorts,
         };
 
-        if (shape.kind === 'articulatedPatch') {
-            const patch = getTileArticulatedPatch(a, b, shape.patch, shape.level, mirrored);
+        if (shape.kind === 'articulatedPatch' || shape.kind === 'wrigglyPatch') {
+            const patch =
+                shape.kind === 'wrigglyPatch'
+                    ? getTileWrigglyPatch(a, b, shape.patch, shape.level, mirrored)
+                    : getTileArticulatedPatch(a, b, shape.patch, shape.level, mirrored);
             const groups = tilePatchColorGroups(patch);
             const points = [
                 ...patch.tiles.flatMap(smithTileWorldVertices),
@@ -94,6 +100,33 @@ export function useScene(state: TileState): Scene {
                               plug: tilePatchPort(patch.plug),
                               sockets: patch.sockets.map(tilePatchPort),
                           }
+                        : undefined,
+                    componentFills: toggles.showComponentColors ? groups : undefined,
+                    componentBorders: toggles.showComponentBorders
+                        ? colorGroupBorders(groups)
+                        : undefined,
+                },
+                createFittedCamera(points, zoom, rotationDeg, pan),
+            );
+        }
+
+        if (shape.kind === 'spectreWriggly') {
+            const patch = getSpectreWrigglyPatch(shape.patch, shape.level, mirrored);
+            const groups = spectreWrigglyColorGroups(patch);
+            const points = [
+                ...patch.tiles.flatMap(smithTileWorldVertices),
+                patch.plug.position,
+                ...patch.sockets.map((port) => port.position),
+            ];
+            return buildScene(
+                {
+                    tiles: patch.tiles,
+                    paint,
+                    fillColor: tileColor,
+                    edgeCurve: activeSpectreCurve,
+                    overlays,
+                    ports: toggles.showPatchPorts
+                        ? { plug: patchPort(patch.plug), sockets: patch.sockets.map(patchPort) }
                         : undefined,
                     componentFills: toggles.showComponentColors ? groups : undefined,
                     componentBorders: toggles.showComponentBorders

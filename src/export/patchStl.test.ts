@@ -3,8 +3,10 @@ import type { Geom3 } from '@jscad/modeling/src/geometries/types';
 import { describe, expect, it } from 'vitest';
 import { SPECTRE_PATCHES } from '../geometry/smithPatch';
 import { createSmithTile, PRESETS, smithTileWorldVertices } from '../geometry/smithTile';
+import { getSpectreWrigglyPatch } from '../geometry/spectreWrigglyPatch';
 import { createReflectionTransform, IDENTITY_TRANSFORM } from '../geometry/Transform';
 import { getTileArticulatedPatch } from '../geometry/tileArticulatedPatch';
+import { getTileWrigglyPatch } from '../geometry/tileWrigglyPatch';
 import { ccwPolygon, insetPolygon } from './insetPolygon';
 import { beveledSolid, patchSolid, patchSolids, patchStl } from './patchStl';
 import { PatchStlValidationError } from './patchStlError';
@@ -109,6 +111,37 @@ describe('beveled patch STL', () => {
         c1: { x: 0.2, y: 0.12 },
         c2: { x: 0.8, y: 0.12 },
     };
+
+    it('exports a closed curved Spectre Wriggly I1 after recursion', () => {
+        const patch = getSpectreWrigglyPatch('I', 1, true);
+        expectClosed(readStl(patchStl(patch, { edgeCurve: curved })), 'I1 mirrored');
+    });
+
+    it.each([
+        ['Hat', 1, Math.sqrt(3)],
+        ['Turtle', Math.sqrt(3), 1],
+        ['Tile(2, 3)', 2, 3],
+    ] as const)('exports closed Wriggly %s meshes with shared faces removed', (name, a, b) => {
+        for (const kind of ['B', 'C', 'S'] as const) {
+            const patch = getTileWrigglyPatch(a, b, kind, 1, true);
+            for (const bevel of [0, 0.8]) {
+                expectClosed(readStl(patchStl(patch, { bevel })), `${name} ${kind}1`);
+            }
+        }
+    });
+
+    it.each(['I', 'S', 'N', 'Aa', 'Ab'] as const)(
+        'exports a closed curved Wriggly Spectre %s0',
+        (kind) => {
+            for (const mirrored of [false, true]) {
+                const patch = getSpectreWrigglyPatch(kind, 0, mirrored);
+                expectClosed(
+                    readStl(patchStl(patch, { edgeCurve: curved })),
+                    `${kind}0 ${mirrored}`,
+                );
+            }
+        },
+    );
 
     it.each([
         ['hat', 1, Math.sqrt(3)],

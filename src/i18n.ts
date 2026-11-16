@@ -64,6 +64,8 @@ export interface Strings {
     closure: string;
     family: string;
     articulated: string;
+    wriggly: string;
+    tileWrigglyPatches: string;
     tileCount: string;
     frontEnd: string;
     rearEnd: string;
@@ -177,6 +179,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         closure: '閉路誤差',
         family: '分類',
         articulated: '関節型',
+        wriggly: 'Wriggly',
+        tileWrigglyPatches: 'Tile(a, b) Wriggly',
         tileCount: 'タイル数',
         frontEnd: '前端',
         rearEnd: '後端',
@@ -294,6 +298,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         closure: 'Closure error',
         family: 'Class',
         articulated: 'Articulated',
+        wriggly: 'Wriggly',
+        tileWrigglyPatches: 'Tile(a, b) Wriggly',
         tileCount: 'Tiles',
         frontEnd: 'Front end',
         rearEnd: 'Rear end',

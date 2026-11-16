@@ -7,7 +7,9 @@ export function NotPolykiteNote() {
     if (
         shape.kind === 'articulatedWorm' ||
         shape.kind === 'region' ||
-        shape.kind === 'articulatedPatch'
+        shape.kind === 'articulatedPatch' ||
+        shape.kind === 'wrigglyPatch' ||
+        shape.kind === 'spectreWriggly'
     ) {
         return null;
     }
