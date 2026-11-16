@@ -128,13 +128,10 @@ export function TilePaintEditor() {
             : state.spectreCurveMode === 'polyline'
               ? state.spectrePolyline
               : state.spectreCurve;
-    const patchTile = state.shape.kind === 'articulatedPatch' ? state.shape.tile : null;
-    const previewA = patchTile === 'hat' ? 1 : patchTile === 'turtle' ? Math.sqrt(3) : state.a;
-    const previewB = patchTile === 'hat' ? Math.sqrt(3) : patchTile === 'turtle' ? 1 : state.b;
     const previewBoundary = useMemo(() => {
         const tile = createSmithTile(
-            usesSpectre ? 1 : previewA,
-            usesSpectre ? 1 : previewB,
+            usesSpectre ? 1 : state.a,
+            usesSpectre ? 1 : state.b,
             IDENTITY_TRANSFORM,
         );
         const localPoints = tile.shape.vertices.map((vertex) => vertex.position);
@@ -146,7 +143,7 @@ export function TilePaintEditor() {
         return smithTileBoundary(tile.shape, usesSpectre ? activeCurve : STRAIGHT_CURVE).map(
             (segment) => mapSegment(segment, normalize),
         );
-    }, [activeCurve, previewA, previewB, usesSpectre]);
+    }, [activeCurve, state.a, state.b, usesSpectre]);
 
     const eventPoint = (event: ReactPointerEvent<SVGSVGElement>): PaintPoint | null => {
         const svg = svgRef.current;

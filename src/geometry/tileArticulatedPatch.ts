@@ -1,6 +1,6 @@
 /** Künzel, TurtleArticulate_1.pdf (30 July 2024), pp. 1–3. */
 import type { Port } from './smithPatch';
-import { createSmithTile, type SmithTile, SQRT3 } from './smithTile';
+import { createSmithTile, type SmithTile } from './smithTile';
 import {
     applyTransform,
     composeTransforms,
@@ -10,7 +10,6 @@ import {
 } from './Transform';
 import type { Vec2 } from './Vec2';
 
-export type ArticulatedTile = 'hat' | 'turtle';
 export type TilePatchKind = 'B' | 'S' | 'C';
 export const TILE_PATCH_KINDS: readonly TilePatchKind[] = ['B', 'S', 'C'];
 /** The PDF illustrates levels 0–4; bound interactive work before allocating tiles. */
@@ -156,13 +155,9 @@ const close = (patch: TilePatch) =>
         patch.sockets.map(() => empty),
     );
 
-function initialLevel(tileKind: ArticulatedTile): PatchLevel {
+function initialLevel(a: number, b: number): PatchLevel {
     const tile: PlacedTile = {
-        ...createSmithTile(
-            tileKind === 'hat' ? 1 : SQRT3,
-            tileKind === 'hat' ? SQRT3 : 1,
-            IDENTITY_TRANSFORM,
-        ),
+        ...createSmithTile(a, b, IDENTITY_TRANSFORM),
         rotationSteps: 0,
         mirrored: false,
     };
@@ -214,12 +209,29 @@ function nextLevel(prev: PatchLevel, level: number): PatchLevel {
     };
 }
 
-const levels = new Map<ArticulatedTile, PatchLevel[]>();
+const levels = new Map<string, PatchLevel[]>();
 const mirroredPatches = new Map<string, NamedTilePatch>();
+const MAX_CACHED_PARAMETER_PAIRS = 8;
+
+const parameterKey = (a: number, b: number) => `${a}:${b}`;
+
+function cacheLevels(parameters: string, generated: PatchLevel[]): void {
+    if (levels.size >= MAX_CACHED_PARAMETER_PAIRS) {
+        const oldest = levels.keys().next().value;
+        if (oldest !== undefined) {
+            levels.delete(oldest);
+            for (const key of mirroredPatches.keys()) {
+                if (key.startsWith(`${oldest}:`)) mirroredPatches.delete(key);
+            }
+        }
+    }
+    levels.set(parameters, generated);
+}
 
 /** Generate only requested levels, sharing the cache across view changes. */
 export function getTileArticulatedPatch(
-    tile: ArticulatedTile,
+    a: number,
+    b: number,
     kind: TilePatchKind,
     level: number,
     mirrored = false,
@@ -227,17 +239,22 @@ export function getTileArticulatedPatch(
     if (!Number.isInteger(level) || level < 0 || level > MAX_TILE_PATCH_LEVEL) {
         throw new RangeError(`Patch level must be an integer from 0 to ${MAX_TILE_PATCH_LEVEL}`);
     }
-    let generated = levels.get(tile);
+    const parameters = parameterKey(a, b);
+    let generated = levels.get(parameters);
     if (!generated) {
-        generated = [initialLevel(tile)];
-        levels.set(tile, generated);
+        generated = [initialLevel(a, b)];
+        cacheLevels(parameters, generated);
+    } else {
+        // Refresh insertion order so continuous parameter editing does not evict a recently used pair.
+        levels.delete(parameters);
+        levels.set(parameters, generated);
     }
     while (generated.length <= level) {
         generated.push(nextLevel(generated[generated.length - 1], generated.length));
     }
     const patch = generated[level][kind];
     if (!mirrored) return patch;
-    const key = `${tile}:${kind}:${level}`;
+    const key = `${parameters}:${kind}:${level}`;
     let result = mirroredPatches.get(key);
     if (!result) {
         result = name(placePatch(patch, origin, 0, true), kind, level);
@@ -246,7 +263,11 @@ export function getTileArticulatedPatch(
     return result;
 }
 
-const COLORS: Record<TilePatchKind, string> = { B: '#d6c991', S: '#c45dcc', C: '#8dcee2' };
+export const TILE_PATCH_COLORS: Readonly<Record<TilePatchKind, string>> = {
+    B: '#d6c991',
+    S: '#c45dcc',
+    C: '#8dcee2',
+};
 
 export function tilePatchColorGroups(patch: NamedTilePatch) {
     const components: readonly PatchComponent[] = patch.components.length
@@ -254,5 +275,5 @@ export function tilePatchColorGroups(patch: NamedTilePatch) {
         : [patch];
     return components
         .filter((part) => part.tiles.length > 0)
-        .map((part) => ({ fill: COLORS[part.kind], tiles: part.tiles }));
+        .map((part) => ({ fill: TILE_PATCH_COLORS[part.kind], tiles: part.tiles }));
 }

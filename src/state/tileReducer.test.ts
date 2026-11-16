@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { clampZoom, initialTileState, tileReducer } from './tileReducer';
 
-describe('tileReducer — Hat/Turtle articulated patches', () => {
-    it('enters at Turtle B1 and changes tile, function and level independently', () => {
+describe('tileReducer — Tile(a, b) articulated patches', () => {
+    it('keeps Tile(a, b) and changes function and level independently', () => {
         const opened = tileReducer(initialTileState, {
             type: 'setShape',
             shape: 'articulatedPatch',
         });
         expect(opened.shape).toEqual({
             kind: 'articulatedPatch',
-            tile: 'turtle',
             patch: 'B',
             level: 1,
         });
@@ -17,14 +16,12 @@ describe('tileReducer — Hat/Turtle articulated patches', () => {
             { ...opened, pan: { x: 20, y: -30 } },
             {
                 type: 'setTilePatch',
-                tile: 'hat',
                 patch: 'C',
                 level: 2,
             },
         );
         expect(state.shape).toEqual({
             kind: 'articulatedPatch',
-            tile: 'hat',
             patch: 'C',
             level: 2,
         });
@@ -33,7 +30,6 @@ describe('tileReducer — Hat/Turtle articulated patches', () => {
         expect(state.b).toBe(initialTileState.b);
         expect(tileReducer(state, { type: 'setTilePatch', patch: 'S' }).shape).toEqual({
             kind: 'articulatedPatch',
-            tile: 'hat',
             patch: 'S',
             level: 2,
         });

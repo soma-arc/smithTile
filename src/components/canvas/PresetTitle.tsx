@@ -8,7 +8,7 @@ export function PresetTitle() {
     const preset = findPreset(presetName);
     const title =
         shape.kind === 'articulatedPatch'
-            ? `${shape.tile === 'hat' ? 'Hat' : 'Turtle'} Articulated Patch  ${shape.patch}${shape.level}`
+            ? `${preset ? `${preset.nick[lang]}  ` : ''}Tile(${fmtNum(a)}, ${fmtNum(b)}) Articulated Patch  ${shape.patch}${shape.level}`
             : shape.kind === 'region'
               ? `Spectre Region  ${shape.region}${assemblySuffix}`
               : shape.kind === 'articulatedWorm'

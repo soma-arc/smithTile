@@ -17,7 +17,8 @@ vi.mock('../../export/patchStlJob', () => ({
             patchStl(
                 'tilePatch' in request
                     ? getTileArticulatedPatch(
-                          request.tilePatch.tile,
+                          request.tilePatch.a,
+                          request.tilePatch.b,
                           request.tilePatch.patch,
                           request.tilePatch.level,
                           request.tilePatch.mirrored,
@@ -50,7 +51,7 @@ function stubDownload() {
 }
 
 describe('<StlExportPanel>', () => {
-    it('downloads the selected Hat articulated patch and disables the empty S0', async () => {
+    it('downloads the selected Tile(a, b) articulated patch and disables the empty S0', async () => {
         const { click } = stubDownload();
         const user = userEvent.setup();
         render(
@@ -59,12 +60,12 @@ describe('<StlExportPanel>', () => {
             </TileStateProvider>,
         );
         await user.click(screen.getByRole('radio', { name: 'Patch' }));
-        await user.click(screen.getByRole('radio', { name: 'Hat' }));
+        await user.click(screen.getByRole('button', { name: 'Tile(1,4)' }));
         await user.click(screen.getByRole('radio', { name: '鏡像' }));
         await user.click(screen.getByRole('button', { name: '直線パッチのSTLを保存' }));
         expect(click).toHaveBeenCalledOnce();
         const anchor = click.mock.instances[0] as unknown as HTMLAnchorElement;
-        expect(anchor.download).toBe('patch-hat-B1-mirrored-straight.stl');
+        expect(anchor.download).toBe('patch-tile-a1-b4-B1-mirrored-straight.stl');
         await user.click(screen.getByRole('radio', { name: 'S' }));
         await user.selectOptions(screen.getByRole('combobox', { name: 'レベル' }), '0');
         expect(screen.getByRole('button', { name: '直線パッチのSTLを保存' })).toBeDisabled();

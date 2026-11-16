@@ -76,7 +76,7 @@ export function useScene(state: TileState): Scene {
         };
 
         if (shape.kind === 'articulatedPatch') {
-            const patch = getTileArticulatedPatch(shape.tile, shape.patch, shape.level, mirrored);
+            const patch = getTileArticulatedPatch(a, b, shape.patch, shape.level, mirrored);
             const groups = tilePatchColorGroups(patch);
             const points = [
                 ...patch.tiles.flatMap(smithTileWorldVertices),

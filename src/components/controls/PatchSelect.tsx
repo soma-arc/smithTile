@@ -4,7 +4,6 @@ import { SPECTRE_PATCHES, type SpectrePatchKey } from '../../geometry/smithPatch
 import { SPECTRE_REGION_KEYS } from '../../geometry/spectreRegion';
 import { ARTICULATED_WORM_KEYS } from '../../geometry/spectreWorm';
 import {
-    type ArticulatedTile,
     MAX_TILE_PATCH_LEVEL,
     TILE_PATCH_KINDS,
     type TilePatchKind,
@@ -59,7 +58,7 @@ export function ShapeToggle() {
             ]}
             onChange={(kind) => dispatch({ type: 'setShape', shape: kind })}
             containerStyle={{ width: '100%' }}
-            optionStyle={{ flex: 1, justifyContent: 'center' }}
+            optionStyle={{ flex: 1, minWidth: 0, justifyContent: 'center', padding: '7px' }}
         />
     );
 }
@@ -71,17 +70,6 @@ export function TileArticulatedPatchSelect() {
     if (shape.kind !== 'articulatedPatch') return null;
     return (
         <div className="shape-grid">
-            <Segmented<ArticulatedTile>
-                name="patch-tile"
-                value={shape.tile}
-                options={[
-                    { value: 'hat', label: 'Hat' },
-                    { value: 'turtle', label: 'Turtle' },
-                ]}
-                onChange={(tile) => dispatch({ type: 'setTilePatch', tile })}
-                containerStyle={{ gridColumn: '1 / -1', width: '100%' }}
-                optionStyle={{ flex: 1, justifyContent: 'center' }}
-            />
             <Segmented<TilePatchKind>
                 name="patch-function"
                 value={shape.patch}

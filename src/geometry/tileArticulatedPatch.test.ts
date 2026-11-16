@@ -1,7 +1,7 @@
 import { booleans, geometries, measurements, primitives } from '@jscad/modeling';
 import { describe, expect, it } from 'vitest';
 import { getPortFromVertex } from './smithPatch';
-import { polygonArea, smithTileWorldVertices } from './smithTile';
+import { polygonArea, SQRT3, smithTileWorldVertices } from './smithTile';
 import { applyTransform, createReflectionTransform } from './Transform';
 import {
     applyTilePatch,
@@ -23,28 +23,32 @@ const COUNTS = [
     { B: 3025, S: 441, C: 2586 },
 ];
 
-for (const tile of ['hat', 'turtle'] as const) {
-    describe(`${tile} articulated patches`, () => {
+for (const { name, a, b } of [
+    { name: 'hat', a: 1, b: SQRT3 },
+    { name: 'turtle', a: SQRT3, b: 1 },
+    { name: 'arbitrary Tile(2, 3)', a: 2, b: 3 },
+]) {
+    describe(`${name} articulated patches`, () => {
         it('keeps S0 as the identity and counts every level using previous-level S', () => {
             for (let level = 0; level <= MAX_TILE_PATCH_LEVEL; level++) {
                 for (const kind of TILE_PATCH_KINDS) {
-                    const patch = getTileArticulatedPatch(tile, kind, level);
+                    const patch = getTileArticulatedPatch(a, b, kind, level);
                     expect(patch.tiles).toHaveLength(COUNTS[level][kind]);
                     expect(patch.sockets).toHaveLength(kind === 'C' ? 5 : 1);
                     expect(patch.kind).toBe(kind);
                     expect(patch.level).toBe(level);
-                    expect(getTileArticulatedPatch(tile, kind, level)).toBe(patch);
+                    expect(getTileArticulatedPatch(a, b, kind, level)).toBe(patch);
                 }
             }
         });
 
         it('matches the initial plug and the five x,y,z,u,v marks in PDF p.2', () => {
-            const b = getTileArticulatedPatch(tile, 'B', 0);
-            const c = getTileArticulatedPatch(tile, 'C', 0);
+            const patchB = getTileArticulatedPatch(a, b, 'B', 0);
+            const c = getTileArticulatedPatch(a, b, 'C', 0);
             expect(c.tiles.map((part) => part.mirrored)).toEqual([false, true, false]);
             for (const [actual, source] of [
-                [b.plug, getPortFromVertex(b.tiles[0], 4)],
-                [b.sockets[0], getPortFromVertex(b.tiles[0], 10)],
+                [patchB.plug, getPortFromVertex(patchB.tiles[0], 4)],
+                [patchB.sockets[0], getPortFromVertex(patchB.tiles[0], 10)],
                 [c.plug, getPortFromVertex(c.tiles[0], 4)],
                 ...[
                     [0, 0],
@@ -75,7 +79,7 @@ for (const tile of ['hat', 'turtle'] as const) {
             for (const kind of TILE_PATCH_KINDS) {
                 if (kind === 'S' && level === 0) continue;
                 it(`${kind}${level} has no overlapping interiors, disconnected pieces, or holes`, () => {
-                    const patch = getTileArticulatedPatch(tile, kind, level);
+                    const patch = getTileArticulatedPatch(a, b, kind, level);
                     const polygons = patch.tiles.map((part) => {
                         const points = smithTileWorldVertices(part);
                         return part.mirrored ? [...points].reverse() : points;
@@ -96,10 +100,10 @@ for (const tile of ['hat', 'turtle'] as const) {
         }
 
         it('propagates all argument sockets in order and preserves the parent plug', () => {
-            const b = getTileArticulatedPatch(tile, 'B', 0);
-            const c = getTileArticulatedPatch(tile, 'C', 0);
-            const attached = attachTilePatch(b, 0, c);
-            expect(attached.plug).toBe(b.plug);
+            const patchB = getTileArticulatedPatch(a, b, 'B', 0);
+            const c = getTileArticulatedPatch(a, b, 'C', 0);
+            const attached = attachTilePatch(patchB, 0, c);
+            expect(attached.plug).toBe(patchB.plug);
             expect(attached.sockets).toHaveLength(5);
             for (let i = 0; i < 5; i++) {
                 const parent = attached.sockets[i];
@@ -108,8 +112,8 @@ for (const tile of ['hat', 'turtle'] as const) {
                 // A rigid placement preserves each socket's distance to the plug.
                 expect(
                     Math.hypot(
-                        parent.position.x - b.sockets[0].position.x,
-                        parent.position.y - b.sockets[0].position.y,
+                        parent.position.x - patchB.sockets[0].position.x,
+                        parent.position.y - patchB.sockets[0].position.y,
                     ),
                 ).toBeCloseTo(
                     Math.hypot(
@@ -119,9 +123,9 @@ for (const tile of ['hat', 'turtle'] as const) {
                     10,
                 );
             }
-            const id = getTileArticulatedPatch(tile, 'S', 0);
-            const throughId = applyTilePatch(id, [b]);
-            const closed = applyTilePatch(b, [{ ...id, sockets: [] }]);
+            const id = getTileArticulatedPatch(a, b, 'S', 0);
+            const throughId = applyTilePatch(id, [patchB]);
+            const closed = applyTilePatch(patchB, [{ ...id, sockets: [] }]);
             expect(throughId.tiles).toHaveLength(1);
             expect(throughId.sockets).toHaveLength(1);
             expect(closed.sockets).toHaveLength(0);
@@ -129,8 +133,8 @@ for (const tile of ['hat', 'turtle'] as const) {
         });
 
         it('reflects the whole construction, including ports and component fills', () => {
-            const patch = getTileArticulatedPatch(tile, 'C', 2);
-            const mirror = getTileArticulatedPatch(tile, 'C', 2, true);
+            const patch = getTileArticulatedPatch(a, b, 'C', 2);
+            const mirror = getTileArticulatedPatch(a, b, 'C', 2, true);
             const reflect = createReflectionTransform();
             patch.tiles.forEach((part, index) => {
                 const original = smithTileWorldVertices(part).map((p) =>
@@ -156,11 +160,25 @@ for (const tile of ['hat', 'turtle'] as const) {
     });
 }
 
+it.each([
+    [1, 0],
+    [0, 1],
+])('generates finite drawable patches for the boundary Tile(%s, %s)', (a, b) => {
+    for (const kind of TILE_PATCH_KINDS) {
+        const patch = getTileArticulatedPatch(a, b, kind, 2);
+        expect(patch.tiles).toHaveLength(COUNTS[2][kind]);
+        for (const point of patch.tiles.flatMap(smithTileWorldVertices)) {
+            expect(Number.isFinite(point.x)).toBe(true);
+            expect(Number.isFinite(point.y)).toBe(true);
+        }
+    }
+});
+
 it('rejects invalid levels, socket indices, and function arities', () => {
     for (const level of [-1, 0.5, Number.NaN, Number.POSITIVE_INFINITY, MAX_TILE_PATCH_LEVEL + 1]) {
-        expect(() => getTileArticulatedPatch('hat', 'B', level)).toThrow(RangeError);
+        expect(() => getTileArticulatedPatch(1, SQRT3, 'B', level)).toThrow(RangeError);
     }
-    const b = getTileArticulatedPatch('hat', 'B', 0);
+    const b = getTileArticulatedPatch(1, SQRT3, 'B', 0);
     for (const index of [-1, 1, 0.5, Number.NaN]) {
         expect(() => attachTilePatch(b, index, b)).toThrow(RangeError);
     }

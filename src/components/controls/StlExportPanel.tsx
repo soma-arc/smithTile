@@ -13,6 +13,7 @@ import {
     stlFilename,
     tileStl,
 } from '../../export/stl';
+import { fmtNum } from '../../format';
 import { SPECTRE_PATCHES } from '../../geometry/smithPatch';
 import { STRAIGHT_CURVE } from '../../geometry/smithTile';
 import { getTileArticulatedPatch } from '../../geometry/tileArticulatedPatch';
@@ -35,13 +36,13 @@ export function StlExportPanel() {
     const patchKey = shape.kind === 'spectre' ? shape.patch : null;
     const selection =
         shape.kind === 'articulatedPatch'
-            ? { tilePatch: { tile: shape.tile, patch: shape.patch, level: shape.level, mirrored } }
+            ? { tilePatch: { a, b, patch: shape.patch, level: shape.level, mirrored } }
             : patchKey
               ? { patchKey }
               : null;
     const emptyPatch =
         shape.kind === 'articulatedPatch'
-            ? getTileArticulatedPatch(shape.tile, shape.patch, shape.level).tiles.length === 0
+            ? getTileArticulatedPatch(a, b, shape.patch, shape.level).tiles.length === 0
             : patchKey !== null && SPECTRE_PATCHES[patchKey].tiles.length === 0;
     const save = async () => {
         if (saving) return;
@@ -60,7 +61,7 @@ export function StlExportPanel() {
                 downloadBytes(
                     await job.current.result,
                     shape.kind === 'articulatedPatch'
-                        ? `patch-${shape.tile}-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-straight.stl`
+                        ? `patch-tile-a${fmtNum(a)}-b${fmtNum(b)}-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-straight.stl`
                         : `patch-${patchKey}-straight.stl`,
                     STL_MIME_TYPE,
                 );

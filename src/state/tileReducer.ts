@@ -14,11 +14,7 @@ import {
 } from '../geometry/smithTile';
 import type { SpectreRegionKey } from '../geometry/spectreRegion';
 import type { ArticulatedWormKey } from '../geometry/spectreWorm';
-import {
-    type ArticulatedTile,
-    MAX_TILE_PATCH_LEVEL,
-    type TilePatchKind,
-} from '../geometry/tileArticulatedPatch';
+import { MAX_TILE_PATCH_LEVEL, type TilePatchKind } from '../geometry/tileArticulatedPatch';
 import {
     erasePaintStrokes,
     type PaintDocument,
@@ -37,7 +33,7 @@ export type RegionAdjustment = { translation: Vec2; rotationRad: number };
 export type ShapeSelection =
     | { kind: 'tile' }
     | { kind: 'spectre'; patch: SpectrePatchKey | null }
-    | { kind: 'articulatedPatch'; tile: ArticulatedTile; patch: TilePatchKind; level: number }
+    | { kind: 'articulatedPatch'; patch: TilePatchKind; level: number }
     | { kind: 'articulatedWorm'; worm: ArticulatedWormKey }
     | { kind: 'region'; region: SpectreRegionKey };
 
@@ -142,7 +138,7 @@ export type TileAction =
     | { type: 'setParameterMode'; mode: ParameterMode }
     | { type: 'setShape'; shape: ShapeSelection['kind'] }
     | { type: 'setSpectrePatch'; patch: SpectrePatchKey | null }
-    | { type: 'setTilePatch'; tile?: ArticulatedTile; patch?: TilePatchKind; level?: number }
+    | { type: 'setTilePatch'; patch?: TilePatchKind; level?: number }
     | { type: 'setArticulatedWorm'; worm: ArticulatedWormKey }
     | { type: 'setSpectreRegion'; region: SpectreRegionKey }
     | { type: 'setRegionPlacementMode'; mode: RegionPlacementMode }
@@ -209,7 +205,7 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 zoom: action.shape === 'articulatedPatch' ? 1 : state.zoom,
                 shape:
                     action.shape === 'articulatedPatch'
-                        ? { kind: 'articulatedPatch', tile: 'turtle', patch: 'B', level: 1 }
+                        ? { kind: 'articulatedPatch', patch: 'B', level: 1 }
                         : action.shape === 'spectre'
                           ? { kind: 'spectre', patch: null }
                           : action.shape === 'articulatedWorm'
@@ -225,7 +221,6 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                     ? state.shape
                     : {
                           kind: 'articulatedPatch' as const,
-                          tile: 'turtle' as const,
                           patch: 'B' as const,
                           level: 1,
                       };
@@ -237,7 +232,6 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 zoom: action.level !== undefined ? 1 : state.zoom,
                 shape: {
                     kind: 'articulatedPatch',
-                    tile: action.tile ?? current.tile,
                     patch: action.patch ?? current.patch,
                     level,
                 },
@@ -493,7 +487,7 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 ...state,
                 a: p.a,
                 b: p.b,
-                shape: { kind: 'tile' },
+                shape: state.shape.kind === 'articulatedPatch' ? state.shape : { kind: 'tile' },
                 pan: { x: 0, y: 0 },
                 presetName: p.key,
                 // Chevron (a = 0) has no finite ratio; force independent mode.

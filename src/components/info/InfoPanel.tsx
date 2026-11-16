@@ -15,7 +15,11 @@ import {
     SPECTRE_WORMS,
 } from '../../geometry/spectreWorm';
 import { IDENTITY_TRANSFORM } from '../../geometry/Transform';
-import { getTileArticulatedPatch } from '../../geometry/tileArticulatedPatch';
+import {
+    getTileArticulatedPatch,
+    TILE_PATCH_COLORS,
+    TILE_PATCH_KINDS,
+} from '../../geometry/tileArticulatedPatch';
 import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
 import { Tag } from '../ui/Tag';
@@ -37,7 +41,7 @@ export function InfoPanel() {
     const { a: tileA, assemblyTileMode, b: tileB, lang, mirrored, shape } = useTileState();
     const t = TRANSLATIONS[lang];
     if (shape.kind === 'articulatedPatch') {
-        const patch = getTileArticulatedPatch(shape.tile, shape.patch, shape.level, mirrored);
+        const patch = getTileArticulatedPatch(tileA, tileB, shape.patch, shape.level, mirrored);
         return (
             <aside className="info">
                 <h6>{t.info}</h6>
@@ -56,6 +60,20 @@ export function InfoPanel() {
                         <span className="k">{t.tileCount}</span>
                         <span className="v">{patch.tiles.length}</span>
                     </div>
+                </div>
+                <div>
+                    <div className="info-block-label">{t.componentColors}</div>
+                    <fieldset className="component-legend" aria-label={t.componentColors}>
+                        {TILE_PATCH_KINDS.map((kind) => (
+                            <div className="component-legend-item" key={kind}>
+                                <span
+                                    className="component-legend-swatch"
+                                    style={{ backgroundColor: TILE_PATCH_COLORS[kind] }}
+                                />
+                                <span>{kind}</span>
+                            </div>
+                        ))}
+                    </fieldset>
                 </div>
             </aside>
         );

@@ -103,24 +103,25 @@ describe('constant-width inset', () => {
 });
 
 describe('beveled patch STL', () => {
-    it.each(['hat', 'turtle'] as const)(
-        'exports closed %s B/C patches including reflected tiles',
-        (tile) => {
-            for (const kind of ['B', 'C'] as const) {
-                for (const mirrored of [false, true]) {
-                    for (const level of [1, 2]) {
-                        const patch = getTileArticulatedPatch(tile, kind, level, mirrored);
-                        for (const bevel of [0, 0.8]) {
-                            expectClosed(
-                                readStl(patchStl(patch, { bevel })),
-                                `${tile} ${kind}${level} ${mirrored}`,
-                            );
-                        }
+    it.each([
+        ['hat', 1, Math.sqrt(3)],
+        ['turtle', Math.sqrt(3), 1],
+        ['Tile(2, 3)', 2, 3],
+    ] as const)('exports closed %s B/C patches including reflected tiles', (name, a, b) => {
+        for (const kind of ['B', 'C'] as const) {
+            for (const mirrored of [false, true]) {
+                for (const level of [1, 2]) {
+                    const patch = getTileArticulatedPatch(a, b, kind, level, mirrored);
+                    for (const bevel of [0, 0.8]) {
+                        expectClosed(
+                            readStl(patchStl(patch, { bevel })),
+                            `${name} ${kind}${level} ${mirrored}`,
+                        );
                     }
                 }
             }
-        },
-    );
+        }
+    });
 
     it('makes closed, consistently oriented solids for presets and reflected tiles', () => {
         for (const preset of PRESETS) {

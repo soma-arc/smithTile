@@ -1,12 +1,16 @@
 import { expect, it } from 'vitest';
-import { smithTileWorldVertices } from '../geometry/smithTile';
+import { SQRT3, smithTileWorldVertices } from '../geometry/smithTile';
 import { getTileArticulatedPatch, MAX_TILE_PATCH_LEVEL } from '../geometry/tileArticulatedPatch';
 import { CANVAS_H, CANVAS_W, createFittedCamera } from './camera';
 
-it('fits both largest Hat/Turtle patches without clipping at the default zoom', () => {
-    for (const tile of ['hat', 'turtle'] as const) {
+it('fits the largest Tile(a, b) patches without clipping at the default zoom', () => {
+    for (const [a, b] of [
+        [1, SQRT3],
+        [SQRT3, 1],
+        [2, 3],
+    ]) {
         for (const kind of ['B', 'C'] as const) {
-            const points = getTileArticulatedPatch(tile, kind, MAX_TILE_PATCH_LEVEL).tiles.flatMap(
+            const points = getTileArticulatedPatch(a, b, kind, MAX_TILE_PATCH_LEVEL).tiles.flatMap(
                 smithTileWorldVertices,
             );
             const camera = createFittedCamera(points);

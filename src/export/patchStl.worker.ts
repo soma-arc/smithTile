@@ -1,16 +1,13 @@
 import { SPECTRE_PATCHES, type SpectrePatchKey } from '../geometry/smithPatch';
-import {
-    type ArticulatedTile,
-    getTileArticulatedPatch,
-    type TilePatchKind,
-} from '../geometry/tileArticulatedPatch';
+import { getTileArticulatedPatch, type TilePatchKind } from '../geometry/tileArticulatedPatch';
 import { type PatchStlOptions, patchStl } from './patchStl';
 
 export type PatchStlRequest = (
     | { patchKey: SpectrePatchKey }
     | {
           tilePatch: {
-              tile: ArticulatedTile;
+              a: number;
+              b: number;
               patch: TilePatchKind;
               level: number;
               mirrored: boolean;
@@ -27,7 +24,8 @@ self.onmessage = (event: MessageEvent<PatchStlRequest>) => {
         const patch =
             'tilePatch' in request
                 ? getTileArticulatedPatch(
-                      request.tilePatch.tile,
+                      request.tilePatch.a,
+                      request.tilePatch.b,
                       request.tilePatch.patch,
                       request.tilePatch.level,
                       request.tilePatch.mirrored,

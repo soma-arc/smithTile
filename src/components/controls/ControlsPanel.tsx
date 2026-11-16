@@ -70,15 +70,15 @@ export function ControlsPanel() {
 
             <section>
                 <h6>{t.params}</h6>
-                {isTile && <ModeToggle />}
-                {isTile && parameterMode === 'independent' && <IndependentControls />}
-                {isTile && parameterMode === 'ratio' && <RatioControl />}
+                {(isTile || isPatch) && <ModeToggle />}
+                {(isTile || isPatch) && parameterMode === 'independent' && <IndependentControls />}
+                {(isTile || isPatch) && parameterMode === 'ratio' && <RatioControl />}
                 {(isTile || isArticulatedWorm || isRegion || isPatch) && <ReflectionToggle />}
                 <ZoomControl />
                 <RotationControl />
             </section>
 
-            {isTile && (
+            {(isTile || isPatch) && (
                 <section>
                     <h6>{t.presets}</h6>
                     <PresetGrid />
