@@ -79,7 +79,7 @@ describe('<App> (state + components wiring)', () => {
         expect(container.querySelector('.svg-host polygon')?.getAttribute('points')).not.toBe(
             points,
         );
-        await user.click(screen.getByRole('radio', { name: '関節型' }));
+        await user.click(screen.getByRole('radio', { name: 'Articulated' }));
         expect(
             screen.getByText('タートル Tile(1.7321, 1) Articulated Patch B1'),
         ).toBeInTheDocument();

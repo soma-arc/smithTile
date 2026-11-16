@@ -178,7 +178,7 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         edgeCount: '辺数',
         closure: '閉路誤差',
         family: '分類',
-        articulated: '関節型',
+        articulated: 'Articulated',
         wriggly: 'Wriggly',
         tileWrigglyPatches: 'Tile(a, b) Wriggly',
         tileCount: 'タイル数',
