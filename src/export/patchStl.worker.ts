@@ -1,6 +1,7 @@
 import { patchStl } from './patchStl';
 import { type PatchStlErrorCode, PatchStlValidationError } from './patchStlError';
 import { type PatchStlRequest, resolvePatchStlSource } from './patchStlSource';
+import { patchTrayStl } from './patchTray';
 
 export type { PatchStlRequest } from './patchStlSource';
 
@@ -12,7 +13,11 @@ export type PatchStlReply =
 self.onmessage = (event: MessageEvent<PatchStlRequest>) => {
     try {
         const request = event.data;
-        const bytes = patchStl(resolvePatchStlSource(request), request.options);
+        const patch = resolvePatchStlSource(request);
+        const bytes =
+            request.output === 'tray'
+                ? patchTrayStl(patch, request.options, request.trayOptions)
+                : patchStl(patch, request.options);
         self.postMessage({ bytes } satisfies PatchStlReply, { transfer: [bytes.buffer] });
     } catch (error) {
         self.postMessage(

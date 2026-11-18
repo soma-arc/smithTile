@@ -94,6 +94,13 @@ export function ControlsPanel() {
                 <RotationControl />
             </section>
 
+            {(isTile || isSpectre || isPatch) && (
+                <section>
+                    <h6>{t.exportStl}</h6>
+                    <StlExportPanel />
+                </section>
+            )}
+
             {(isTile || isPatch) && (
                 <section>
                     <h6>{t.presets}</h6>
@@ -106,12 +113,6 @@ export function ControlsPanel() {
                 <DisplayToggles />
             </section>
 
-            {(isTile || isSpectre || isPatch) && (
-                <section>
-                    <h6>{t.exportStl}</h6>
-                    <StlExportPanel />
-                </section>
-            )}
         </aside>
     );
 }

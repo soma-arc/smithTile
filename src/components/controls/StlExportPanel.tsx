@@ -7,6 +7,7 @@ import { downloadBytes } from '../../export/download';
 import { DEFAULT_PATCH_STL_OPTIONS } from '../../export/patchStl';
 import { type PatchStlErrorCode, PatchStlValidationError } from '../../export/patchStlError';
 import { startPatchStlJob } from '../../export/patchStlJob';
+import { DEFAULT_PATCH_TRAY_OPTIONS } from '../../export/patchTray';
 import {
     SPECTRE_STL_FILENAME,
     STL_MIME_TYPE,
@@ -33,11 +34,21 @@ export function StlExportPanel() {
         bevel: String(DEFAULT_PATCH_STL_OPTIONS.bevel),
         curveToleranceMm: String(DEFAULT_PATCH_STL_OPTIONS.curveToleranceMm),
     });
-    const [saving, setSaving] = useState(false);
+    const [trayOptions, setTrayOptions] = useState({
+        clearance: String(DEFAULT_PATCH_TRAY_OPTIONS.clearance),
+        frameWidth: String(DEFAULT_PATCH_TRAY_OPTIONS.frameWidth),
+        baseThickness: String(DEFAULT_PATCH_TRAY_OPTIONS.baseThickness),
+        wallHeight: String(DEFAULT_PATCH_TRAY_OPTIONS.wallHeight),
+    });
+    const [trayOuterShape, setTrayOuterShape] = useState<'silhouette' | 'rectangle'>(
+        DEFAULT_PATCH_TRAY_OPTIONS.outerShape,
+    );
+    const [saving, setSaving] = useState<'patch' | 'tray' | null>(null);
     const job = useRef<ReturnType<typeof startPatchStlJob> | null>(null);
     useEffect(() => () => job.current?.cancel(), []);
     const t = TRANSLATIONS[lang];
     const patchKey = shape.kind === 'spectre' ? shape.patch : null;
+    const isSingleSpectre = shape.kind === 'spectre' && patchKey === null;
     const isTilePatch = shape.kind === 'articulatedPatch' || shape.kind === 'wrigglyPatch';
     const selection =
         shape.kind === 'spectreWriggly'
@@ -56,8 +67,10 @@ export function StlExportPanel() {
                                 : ('articulated' as const),
                     },
                 }
-              : patchKey
-                ? { patchKey }
+              : shape.kind === 'spectre'
+                ? patchKey
+                    ? { patchKey }
+                    : { singleSpectre: true as const }
                 : null;
     const emptyPatch =
         shape.kind === 'spectreWriggly'
@@ -88,6 +101,16 @@ export function StlExportPanel() {
                 return t.stlInvalidBevel;
             case 'invalidTolerance':
                 return t.stlInvalidTolerance;
+            case 'invalidClearance':
+                return t.stlInvalidClearance;
+            case 'invalidFrameWidth':
+                return t.stlInvalidFrameWidth;
+            case 'invalidBaseThickness':
+                return t.stlInvalidBaseThickness;
+            case 'invalidWallHeight':
+                return t.stlInvalidWallHeight;
+            case 'invalidTrayShape':
+                return t.stlInvalidTrayShape;
             case 'invalidCurve':
                 return t.stlInvalidCurve;
             case 'selfIntersection':
@@ -100,35 +123,53 @@ export function StlExportPanel() {
                 return t.stlTriangulationFailed;
         }
     };
-    const save = async () => {
+    const save = async (output: 'patch' | 'tray' = 'patch') => {
         if (saving) return;
         try {
             setError(null);
-            if (selection) {
-                setSaving(true);
-                job.current = startPatchStlJob({
-                    ...selection,
-                    options: {
-                        unitMm: Number.parseFloat(options.unitMm),
-                        thickness: Number.parseFloat(options.thickness),
-                        bevel: Number.parseFloat(options.bevel),
-                        edgeCurve: isTilePatch ? STRAIGHT_CURVE : activeCurve,
-                        curveToleranceMm: Number.parseFloat(options.curveToleranceMm),
-                    },
-                });
-                downloadBytes(
-                    await job.current.result,
-                    shape.kind === 'spectreWriggly'
-                        ? `patch-spectre-wriggly-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-${spectreCurveMode}.stl`
-                        : isTilePatch
-                          ? `patch-tile-${shape.kind === 'wrigglyPatch' ? 'wriggly-' : ''}a${fmtNum(a)}-b${fmtNum(b)}-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-straight.stl`
-                          : `patch-${patchKey}-${spectreCurveMode}.stl`,
-                    STL_MIME_TYPE,
-                );
+            if (isSingleSpectre && output === 'patch') {
+                downloadBytes(spectreStl(activeCurve), SPECTRE_STL_FILENAME, STL_MIME_TYPE);
                 return;
             }
-            if (shape.kind === 'spectre') {
-                downloadBytes(spectreStl(activeCurve), SPECTRE_STL_FILENAME, STL_MIME_TYPE);
+            if (selection) {
+                setSaving(output);
+                const patchOptions = {
+                    unitMm: Number.parseFloat(options.unitMm),
+                    thickness: Number.parseFloat(options.thickness),
+                    bevel: Number.parseFloat(options.bevel),
+                    edgeCurve: isTilePatch ? STRAIGHT_CURVE : activeCurve,
+                    curveToleranceMm: Number.parseFloat(options.curveToleranceMm),
+                };
+                job.current =
+                    output === 'tray'
+                        ? startPatchStlJob({
+                              ...selection,
+                              output: 'tray',
+                              options: patchOptions,
+                              trayOptions: {
+                                  outerShape: trayOuterShape,
+                                  clearance: Number.parseFloat(trayOptions.clearance),
+                                  frameWidth: Number.parseFloat(trayOptions.frameWidth),
+                                  baseThickness: Number.parseFloat(trayOptions.baseThickness),
+                                  wallHeight: Number.parseFloat(trayOptions.wallHeight),
+                              },
+                          })
+                        : startPatchStlJob({ ...selection, output: 'patch', options: patchOptions });
+                const prefix =
+                    output === 'tray'
+                        ? `tray${trayOuterShape === 'rectangle' ? '-rectangle' : ''}`
+                        : 'patch';
+                downloadBytes(
+                    await job.current.result,
+                    isSingleSpectre
+                        ? `${prefix}-spectre-${spectreCurveMode}.stl`
+                        : shape.kind === 'spectreWriggly'
+                        ? `${prefix}-spectre-wriggly-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-${spectreCurveMode}.stl`
+                        : isTilePatch
+                          ? `${prefix}-tile-${shape.kind === 'wrigglyPatch' ? 'wriggly-' : ''}a${fmtNum(a)}-b${fmtNum(b)}-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-straight.stl`
+                          : `${prefix}-${patchKey}-${spectreCurveMode}.stl`,
+                    STL_MIME_TYPE,
+                );
                 return;
             }
             downloadBytes(tileStl(a, b, { mirrored }), stlFilename(a, b, mirrored), STL_MIME_TYPE);
@@ -144,12 +185,36 @@ export function StlExportPanel() {
             setError(t.stlExportFailed);
         } finally {
             job.current = null;
-            setSaving(false);
+            setSaving(null);
         }
     };
 
     return (
         <>
+            <div className="stl-export-actions">
+                <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => save('patch')}
+                    disabled={emptyPatch || saving !== null}
+                >
+                    {saving === 'patch'
+                        ? t.stlGenerating
+                        : selection && !isSingleSpectre
+                          ? t.savePatchStl
+                          : t.saveStl}
+                </button>
+                {selection && (
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => save('tray')}
+                        disabled={emptyPatch || saving !== null}
+                    >
+                        {saving === 'tray' ? t.stlGenerating : t.savePatchTrayStl}
+                    </button>
+                )}
+            </div>
             {selection && (
                 <>
                     <p>{t.stlPatchDescription}</p>
@@ -175,17 +240,45 @@ export function StlExportPanel() {
                             />
                         </label>
                     ))}
+                    <p>{t.stlTrayDescription}</p>
+                    <label style={{ display: 'block' }}>
+                        {t.stlTrayOuterShape}
+                        <select
+                            value={trayOuterShape}
+                            onChange={(event) => {
+                                setError(null);
+                                setTrayOuterShape(event.target.value as 'silhouette' | 'rectangle');
+                            }}
+                        >
+                            <option value="silhouette">{t.stlTrayShapeSilhouette}</option>
+                            <option value="rectangle">{t.stlTrayShapeRectangle}</option>
+                        </select>
+                    </label>
+                    {(
+                        [
+                            ['clearance', t.stlTrayClearance],
+                            ['frameWidth', t.stlTrayFrameWidth],
+                            ['baseThickness', t.stlTrayBaseThickness],
+                            ['wallHeight', t.stlTrayWallHeight],
+                        ] as const
+                    ).map(([key, label]) => (
+                        <label key={key} style={{ display: 'block' }}>
+                            {label}
+                            <input
+                                type="number"
+                                min={key === 'clearance' ? 0 : 0.1}
+                                step={key === 'clearance' ? 0.05 : 0.1}
+                                value={trayOptions[key]}
+                                onChange={(event) => {
+                                    setError(null);
+                                    setTrayOptions({ ...trayOptions, [key]: event.target.value });
+                                }}
+                            />
+                        </label>
+                    ))}
                     {emptyPatch && <p>{t.stlEmptyPatch}</p>}
                 </>
             )}
-            <button
-                type="button"
-                className="btn btn-primary"
-                onClick={save}
-                disabled={emptyPatch || saving}
-            >
-                {saving ? t.stlGenerating : selection ? t.savePatchStl : t.saveStl}
-            </button>
             {error && <div role="alert">{error}</div>}
         </>
     );

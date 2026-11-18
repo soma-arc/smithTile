@@ -11,9 +11,12 @@ vi.mock('../../export/patchStlJob', () => ({
     startPatchStlJob: (request: import('../../export/patchStl.worker').PatchStlRequest) => ({
         result: Promise.all([
             import('../../export/patchStl'),
+            import('../../export/patchTray'),
             import('../../export/patchStlSource'),
-        ]).then(([{ patchStl }, { resolvePatchStlSource }]) =>
-            patchStl(resolvePatchStlSource(request), request.options),
+        ]).then(([{ patchStl }, { patchTrayStl }, { resolvePatchStlSource }]) =>
+            request.output === 'tray'
+                ? patchTrayStl(resolvePatchStlSource(request), request.options, request.trayOptions)
+                : patchStl(resolvePatchStlSource(request), request.options),
         ),
         cancel: vi.fn(),
     }),
@@ -140,6 +143,40 @@ describe('<StlExportPanel>', () => {
         vi.unstubAllGlobals();
     });
 
+    it('downloads a silhouette frame and base for the selected patch', async () => {
+        const { createObjectURL, click } = stubDownload();
+        const user = userEvent.setup();
+        render(
+            <TileStateProvider>
+                <App />
+            </TileStateProvider>,
+        );
+        await user.click(screen.getByRole('radio', { name: 'Spectre' }));
+        await user.click(screen.getByRole('button', { name: 'Ma0' }));
+        await user.click(screen.getByRole('button', { name: '外枠＋下地のSTLを保存' }));
+        await waitFor(() => expect(click).toHaveBeenCalledOnce());
+        const anchor = click.mock.instances[0] as unknown as HTMLAnchorElement;
+        expect(anchor.download).toBe('tray-Ma0-cubicBezier.stl');
+        expect(createObjectURL.mock.calls[0][0].size).toBeGreaterThan(84);
+    });
+
+    it('downloads a rectangular frame and base for the selected patch', async () => {
+        const { click } = stubDownload();
+        const user = userEvent.setup();
+        render(
+            <TileStateProvider>
+                <App />
+            </TileStateProvider>,
+        );
+        await user.click(screen.getByRole('radio', { name: 'Spectre' }));
+        await user.click(screen.getByRole('button', { name: 'Ma0' }));
+        await user.selectOptions(screen.getByRole('combobox', { name: '外形' }), 'rectangle');
+        await user.click(screen.getByRole('button', { name: '外枠＋下地のSTLを保存' }));
+        await waitFor(() => expect(click).toHaveBeenCalledOnce());
+        const anchor = click.mock.instances[0] as unknown as HTMLAnchorElement;
+        expect(anchor.download).toBe('tray-rectangle-Ma0-cubicBezier.stl');
+    });
+
     it('downloads the currently displayed single Spectre', async () => {
         const { createObjectURL, click } = stubDownload();
         const user = userEvent.setup();
@@ -160,6 +197,22 @@ describe('<StlExportPanel>', () => {
         expect(blob.size).toBeGreaterThan(84);
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
+    });
+
+    it('downloads a frame and base for the single Spectre', async () => {
+        const { click } = stubDownload();
+        const user = userEvent.setup();
+        render(
+            <TileStateProvider>
+                <App />
+            </TileStateProvider>,
+        );
+        await user.click(screen.getByRole('radio', { name: 'Spectre' }));
+        await user.selectOptions(screen.getByRole('combobox', { name: '外形' }), 'rectangle');
+        await user.click(screen.getByRole('button', { name: '外枠＋下地のSTLを保存' }));
+        await waitFor(() => expect(click).toHaveBeenCalledOnce());
+        const anchor = click.mock.instances[0] as unknown as HTMLAnchorElement;
+        expect(anchor.download).toBe('tray-rectangle-spectre-cubicBezier.stl');
     });
 
     it('reports an excessive bevel without downloading a file', async () => {
