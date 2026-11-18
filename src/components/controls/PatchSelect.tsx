@@ -4,6 +4,10 @@ import { SPECTRE_PATCHES, type SpectrePatchKey } from '../../geometry/smithPatch
 import { SPECTRE_REGION_KEYS } from '../../geometry/spectreRegion';
 import { ARTICULATED_WORM_KEYS } from '../../geometry/spectreWorm';
 import {
+    MAX_SPECTRE_WRIGGLY_LEVEL,
+    SPECTRE_WRIGGLY_KINDS,
+} from '../../geometry/spectreWrigglyPatch';
+import {
     MAX_TILE_PATCH_LEVEL,
     TILE_PATCH_KINDS,
     type TilePatchKind,
@@ -19,6 +23,78 @@ import { Segmented } from '../ui/Segmented';
 
 const PATCH_KEYS = Object.keys(SPECTRE_PATCHES) as SpectrePatchKey[];
 const TILE_PATCH_LEVELS = Array.from({ length: MAX_TILE_PATCH_LEVEL + 1 }, (_, level) => level);
+const SPECTRE_WRIGGLY_LEVELS = Array.from(
+    { length: MAX_SPECTRE_WRIGGLY_LEVEL + 1 },
+    (_, level) => level,
+);
+
+export function PatchFamilySelect() {
+    const { shape, lang } = useTileState();
+    const dispatch = useTileDispatch();
+    const spectre = shape.kind === 'spectre' || shape.kind === 'spectreWriggly';
+    const wriggly = shape.kind === 'spectreWriggly' || shape.kind === 'wrigglyPatch';
+    const t = TRANSLATIONS[lang];
+    return (
+        <Segmented<'articulated' | 'wriggly'>
+            name="patch-family"
+            value={wriggly ? 'wriggly' : 'articulated'}
+            options={[
+                { value: 'articulated', label: t.articulated },
+                { value: 'wriggly', label: t.wriggly },
+            ]}
+            onChange={(family) =>
+                dispatch({
+                    type: 'setShape',
+                    shape: spectre
+                        ? family === 'wriggly'
+                            ? 'spectreWriggly'
+                            : 'spectre'
+                        : family === 'wriggly'
+                          ? 'wrigglyPatch'
+                          : 'articulatedPatch',
+                })
+            }
+            containerStyle={{ width: '100%' }}
+            optionStyle={{ flex: 1, justifyContent: 'center' }}
+        />
+    );
+}
+
+export function SpectreWrigglyPatchSelect() {
+    const { shape, lang } = useTileState();
+    const dispatch = useTileDispatch();
+    if (shape.kind !== 'spectreWriggly') return null;
+    return (
+        <div className="shape-grid">
+            {SPECTRE_WRIGGLY_KINDS.map((patch) => (
+                <button
+                    key={patch}
+                    type="button"
+                    className={`btn shape-opt${shape.patch === patch ? ' active' : ''}`}
+                    onClick={() => dispatch({ type: 'setSpectreWrigglyPatch', patch })}
+                >
+                    {patch}
+                </button>
+            ))}
+            <label className="patch-level">
+                {TRANSLATIONS[lang].regionLevel}
+                <select
+                    aria-label={TRANSLATIONS[lang].regionLevel}
+                    value={shape.level}
+                    onChange={(e) =>
+                        dispatch({ type: 'setSpectreWrigglyPatch', level: Number(e.target.value) })
+                    }
+                >
+                    {SPECTRE_WRIGGLY_LEVELS.map((level) => (
+                        <option key={level} value={level}>
+                            {level}
+                        </option>
+                    ))}
+                </select>
+            </label>
+        </div>
+    );
+}
 
 export function AssemblyTileModeSelect() {
     const { assemblyTileMode, lang } = useTileState();
@@ -46,9 +122,15 @@ export function ShapeToggle() {
     const t = TRANSLATIONS[lang];
 
     return (
-        <Segmented<ShapeSelection['kind']>
+        <Segmented<Exclude<ShapeSelection['kind'], 'wrigglyPatch' | 'spectreWriggly'>>
             name="shape"
-            value={shape.kind}
+            value={
+                shape.kind === 'wrigglyPatch'
+                    ? 'articulatedPatch'
+                    : shape.kind === 'spectreWriggly'
+                      ? 'spectre'
+                      : shape.kind
+            }
             options={[
                 { value: 'tile', label: t.shapeTile },
                 { value: 'spectre', label: t.shapeSpectre },
@@ -67,14 +149,18 @@ export function TileArticulatedPatchSelect() {
     const { shape, lang } = useTileState();
     const dispatch = useTileDispatch();
     const t = TRANSLATIONS[lang];
-    if (shape.kind !== 'articulatedPatch') return null;
+    if (shape.kind !== 'articulatedPatch' && shape.kind !== 'wrigglyPatch') return null;
+    const action =
+        shape.kind === 'wrigglyPatch'
+            ? ('setTileWrigglyPatch' as const)
+            : ('setTilePatch' as const);
     return (
         <div className="shape-grid">
             <Segmented<TilePatchKind>
                 name="patch-function"
                 value={shape.patch}
                 options={TILE_PATCH_KINDS.map((value) => ({ value, label: value }))}
-                onChange={(patch) => dispatch({ type: 'setTilePatch', patch })}
+                onChange={(patch) => dispatch({ type: action, patch })}
                 containerStyle={{ gridColumn: '1 / -1', width: '100%' }}
                 optionStyle={{ flex: 1, justifyContent: 'center' }}
             />
@@ -84,7 +170,7 @@ export function TileArticulatedPatchSelect() {
                     aria-label={t.regionLevel}
                     value={shape.level}
                     onChange={(event) =>
-                        dispatch({ type: 'setTilePatch', level: Number(event.target.value) })
+                        dispatch({ type: action, level: Number(event.target.value) })
                     }
                 >
                     {TILE_PATCH_LEVELS.map((level) => (

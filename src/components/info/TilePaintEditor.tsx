@@ -120,6 +120,7 @@ export function TilePaintEditor() {
 
     const usesSpectre =
         state.shape.kind === 'spectre' ||
+        state.shape.kind === 'spectreWriggly' ||
         ((state.shape.kind === 'articulatedWorm' || state.shape.kind === 'region') &&
             state.assemblyTileMode === 'spectre');
     const activeCurve =

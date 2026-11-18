@@ -14,12 +14,18 @@ import {
     MIRRORED_SPECTRE_WORMS,
     SPECTRE_WORMS,
 } from '../../geometry/spectreWorm';
+import {
+    getSpectreWrigglyPatch,
+    SPECTRE_WRIGGLY_COLORS,
+    SPECTRE_WRIGGLY_KINDS,
+} from '../../geometry/spectreWrigglyPatch';
 import { IDENTITY_TRANSFORM } from '../../geometry/Transform';
 import {
     getTileArticulatedPatch,
     TILE_PATCH_COLORS,
     TILE_PATCH_KINDS,
 } from '../../geometry/tileArticulatedPatch';
+import { getTileWrigglyPatch } from '../../geometry/tileWrigglyPatch';
 import { useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
 import { Tag } from '../ui/Tag';
@@ -40,13 +46,33 @@ const POLYKITE_NO_TAG = {
 export function InfoPanel() {
     const { a: tileA, assemblyTileMode, b: tileB, lang, mirrored, shape } = useTileState();
     const t = TRANSLATIONS[lang];
-    if (shape.kind === 'articulatedPatch') {
-        const patch = getTileArticulatedPatch(tileA, tileB, shape.patch, shape.level, mirrored);
+    if (
+        shape.kind === 'articulatedPatch' ||
+        shape.kind === 'wrigglyPatch' ||
+        shape.kind === 'spectreWriggly'
+    ) {
+        const patch =
+            shape.kind === 'spectreWriggly'
+                ? getSpectreWrigglyPatch(shape.patch, shape.level, mirrored)
+                : shape.kind === 'wrigglyPatch'
+                  ? getTileWrigglyPatch(tileA, tileB, shape.patch, shape.level, mirrored)
+                  : getTileArticulatedPatch(tileA, tileB, shape.patch, shape.level, mirrored);
+        const kinds: readonly string[] =
+            shape.kind === 'spectreWriggly' ? [...SPECTRE_WRIGGLY_KINDS, 'T'] : TILE_PATCH_KINDS;
+        const colors: Readonly<Record<string, string>> =
+            shape.kind === 'spectreWriggly' ? SPECTRE_WRIGGLY_COLORS : TILE_PATCH_COLORS;
         return (
             <aside className="info">
                 <h6>{t.info}</h6>
+                {shape.kind === 'spectreWriggly' && <SpectreCurveEditor />}
                 <TilePaintEditor />
-                <div className="info-stat-label">{t.tileArticulatedPatches}</div>
+                <div className="info-stat-label">
+                    {shape.kind === 'spectreWriggly'
+                        ? 'Spectre Wriggly'
+                        : shape.kind === 'wrigglyPatch'
+                          ? t.tileWrigglyPatches
+                          : t.tileArticulatedPatches}
+                </div>
                 <div className="info-stat-value">
                     {shape.patch}
                     {shape.level}
@@ -64,11 +90,11 @@ export function InfoPanel() {
                 <div>
                     <div className="info-block-label">{t.componentColors}</div>
                     <fieldset className="component-legend" aria-label={t.componentColors}>
-                        {TILE_PATCH_KINDS.map((kind) => (
+                        {kinds.map((kind) => (
                             <div className="component-legend-item" key={kind}>
                                 <span
                                     className="component-legend-swatch"
-                                    style={{ backgroundColor: TILE_PATCH_COLORS[kind] }}
+                                    style={{ backgroundColor: colors[kind] }}
                                 />
                                 <span>{kind}</span>
                             </div>

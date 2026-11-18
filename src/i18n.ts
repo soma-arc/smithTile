@@ -64,6 +64,8 @@ export interface Strings {
     closure: string;
     family: string;
     articulated: string;
+    wriggly: string;
+    tileWrigglyPatches: string;
     tileCount: string;
     frontEnd: string;
     rearEnd: string;
@@ -82,16 +84,30 @@ export interface Strings {
     saveStl: string;
     stlInvalidBoundary: string;
     savePatchStl: string;
+    savePatchTrayStl: string;
     stlPatchDescription: string;
+    stlTrayDescription: string;
+    stlTrayOuterShape: string;
+    stlTrayShapeSilhouette: string;
+    stlTrayShapeRectangle: string;
     stlUnitMm: string;
     stlThickness: string;
     stlBevel: string;
     stlCurveTolerance: string;
+    stlTrayClearance: string;
+    stlTrayFrameWidth: string;
+    stlTrayBaseThickness: string;
+    stlTrayWallHeight: string;
     stlInvalidPatch: string;
     stlInvalidScale: string;
     stlInvalidThickness: string;
     stlInvalidBevel: string;
     stlInvalidTolerance: string;
+    stlInvalidClearance: string;
+    stlInvalidFrameWidth: string;
+    stlInvalidBaseThickness: string;
+    stlInvalidWallHeight: string;
+    stlInvalidTrayShape: string;
     stlInvalidCurve: string;
     stlPatchSelfIntersection: string;
     stlBevelGeometry: string;
@@ -176,7 +192,9 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         edgeCount: '辺数',
         closure: '閉路誤差',
         family: '分類',
-        articulated: '関節型',
+        articulated: 'Articulated',
+        wriggly: 'Wriggly',
+        tileWrigglyPatches: 'Tile(a, b) Wriggly',
         tileCount: 'タイル数',
         frontEnd: '前端',
         rearEnd: '後端',
@@ -196,18 +214,32 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         saveStl: 'STL を保存',
         stlInvalidBoundary: '境界が自己交差しているため、STLを作成できません。',
         savePatchStl: 'パッチのSTLを保存',
+        savePatchTrayStl: '外枠＋下地のSTLを保存',
         stlPatchDescription:
             '表示中の辺形状で、隙間なくパッチを立体化します。上縁だけを45°面取りします。',
+        stlTrayDescription: 'パッチの外周に沿った外枠と、全面の下地を作成します。',
+        stlTrayOuterShape: '外形',
+        stlTrayShapeSilhouette: '輪郭に沿う',
+        stlTrayShapeRectangle: '矩形',
         stlUnitMm: '単位辺長 (mm)',
         stlThickness: '厚さ (mm)',
         stlBevel: '面取り幅 (mm)',
         stlCurveTolerance: '曲線許容誤差 (mm)',
+        stlTrayClearance: 'パッチとの隙間 (mm)',
+        stlTrayFrameWidth: '外枠の太さ (mm)',
+        stlTrayBaseThickness: '下地の厚さ (mm)',
+        stlTrayWallHeight: '外枠の高さ (mm)',
         stlInvalidPatch:
             '寸法を確認してください。面取り幅は厚さ未満で、輪郭が潰れない大きさにしてください。',
         stlInvalidScale: '単位辺長には0より大きい有限値を指定してください。',
         stlInvalidThickness: '厚さには0より大きい有限値を指定してください。',
         stlInvalidBevel: '面取り幅は0以上かつ厚さ未満にしてください。',
         stlInvalidTolerance: '曲線許容誤差には0より大きい有限値を指定してください。',
+        stlInvalidClearance: 'パッチとの隙間は0以上の有限値にしてください。',
+        stlInvalidFrameWidth: '外枠の太さには0より大きい有限値を指定してください。',
+        stlInvalidBaseThickness: '下地の厚さには0より大きい有限値を指定してください。',
+        stlInvalidWallHeight: '外枠の高さには0より大きい有限値を指定してください。',
+        stlInvalidTrayShape: '外枠の外形を選択してください。',
         stlInvalidCurve: '曲線の点が不足しているか、曲線データが不正です。',
         stlPatchSelfIntersection:
             '曲線を適用したタイル境界が自己交差しています。曲線の曲がりを小さくしてください。',
@@ -294,6 +326,8 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         closure: 'Closure error',
         family: 'Class',
         articulated: 'Articulated',
+        wriggly: 'Wriggly',
+        tileWrigglyPatches: 'Tile(a, b) Wriggly',
         tileCount: 'Tiles',
         frontEnd: 'Front end',
         rearEnd: 'Rear end',
@@ -313,18 +347,32 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         saveStl: 'Save STL',
         stlInvalidBoundary: 'The boundary intersects itself, so an STL cannot be created.',
         savePatchStl: 'Save patch STL',
+        savePatchTrayStl: 'Save frame + base STL',
         stlPatchDescription:
             'Create the patch with the displayed edge shape, no gaps, and a 45° bevel on the top edges only.',
+        stlTrayDescription: 'Create a silhouette frame and a full base below the patch.',
+        stlTrayOuterShape: 'Outer shape',
+        stlTrayShapeSilhouette: 'Follow silhouette',
+        stlTrayShapeRectangle: 'Rectangle',
         stlUnitMm: 'Unit edge length (mm)',
         stlThickness: 'Thickness (mm)',
         stlBevel: 'Bevel width (mm)',
         stlCurveTolerance: 'Curve tolerance (mm)',
+        stlTrayClearance: 'Patch clearance (mm)',
+        stlTrayFrameWidth: 'Frame width (mm)',
+        stlTrayBaseThickness: 'Base thickness (mm)',
+        stlTrayWallHeight: 'Frame height (mm)',
         stlInvalidPatch:
             'Check the dimensions. The bevel must be smaller than the thickness and must not collapse the outline.',
         stlInvalidScale: 'Unit edge length must be a finite value greater than zero.',
         stlInvalidThickness: 'Thickness must be a finite value greater than zero.',
         stlInvalidBevel: 'Bevel width must be at least zero and smaller than the thickness.',
         stlInvalidTolerance: 'Curve tolerance must be a finite value greater than zero.',
+        stlInvalidClearance: 'Patch clearance must be a finite value of at least zero.',
+        stlInvalidFrameWidth: 'Frame width must be a finite value greater than zero.',
+        stlInvalidBaseThickness: 'Base thickness must be a finite value greater than zero.',
+        stlInvalidWallHeight: 'Frame height must be a finite value greater than zero.',
+        stlInvalidTrayShape: 'Select an outer frame shape.',
         stlInvalidCurve: 'The curve has too few points or contains invalid data.',
         stlPatchSelfIntersection:
             'The curved tile boundary intersects itself. Reduce the amount of curvature.',

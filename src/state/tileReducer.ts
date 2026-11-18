@@ -14,6 +14,10 @@ import {
 } from '../geometry/smithTile';
 import type { SpectreRegionKey } from '../geometry/spectreRegion';
 import type { ArticulatedWormKey } from '../geometry/spectreWorm';
+import {
+    MAX_SPECTRE_WRIGGLY_LEVEL,
+    type SpectreWrigglyKind,
+} from '../geometry/spectreWrigglyPatch';
 import { MAX_TILE_PATCH_LEVEL, type TilePatchKind } from '../geometry/tileArticulatedPatch';
 import {
     erasePaintStrokes,
@@ -22,6 +26,7 @@ import {
     type PaintStroke,
     type PaintTool,
 } from '../geometry/tilePaint';
+import { MAX_TILE_WRIGGLY_LEVEL } from '../geometry/tileWrigglyPatch';
 import type { Vec2 } from '../geometry/Vec2';
 import type { Lang } from '../i18n';
 
@@ -33,7 +38,9 @@ export type RegionAdjustment = { translation: Vec2; rotationRad: number };
 export type ShapeSelection =
     | { kind: 'tile' }
     | { kind: 'spectre'; patch: SpectrePatchKey | null }
+    | { kind: 'spectreWriggly'; patch: SpectreWrigglyKind; level: number }
     | { kind: 'articulatedPatch'; patch: TilePatchKind; level: number }
+    | { kind: 'wrigglyPatch'; patch: TilePatchKind; level: number }
     | { kind: 'articulatedWorm'; worm: ArticulatedWormKey }
     | { kind: 'region'; region: SpectreRegionKey };
 
@@ -139,6 +146,8 @@ export type TileAction =
     | { type: 'setShape'; shape: ShapeSelection['kind'] }
     | { type: 'setSpectrePatch'; patch: SpectrePatchKey | null }
     | { type: 'setTilePatch'; patch?: TilePatchKind; level?: number }
+    | { type: 'setTileWrigglyPatch'; patch?: TilePatchKind; level?: number }
+    | { type: 'setSpectreWrigglyPatch'; patch?: SpectreWrigglyKind; level?: number }
     | { type: 'setArticulatedWorm'; worm: ArticulatedWormKey }
     | { type: 'setSpectreRegion'; region: SpectreRegionKey }
     | { type: 'setRegionPlacementMode'; mode: RegionPlacementMode }
@@ -202,17 +211,23 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
             return {
                 ...state,
                 pan: { x: 0, y: 0 },
-                zoom: action.shape === 'articulatedPatch' ? 1 : state.zoom,
+                zoom: ['articulatedPatch', 'wrigglyPatch', 'spectreWriggly'].includes(action.shape)
+                    ? 1
+                    : state.zoom,
                 shape:
-                    action.shape === 'articulatedPatch'
-                        ? { kind: 'articulatedPatch', patch: 'B', level: 1 }
-                        : action.shape === 'spectre'
-                          ? { kind: 'spectre', patch: null }
-                          : action.shape === 'articulatedWorm'
-                            ? { kind: 'articulatedWorm', worm: 'E' }
-                            : action.shape === 'region'
-                              ? { kind: 'region', region: 'PA1' }
-                              : { kind: 'tile' },
+                    action.shape === 'spectreWriggly'
+                        ? { kind: 'spectreWriggly', patch: 'I', level: 1 }
+                        : action.shape === 'wrigglyPatch'
+                          ? { kind: 'wrigglyPatch', patch: 'B', level: 1 }
+                          : action.shape === 'articulatedPatch'
+                            ? { kind: 'articulatedPatch', patch: 'B', level: 1 }
+                            : action.shape === 'spectre'
+                              ? { kind: 'spectre', patch: null }
+                              : action.shape === 'articulatedWorm'
+                                ? { kind: 'articulatedWorm', worm: 'E' }
+                                : action.shape === 'region'
+                                  ? { kind: 'region', region: 'PA1' }
+                                  : { kind: 'tile' },
             };
 
         case 'setTilePatch': {
@@ -244,6 +259,37 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 pan: { x: 0, y: 0 },
                 shape: { kind: 'spectre', patch: action.patch },
             };
+
+        case 'setTileWrigglyPatch': {
+            const current =
+                state.shape.kind === 'wrigglyPatch'
+                    ? state.shape
+                    : { patch: 'B' as const, level: 1 };
+            const level = action.level ?? current.level;
+            if (!Number.isInteger(level) || level < 0 || level > MAX_TILE_WRIGGLY_LEVEL)
+                return state;
+            return {
+                ...state,
+                pan: { x: 0, y: 0 },
+                zoom: action.level !== undefined ? 1 : state.zoom,
+                shape: { kind: 'wrigglyPatch', patch: action.patch ?? current.patch, level },
+            };
+        }
+        case 'setSpectreWrigglyPatch': {
+            const current =
+                state.shape.kind === 'spectreWriggly'
+                    ? state.shape
+                    : { patch: 'I' as const, level: 1 };
+            const level = action.level ?? current.level;
+            if (!Number.isInteger(level) || level < 0 || level > MAX_SPECTRE_WRIGGLY_LEVEL)
+                return state;
+            return {
+                ...state,
+                pan: { x: 0, y: 0 },
+                zoom: action.level !== undefined ? 1 : state.zoom,
+                shape: { kind: 'spectreWriggly', patch: action.patch ?? current.patch, level },
+            };
+        }
 
         case 'setArticulatedWorm':
             return {
@@ -487,7 +533,10 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
                 ...state,
                 a: p.a,
                 b: p.b,
-                shape: state.shape.kind === 'articulatedPatch' ? state.shape : { kind: 'tile' },
+                shape:
+                    state.shape.kind === 'articulatedPatch' || state.shape.kind === 'wrigglyPatch'
+                        ? state.shape
+                        : { kind: 'tile' },
                 pan: { x: 0, y: 0 },
                 presetName: p.key,
                 // Chevron (a = 0) has no finite ratio; force independent mode.
