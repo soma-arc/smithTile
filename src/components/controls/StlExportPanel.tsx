@@ -8,13 +8,7 @@ import { DEFAULT_PATCH_STL_OPTIONS } from '../../export/patchStl';
 import { type PatchStlErrorCode, PatchStlValidationError } from '../../export/patchStlError';
 import { startPatchStlJob } from '../../export/patchStlJob';
 import { DEFAULT_PATCH_TRAY_OPTIONS } from '../../export/patchTray';
-import {
-    SPECTRE_STL_FILENAME,
-    STL_MIME_TYPE,
-    spectreStl,
-    stlFilename,
-    tileStl,
-} from '../../export/stl';
+import { STL_MIME_TYPE, stlFilename, tileStl } from '../../export/stl';
 import { fmtNum } from '../../format';
 import { SPECTRE_PATCHES } from '../../geometry/smithPatch';
 import { STRAIGHT_CURVE } from '../../geometry/smithTile';
@@ -127,10 +121,6 @@ export function StlExportPanel() {
         if (saving) return;
         try {
             setError(null);
-            if (isSingleSpectre && output === 'patch') {
-                downloadBytes(spectreStl(activeCurve), SPECTRE_STL_FILENAME, STL_MIME_TYPE);
-                return;
-            }
             if (selection) {
                 setSaving(output);
                 const patchOptions = {

@@ -191,10 +191,10 @@ describe('<StlExportPanel>', () => {
 
         await waitFor(() => expect(click).toHaveBeenCalledOnce());
         const anchor = click.mock.instances[0] as unknown as HTMLAnchorElement;
-        expect(anchor.download).toBe('spectre.stl');
+        expect(anchor.download).toBe('patch-spectre-cubicBezier.stl');
         const blob = createObjectURL.mock.calls[0][0];
         expect(blob.type).toBe('application/sla');
-        expect(blob.size).toBeGreaterThan(84);
+        expect(blob.size).toBeGreaterThan(2484);
         vi.restoreAllMocks();
         vi.unstubAllGlobals();
     });
