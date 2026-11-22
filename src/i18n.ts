@@ -108,6 +108,14 @@ export interface Strings {
     stlInvalidBaseThickness: string;
     stlInvalidWallHeight: string;
     stlInvalidTrayShape: string;
+    saveExportSettings: string;
+    exportSettingsJson: string;
+    importSettingsJson: string;
+    resetExportSettings: string;
+    exportSettingsSaved: string;
+    exportSettingsLoaded: string;
+    exportSettingsReset: string;
+    exportSettingsInvalid: string;
     stlInvalidCurve: string;
     stlPatchSelfIntersection: string;
     stlBevelGeometry: string;
@@ -240,6 +248,14 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         stlInvalidBaseThickness: '下地の厚さには0より大きい有限値を指定してください。',
         stlInvalidWallHeight: '外枠の高さには0より大きい有限値を指定してください。',
         stlInvalidTrayShape: '外枠の外形を選択してください。',
+        saveExportSettings: '設定を保存',
+        exportSettingsJson: 'JSONを書き出す',
+        importSettingsJson: 'JSONを読み込む',
+        resetExportSettings: '初期値に戻す',
+        exportSettingsSaved: '3D出力設定とパッチ形状を保存しました。',
+        exportSettingsLoaded: 'JSONから設定を読み込みました。',
+        exportSettingsReset: '保存設定を削除し、初期値に戻しました。',
+        exportSettingsInvalid: '設定値または設定JSONが不正です。',
         stlInvalidCurve: '曲線の点が不足しているか、曲線データが不正です。',
         stlPatchSelfIntersection:
             '曲線を適用したタイル境界が自己交差しています。曲線の曲がりを小さくしてください。',
@@ -373,6 +389,14 @@ export const TRANSLATIONS: Record<Lang, Strings> = {
         stlInvalidBaseThickness: 'Base thickness must be a finite value greater than zero.',
         stlInvalidWallHeight: 'Frame height must be a finite value greater than zero.',
         stlInvalidTrayShape: 'Select an outer frame shape.',
+        saveExportSettings: 'Save settings',
+        exportSettingsJson: 'Export JSON',
+        importSettingsJson: 'Import JSON',
+        resetExportSettings: 'Reset defaults',
+        exportSettingsSaved: 'Saved the 3D export settings and patch shape.',
+        exportSettingsLoaded: 'Loaded settings from JSON.',
+        exportSettingsReset: 'Removed saved settings and restored defaults.',
+        exportSettingsInvalid: 'The settings or settings JSON is invalid.',
         stlInvalidCurve: 'The curve has too few points or contains invalid data.',
         stlPatchSelfIntersection:
             'The curved tile boundary intersects itself. Reduce the amount of curvature.',

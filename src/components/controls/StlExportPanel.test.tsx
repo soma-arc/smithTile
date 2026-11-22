@@ -24,6 +24,7 @@ vi.mock('../../export/patchStlJob', () => ({
 
 afterEach(() => {
     cleanup();
+    localStorage.clear();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
 });
@@ -213,6 +214,23 @@ describe('<StlExportPanel>', () => {
         await waitFor(() => expect(click).toHaveBeenCalledOnce());
         const anchor = click.mock.instances[0] as unknown as HTMLAnchorElement;
         expect(anchor.download).toBe('tray-rectangle-spectre-cubicBezier.stl');
+    });
+
+    it('saves the current straight Spectre shape and 3D parameters', async () => {
+        const user = userEvent.setup();
+        render(
+            <TileStateProvider>
+                <App />
+            </TileStateProvider>,
+        );
+        await user.click(screen.getByRole('radio', { name: 'Spectre' }));
+        await user.click(screen.getByRole('radio', { name: '直線' }));
+        await user.click(screen.getByRole('button', { name: '設定を保存' }));
+
+        const profile = JSON.parse(localStorage.getItem('smithTile.exportProfile.v1') as string);
+        expect(profile.patch.shape).toEqual({ kind: 'spectre', patch: null });
+        expect(profile.patch.spectreCurveMode).toBe('straight');
+        expect(profile.export3d.bevel).toBe(0.8);
     });
 
     it('reports an excessive bevel without downloading a file', async () => {

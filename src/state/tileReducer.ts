@@ -44,6 +44,22 @@ export type ShapeSelection =
     | { kind: 'articulatedWorm'; worm: ArticulatedWormKey }
     | { kind: 'region'; region: SpectreRegionKey };
 
+export type ExportableShapeSelection = Exclude<
+    ShapeSelection,
+    { kind: 'articulatedWorm' } | { kind: 'region' }
+>;
+
+export type SavedPatchParameters = Pick<
+    TileState,
+    | 'parameterMode'
+    | 'spectreCurve'
+    | 'spectrePolyline'
+    | 'spectreCurveMode'
+    | 'a'
+    | 'b'
+    | 'mirrored'
+> & { shape: ExportableShapeSelection };
+
 /** Camera zoom bounds, shared by the slider and mouse-wheel zoom. */
 export const ZOOM_MIN = 0.05;
 export const ZOOM_MAX = 10;
@@ -178,6 +194,7 @@ export type TileAction =
     | { type: 'setZoom'; zoom: number }
     | { type: 'panBy'; delta: Vec2 }
     | { type: 'setRotation'; deg: number }
+    | { type: 'restoreSavedPatchParameters'; parameters: SavedPatchParameters }
     | { type: 'applyPreset'; preset: Preset }
     | { type: 'toggle'; key: keyof Toggles };
 
@@ -526,6 +543,15 @@ export function tileReducer(state: TileState, action: TileAction): TileState {
 
         case 'setRotation':
             return { ...state, rotationDeg: action.deg };
+
+        case 'restoreSavedPatchParameters':
+            return {
+                ...state,
+                ...action.parameters,
+                pan: { x: 0, y: 0 },
+                zoom: 1,
+                presetName: 'custom',
+            };
 
         case 'applyPreset': {
             const p = action.preset;

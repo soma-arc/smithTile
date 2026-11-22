@@ -4,6 +4,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { downloadBytes } from '../../export/download';
+import {
+    createExportProfile,
+    type Export3dSettings,
+    EXPORT_PROFILE_FILENAME,
+    EXPORT_PROFILE_STORAGE_KEY,
+    loadExportProfile,
+    parseExportProfileJson,
+    type ExportProfile,
+} from '../../export/exportProfile';
 import { DEFAULT_PATCH_STL_OPTIONS } from '../../export/patchStl';
 import { type PatchStlErrorCode, PatchStlValidationError } from '../../export/patchStlError';
 import { startPatchStlJob } from '../../export/patchStlJob';
@@ -15,31 +24,64 @@ import { STRAIGHT_CURVE } from '../../geometry/smithTile';
 import { getSpectreWrigglyPatch } from '../../geometry/spectreWrigglyPatch';
 import { getTileArticulatedPatch } from '../../geometry/tileArticulatedPatch';
 import { getTileWrigglyPatch } from '../../geometry/tileWrigglyPatch';
-import { useTileState } from '../../hooks/useTileState';
+import { useTileDispatch, useTileState } from '../../hooks/useTileState';
 import { TRANSLATIONS } from '../../i18n';
+import { initialTileState } from '../../state/tileReducer';
+
+const DEFAULT_EXPORT_SETTINGS: Export3dSettings = {
+    unitMm: DEFAULT_PATCH_STL_OPTIONS.unitMm,
+    thickness: DEFAULT_PATCH_STL_OPTIONS.thickness,
+    bevel: DEFAULT_PATCH_STL_OPTIONS.bevel,
+    curveToleranceMm: DEFAULT_PATCH_STL_OPTIONS.curveToleranceMm,
+    ...DEFAULT_PATCH_TRAY_OPTIONS,
+};
+
+function safelyLoadProfile(): ExportProfile | null {
+    try {
+        return loadExportProfile(window.localStorage);
+    } catch {
+        return null;
+    }
+}
 
 export function StlExportPanel() {
-    const { lang, a, b, mirrored, shape, spectreCurve, spectreCurveMode, spectrePolyline } =
-        useTileState();
+    const state = useTileState();
+    const dispatch = useTileDispatch();
+    const { lang, a, b, mirrored, shape, spectreCurve, spectreCurveMode, spectrePolyline } = state;
+    const [initialProfile] = useState(safelyLoadProfile);
     const [error, setError] = useState<string | null>(null);
+    const [profileStatus, setProfileStatus] = useState<string | null>(null);
     const [options, setOptions] = useState({
-        unitMm: String(DEFAULT_PATCH_STL_OPTIONS.unitMm),
-        thickness: String(DEFAULT_PATCH_STL_OPTIONS.thickness),
-        bevel: String(DEFAULT_PATCH_STL_OPTIONS.bevel),
-        curveToleranceMm: String(DEFAULT_PATCH_STL_OPTIONS.curveToleranceMm),
+        unitMm: String(initialProfile?.export3d.unitMm ?? DEFAULT_EXPORT_SETTINGS.unitMm),
+        thickness: String(initialProfile?.export3d.thickness ?? DEFAULT_EXPORT_SETTINGS.thickness),
+        bevel: String(initialProfile?.export3d.bevel ?? DEFAULT_EXPORT_SETTINGS.bevel),
+        curveToleranceMm: String(
+            initialProfile?.export3d.curveToleranceMm ?? DEFAULT_EXPORT_SETTINGS.curveToleranceMm,
+        ),
     });
     const [trayOptions, setTrayOptions] = useState({
-        clearance: String(DEFAULT_PATCH_TRAY_OPTIONS.clearance),
-        frameWidth: String(DEFAULT_PATCH_TRAY_OPTIONS.frameWidth),
-        baseThickness: String(DEFAULT_PATCH_TRAY_OPTIONS.baseThickness),
-        wallHeight: String(DEFAULT_PATCH_TRAY_OPTIONS.wallHeight),
+        clearance: String(initialProfile?.export3d.clearance ?? DEFAULT_EXPORT_SETTINGS.clearance),
+        frameWidth: String(
+            initialProfile?.export3d.frameWidth ?? DEFAULT_EXPORT_SETTINGS.frameWidth,
+        ),
+        baseThickness: String(
+            initialProfile?.export3d.baseThickness ?? DEFAULT_EXPORT_SETTINGS.baseThickness,
+        ),
+        wallHeight: String(
+            initialProfile?.export3d.wallHeight ?? DEFAULT_EXPORT_SETTINGS.wallHeight,
+        ),
     });
     const [trayOuterShape, setTrayOuterShape] = useState<'silhouette' | 'rectangle'>(
-        DEFAULT_PATCH_TRAY_OPTIONS.outerShape,
+        initialProfile?.export3d.outerShape ?? DEFAULT_EXPORT_SETTINGS.outerShape,
     );
     const [saving, setSaving] = useState<'patch' | 'tray' | null>(null);
     const job = useRef<ReturnType<typeof startPatchStlJob> | null>(null);
-    useEffect(() => () => job.current?.cancel(), []);
+    useEffect(() => {
+        if (initialProfile) {
+            dispatch({ type: 'restoreSavedPatchParameters', parameters: initialProfile.patch });
+        }
+        return () => job.current?.cancel();
+    }, [dispatch, initialProfile]);
     const t = TRANSLATIONS[lang];
     const patchKey = shape.kind === 'spectre' ? shape.patch : null;
     const isSingleSpectre = shape.kind === 'spectre' && patchKey === null;
@@ -117,6 +159,77 @@ export function StlExportPanel() {
                 return t.stlTriangulationFailed;
         }
     };
+    const currentExportSettings = (): Export3dSettings => ({
+        unitMm: Number.parseFloat(options.unitMm),
+        thickness: Number.parseFloat(options.thickness),
+        bevel: Number.parseFloat(options.bevel),
+        curveToleranceMm: Number.parseFloat(options.curveToleranceMm),
+        outerShape: trayOuterShape,
+        clearance: Number.parseFloat(trayOptions.clearance),
+        frameWidth: Number.parseFloat(trayOptions.frameWidth),
+        baseThickness: Number.parseFloat(trayOptions.baseThickness),
+        wallHeight: Number.parseFloat(trayOptions.wallHeight),
+    });
+    const applyProfile = (profile: ExportProfile) => {
+        const settings = profile.export3d;
+        setOptions({
+            unitMm: String(settings.unitMm),
+            thickness: String(settings.thickness),
+            bevel: String(settings.bevel),
+            curveToleranceMm: String(settings.curveToleranceMm),
+        });
+        setTrayOptions({
+            clearance: String(settings.clearance),
+            frameWidth: String(settings.frameWidth),
+            baseThickness: String(settings.baseThickness),
+            wallHeight: String(settings.wallHeight),
+        });
+        setTrayOuterShape(settings.outerShape);
+        dispatch({ type: 'restoreSavedPatchParameters', parameters: profile.patch });
+    };
+    const currentProfile = () => createExportProfile(state, currentExportSettings());
+    const saveProfile = () => {
+        try {
+            const profile = currentProfile();
+            localStorage.setItem(EXPORT_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+            setError(null);
+            setProfileStatus(t.exportSettingsSaved);
+        } catch {
+            setProfileStatus(null);
+            setError(t.exportSettingsInvalid);
+        }
+    };
+    const exportProfileJson = () => {
+        try {
+            const json = `${JSON.stringify(currentProfile(), null, 2)}\n`;
+            downloadBytes(
+                new TextEncoder().encode(json) as Uint8Array<ArrayBuffer>,
+                EXPORT_PROFILE_FILENAME,
+                'application/json',
+            );
+            setError(null);
+        } catch {
+            setError(t.exportSettingsInvalid);
+        }
+    };
+    const importProfileJson = async (file: File) => {
+        try {
+            const profile = parseExportProfileJson(await file.text());
+            localStorage.setItem(EXPORT_PROFILE_STORAGE_KEY, JSON.stringify(profile));
+            applyProfile(profile);
+            setError(null);
+            setProfileStatus(t.exportSettingsLoaded);
+        } catch {
+            setProfileStatus(null);
+            setError(t.exportSettingsInvalid);
+        }
+    };
+    const resetProfile = () => {
+        localStorage.removeItem(EXPORT_PROFILE_STORAGE_KEY);
+        applyProfile(createExportProfile(initialTileState, DEFAULT_EXPORT_SETTINGS));
+        setError(null);
+        setProfileStatus(t.exportSettingsReset);
+    };
     const save = async (output: 'patch' | 'tray' = 'patch') => {
         if (saving) return;
         try {
@@ -144,7 +257,11 @@ export function StlExportPanel() {
                                   wallHeight: Number.parseFloat(trayOptions.wallHeight),
                               },
                           })
-                        : startPatchStlJob({ ...selection, output: 'patch', options: patchOptions });
+                        : startPatchStlJob({
+                              ...selection,
+                              output: 'patch',
+                              options: patchOptions,
+                          });
                 const prefix =
                     output === 'tray'
                         ? `tray${trayOuterShape === 'rectangle' ? '-rectangle' : ''}`
@@ -154,10 +271,10 @@ export function StlExportPanel() {
                     isSingleSpectre
                         ? `${prefix}-spectre-${spectreCurveMode}.stl`
                         : shape.kind === 'spectreWriggly'
-                        ? `${prefix}-spectre-wriggly-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-${spectreCurveMode}.stl`
-                        : isTilePatch
-                          ? `${prefix}-tile-${shape.kind === 'wrigglyPatch' ? 'wriggly-' : ''}a${fmtNum(a)}-b${fmtNum(b)}-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-straight.stl`
-                          : `${prefix}-${patchKey}-${spectreCurveMode}.stl`,
+                          ? `${prefix}-spectre-wriggly-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-${spectreCurveMode}.stl`
+                          : isTilePatch
+                            ? `${prefix}-tile-${shape.kind === 'wrigglyPatch' ? 'wriggly-' : ''}a${fmtNum(a)}-b${fmtNum(b)}-${shape.patch}${shape.level}${mirrored ? '-mirrored' : ''}-straight.stl`
+                            : `${prefix}-${patchKey}-${spectreCurveMode}.stl`,
                     STL_MIME_TYPE,
                 );
                 return;
@@ -266,9 +383,34 @@ export function StlExportPanel() {
                             />
                         </label>
                     ))}
+                    <div className="stl-profile-actions">
+                        <button type="button" className="btn" onClick={saveProfile}>
+                            {t.saveExportSettings}
+                        </button>
+                        <button type="button" className="btn" onClick={exportProfileJson}>
+                            {t.exportSettingsJson}
+                        </button>
+                        <label className="btn">
+                            {t.importSettingsJson}
+                            <input
+                                type="file"
+                                accept="application/json,.json"
+                                hidden
+                                onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    if (file) void importProfileJson(file);
+                                    event.target.value = '';
+                                }}
+                            />
+                        </label>
+                        <button type="button" className="btn" onClick={resetProfile}>
+                            {t.resetExportSettings}
+                        </button>
+                    </div>
                     {emptyPatch && <p>{t.stlEmptyPatch}</p>}
                 </>
             )}
+            {profileStatus && <p role="status">{profileStatus}</p>}
             {error && <div role="alert">{error}</div>}
         </>
     );
