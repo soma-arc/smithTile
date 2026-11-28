@@ -64,6 +64,18 @@ body {
     margin: 0 0 var(--space-3);
     color: var(--color-accent-700);
 }
+.stl-export-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+.stl-profile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
 .field-row {
     display: flex;
     gap: var(--space-3);

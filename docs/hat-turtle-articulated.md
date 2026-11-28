@@ -17,8 +17,8 @@ in that PDF are the specification. The source collection is
    STL worker and validate its closed meshes.
 
 The recurrence from Hat/Turtle Articulated is parameterized by the existing
-Tile(a, b) controls. Spectre Wriggly (part II) is the next requested family; it
-has different initial marks and evaluation order. The
+Tile(a, b) controls. [Wriggly patches](wriggly-patches.md) implement parts II and
+IV with their different initial marks and evaluation order. The
 existing Spectre Articulated and worm/region modes keep their own generators.
 
 ## Initial marks

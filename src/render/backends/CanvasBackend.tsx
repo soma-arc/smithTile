@@ -2,8 +2,8 @@
  * Canvas backend — renders the same Scene onto a 2D <canvas>.
  *
  * Demonstrates that the Scene contract is backend-agnostic: this consumes the
- * identical `Drawable` list the SVG backend does. Not the default; opt-in via
- * `<TileView backend="canvas">`.
+ * identical `Drawable` list the SVG backend does. Used for large Wriggly Spectre
+ * patches; other views can opt in via `<TileView backend="canvas">`.
  */
 
 import { useEffect, useRef } from 'react';

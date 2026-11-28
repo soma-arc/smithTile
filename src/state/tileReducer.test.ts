@@ -1,5 +1,41 @@
 import { describe, expect, it } from 'vitest';
+import { PRESETS } from '../geometry/smithTile';
 import { clampZoom, initialTileState, tileReducer } from './tileReducer';
+
+describe('tileReducer — Wriggly patches', () => {
+    it('preserves Tile(a, b) parameters and selection on preset changes', () => {
+        const opened = tileReducer(initialTileState, { type: 'setShape', shape: 'wrigglyPatch' });
+        expect(opened.shape).toEqual({ kind: 'wrigglyPatch', patch: 'B', level: 1 });
+        const selected = tileReducer(opened, { type: 'setTileWrigglyPatch', patch: 'S', level: 2 });
+        const changed = tileReducer(selected, { type: 'applyPreset', preset: PRESETS[0] });
+        expect(changed.shape).toEqual(selected.shape);
+        expect([changed.a, changed.b]).toEqual([PRESETS[0].a, PRESETS[0].b]);
+        expect(tileReducer(changed, { type: 'setTileWrigglyPatch', patch: 'C' }).shape).toEqual({
+            kind: 'wrigglyPatch',
+            patch: 'C',
+            level: 2,
+        });
+        for (const level of [-1, 0.5, NaN, Infinity, 5]) {
+            expect(tileReducer(changed, { type: 'setTileWrigglyPatch', level })).toBe(changed);
+        }
+    });
+
+    it('selects Spectre I1 and validates levels before changing the viewport', () => {
+        const opened = tileReducer(initialTileState, { type: 'setShape', shape: 'spectreWriggly' });
+        expect(opened.shape).toEqual({ kind: 'spectreWriggly', patch: 'I', level: 1 });
+        const selected = tileReducer(
+            { ...opened, zoom: 4, pan: { x: 20, y: 10 } },
+            { type: 'setSpectreWrigglyPatch', patch: 'Ma', level: 2 },
+        );
+        expect(selected.shape).toEqual({ kind: 'spectreWriggly', patch: 'Ma', level: 2 });
+        expect(selected.zoom).toBe(1);
+        expect(selected.pan).toEqual({ x: 0, y: 0 });
+        expect([selected.a, selected.b]).toEqual([initialTileState.a, initialTileState.b]);
+        for (const level of [-1, 0.5, NaN, Infinity, 3]) {
+            expect(tileReducer(selected, { type: 'setSpectreWrigglyPatch', level })).toBe(selected);
+        }
+    });
+});
 
 describe('tileReducer — Tile(a, b) articulated patches', () => {
     it('keeps Tile(a, b) and changes function and level independently', () => {
